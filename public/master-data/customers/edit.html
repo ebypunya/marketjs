@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Customer - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+        <div class="bento-item" style="width:100%;box-sizing:border-box">
+            <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:0.88rem;font-weight:600"></div>
+
+            <div class="form-row">
+                <div class="form-field">
+                    <label class="field-label">Nama Perusahaan <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="f-name" placeholder="PT. Contoh Jaya" class="field-input">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">No. Telepon</label>
+                    <input type="text" id="f-phone" placeholder="08xx-xxxx-xxxx" class="field-input">
+                </div>
+            </div>
+
+            <div class="form-field" style="margin-top:16px">
+                <label class="field-label">Email</label>
+                <input type="email" id="f-email" placeholder="email@perusahaan.com" class="field-input">
+            </div>
+
+            <div class="form-field" style="margin-top:16px">
+                <label class="field-label">Alamat</label>
+                <textarea id="f-address" class="field-input" rows="3" style="resize:vertical"></textarea>
+            </div>
+
+            <div class="form-field" style="margin-top:16px">
+                <label class="field-label">Keterangan</label>
+                <textarea id="f-annotation" class="field-input" rows="2" style="resize:vertical"></textarea>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:24px">
+                <a href="/master-data/customers" 
+                style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main)">
+                Batal
+            </a>
+            <button onclick="submitEdit()" 
+            style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer">
+            <i class="ti ti-device-floppy"></i> Simpan Perubahan
+        </button>
+    </div>
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    const customerId = new URLSearchParams(window.location.search).get('id');
+    if (!customerId) window.location.href = '/master-data/customers';
+
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.style.display = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent = msg;
+    }
+
+// Load data existing
+fetch('/api/customers/' + customerId)
+.then(r => r.json())
+.then(c => {
+    document.getElementById('f-name').value = c.name || '';
+    document.getElementById('f-phone').value = c.phone || '';
+    document.getElementById('f-email').value = c.email || '';
+    document.getElementById('f-address').value = c.address || '';
+    document.getElementById('f-annotation').value = c.annotation || '';
+})
+.catch(() => showAlert('Gagal memuat data customer.', 'error'));
+
+function submitEdit() {
+    const name = document.getElementById('f-name').value.trim();
+    if (!name) { showAlert('Nama perusahaan wajib diisi.', 'error'); return; }
+
+    const body = new URLSearchParams({
+        name,
+        phone: document.getElementById('f-phone').value.trim(),
+        email: document.getElementById('f-email').value.trim(),
+        address: document.getElementById('f-address').value.trim(),
+        annotation: document.getElementById('f-annotation').value.trim()
+    });
+
+    fetch('/api/customers/' + customerId, {
+        method: 'PUT',
+        body,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('✅ Data berhasil diperbarui!', 'success');
+            setTimeout(() => window.location.href = '/master-data/customers', 1200);
+        } else {
+            showAlert('Gagal: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(() => showAlert('Terjadi kesalahan server.', 'error'));
+}
+</script>
+</body>
+</html>

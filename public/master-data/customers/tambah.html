@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Customer - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+        <div class="bento-item" style="width:100%;box-sizing:border-box">
+
+            <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:0.88rem;font-weight:600"></div>
+
+            <!-- Baris 1: Nama + Telepon -->
+            <div class="form-row" style="margin-bottom:16px">
+                <div class="form-field">
+                    <label class="field-label">Nama Perusahaan <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="f-name" placeholder="PT. Contoh Jaya" class="field-input">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">No. Telepon</label>
+                    <input type="text" id="f-phone" placeholder="08xx-xxxx-xxxx" class="field-input">
+                </div>
+            </div>
+
+            <!-- Baris 2: Email full width -->
+            <div class="form-field" style="margin-bottom:16px">
+                <label class="field-label">Email</label>
+                <input type="email" id="f-email" placeholder="email@perusahaan.com" class="field-input">
+            </div>
+
+            <!-- Baris 3: Alamat full width -->
+            <div class="form-field" style="margin-bottom:16px">
+                <label class="field-label">Alamat</label>
+                <textarea id="f-address" placeholder="Jl. Contoh No. 1, Kota..." class="field-input" rows="3" style="resize:vertical"></textarea>
+            </div>
+
+            <!-- Baris 4: Keterangan full width -->
+            <div class="form-field" style="margin-bottom:24px">
+                <label class="field-label">Keterangan</label>
+                <textarea id="f-annotation" placeholder="Catatan tambahan..." class="field-input" rows="2" style="resize:vertical"></textarea>
+            </div>
+
+            <div style="display:flex;gap:10px">
+                <a href="/master-data/customers"
+                style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+                <i class="ti ti-arrow-left"></i> Batal
+            </a>
+            <button onclick="submitForm()"
+            style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+            <i class="ti ti-device-floppy"></i> Simpan Customer
+        </button>
+    </div>
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.style.display = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent = msg;
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function submitForm() {
+        const name = document.getElementById('f-name').value.trim();
+        if (!name) { showAlert('❌ Nama perusahaan wajib diisi.', 'error'); return; }
+
+        const body = new URLSearchParams({
+            name,
+            phone:      document.getElementById('f-phone').value.trim(),
+            email:      document.getElementById('f-email').value.trim(),
+            address:    document.getElementById('f-address').value.trim(),
+            annotation: document.getElementById('f-annotation').value.trim()
+        });
+
+        fetch('/api/customers', {
+            method: 'POST', body,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('✅ Customer berhasil ditambahkan!', 'success');
+                setTimeout(() => window.location.href = '/master-data/customers', 1200);
+            } else {
+                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(() => showAlert('❌ Terjadi kesalahan server.', 'error'));
+    }
+</script>
+</body>
+</html>

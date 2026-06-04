@@ -42,6 +42,29 @@
             <p>&copy; DeV#477 2026</p>
         </footer>
     </div>
-    <script src="/assets/js/login.js"></script>
+    <!-- POPUP AKTIVASI -->
+    <div id="popup-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; justify-content:center; align-items:center;">
+        <div style="background:#fff; border-radius:16px; padding:40px; max-width:380px; width:90%; text-align:center; box-shadow: 0 20px 60px rgba(0,0,0,0.2);">
+            <div style="font-size:52px; margin-bottom:10px;">📋</div>
+            <h3 style="margin:0 0 10px; color:#0f172a; font-size:1.2rem;">Registrasi Berhasil!</h3>
+            <p style="color:#64748b; font-size:0.9rem; line-height:1.6;">
+                Silahkan hubungi <b style="color:#4f46e5;">Team IT</b> untuk mengaktivasi akun anda.
+            </p>
+            <hr style="border:none; border-top:1px solid #f1f5f9; margin:20px 0;">
+            <button onclick="window.location.href='/'" 
+            style="padding:12px 30px; background:#4f46e5; color:white; border:none; border-radius:8px; font-weight:700; font-size:0.9rem; cursor:pointer;">
+            OK, Mengerti
+        </button>
+    </div>
+</div>
+
+<script src="/assets/js/login.js"></script>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('status') === 'success') {
+        document.getElementById('popup-overlay').style.display = 'flex';
+    }
+</script>
+<script src="/assets/js/login.js"></script>
 </body>
 </html>

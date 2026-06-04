@@ -39,5 +39,29 @@
         </footer>
     </div>
     <script src="/assets/js/login.js"></script>
+    <script>
+    // Tampilkan pesan error dari query param
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    const messages = {
+        'invalid': '❌ Username atau password salah.',
+        'pending': '⏳ Akun belum aktif. Hubungi Team IT untuk aktivasi.',
+        'banned': '🚫 Akun Anda telah dinonaktifkan.',
+        'unauthorized': '🔒 Silahkan login terlebih dahulu.'
+    };
+    if (error && messages[error]) {
+        const div = document.createElement('div');
+        div.style = 'background:#fef2f2;color:#dc2626;padding:12px 16px;border-radius:8px;font-size:0.85rem;font-weight:600;margin-bottom:16px;text-align:center';
+        div.textContent = messages[error];
+        document.querySelector('form').prepend(div);
+    }
+
+    // Popup registrasi berhasil
+    const status = params.get('status');
+    if (status === 'success') {
+        document.getElementById('popup-overlay').style.display = 'flex';
+    }
+</script>
+<script src="/assets/js/login.js"></script>
 </body>
 </html>
