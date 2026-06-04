@@ -1,0 +1,169 @@
+/* --- DEV477 CLEAN LIGHT MODERN DASHBOARD --- */
+:root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --bg-main: #f8fafc;
+    --sidebar-bg: #ffffff;
+    --card-bg: #ffffff;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border-color: #f1f5f9;
+}
+
+.dashboard-page {
+    display: block !important;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    margin: 0;
+    min-height: 100vh;
+}
+
+.dashboard-container {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    min-height: 100vh;
+}
+
+/* Sidebar: Paper White Style */
+.sidebar {
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    padding: 2.5rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.logo-brand {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--primary);
+    margin-bottom: 3rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.nav-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.nav-link {
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    background: var(--bg-main);
+    color: var(--primary);
+}
+
+.nav-link.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* Main Content Area */
+.main-wrapper {
+    padding: 2.5rem;
+    overflow-y: auto;
+}
+
+.header-flex {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+}
+
+.header-flex h1 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+/* Bento Grid System: Light Mode */
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: minmax(140px, auto);
+    gap: 1.5rem;
+}
+
+.bento-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.01);
+    transition: all 0.3s ease;
+}
+
+.bento-item:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05);
+    transform: translateY(-4px);
+    border-color: var(--primary-light);
+}
+
+.bento-large { grid-column: span 2; grid-row: span 2; }
+.bento-medium { grid-column: span 2; }
+
+.stat-label { 
+    color: var(--text-muted); 
+    font-size: 0.75rem; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    letter-spacing: 1px; 
+}
+
+.stat-number { 
+    font-size: 2rem; 
+    font-weight: 800; 
+    margin-top: 8px; 
+    color: var(--text-main);
+}
+
+.btn-logout-modern {
+    margin-top: auto;
+    padding: 12px;
+    text-align: center;
+    background: #fef2f2;
+    color: #ef4444;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: 0.2s;
+}
+
+.btn-logout-modern:hover { 
+    background: #ef4444; 
+    color: white; 
+}
+
+/* Simple Table UI for Dashboard */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.data-table th {
+    text-align: left;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+    padding: 12px 0;
+    font-size: 0.9rem;
+    border-bottom: 1px solid var(--bg-main);
+}
