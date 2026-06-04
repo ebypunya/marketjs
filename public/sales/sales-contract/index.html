@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Contract - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+
+        <!-- Toolbar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <input type="text" id="search-input" placeholder="🔍  Cari contract no atau customer..."
+                style="padding:10px 16px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;width:280px;outline:none;font-family:inherit">
+
+                <select id="filter-status"
+                style="padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;font-family:inherit;outline:none;color:var(--text-main);background:#fff;cursor:pointer">
+                <option value="">Semua Status</option>
+                <option value="draft">Draft</option>
+                <option value="confirmed">Confirmed</option>
+                <option value="done">Done</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+
+        <!-- Tombol tambah disabled sementara -->
+        <button disabled
+        style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:#e2e8f0;color:#94a3b8;border:none;border-radius:10px;font-weight:700;font-size:0.88rem;cursor:not-allowed;font-family:inherit"
+        title="Fitur tambah sedang dalam pengembangan">
+        <i class="ti ti-plus"></i> Tambah Contract
+    </button>
+</div>
+
+<!-- Tabel -->
+<div class="bento-item" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+        <table class="data-table" style="margin:0;min-width:800px">
+            <thead>
+                <tr style="background:var(--bg-main)">
+                    <th style="padding:14px 18px;width:44px">#</th>
+                    <th style="padding:14px 18px">CONTRACT NO</th>
+                    <th style="padding:14px 18px">CUSTOMER</th>
+                    <th style="padding:14px 18px;text-align:center">ITEMS</th>
+                    <th style="padding:14px 18px">DATE SHIP</th>
+                    <th style="padding:14px 18px">CREATED</th>
+                    <th style="padding:14px 18px;text-align:center">STATUS</th>
+                    <th style="padding:14px 18px;width:80px;text-align:center">AKSI</th>
+                </tr>
+            </thead>
+            <tbody id="contract-tbody">
+                <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Memuat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Footer pagination -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--border-color);background:var(--bg-main)">
+        <span id="pagination-info" style="font-size:0.8rem;color:var(--text-muted)">-</span>
+        <div id="pagination-controls" style="display:flex;gap:6px"></div>
+    </div>
+</div>
+</div>
+
+<!-- Modal Hapus -->
+<div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999;justify-content:center;align-items:center">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.18)">
+        <div style="font-size:48px;margin-bottom:10px">🗑️</div>
+        <h3 style="margin:0 0 8px;color:#0f172a">Hapus Sales Contract?</h3>
+        <p style="color:#64748b;font-size:0.88rem;margin-bottom:6px">Contract <b id="delete-name" style="color:#0f172a"></b> akan dihapus permanen.</p>
+        <p style="color:#ef4444;font-size:0.8rem;font-weight:600;margin-bottom:24px">⚠️ Semua detail item dalam contract ini juga akan terhapus.</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="closeDeleteModal()"
+            style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
+            <button onclick="confirmDelete()"
+            style="padding:10px 24px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">
+            <i class="ti ti-trash"></i> Ya, Hapus
+        </button>
+    </div>
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    let allContracts = [];
+    let filtered = [];
+    let currentPage = 1;
+    const PER_PAGE = 10;
+    let deleteId = null;
+
+    // ---- Status config ----
+    const STATUS_CONFIG = {
+        draft:      { label: 'Draft',      bg: '#f1f5f9', color: '#475569' },
+        confirmed:  { label: 'Confirmed',  bg: '#eff6ff', color: '#2563eb' },
+        done:       { label: 'Done',       bg: '#f0fdf4', color: '#16a34a' },
+        cancelled:  { label: 'Cancelled',  bg: '#fef2f2', color: '#dc2626' },
+    };
+
+    function statusBadge(status) {
+        const s = STATUS_CONFIG[status] || { label: status || '-', bg: '#f1f5f9', color: '#64748b' };
+        return `<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;letter-spacing:0.4px;background:${s.bg};color:${s.color}">${s.label}</span>`;
+    }
+
+    function formatDate(str) {
+        if (!str) return '-';
+        const d = new Date(str);
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return `${dd}/${mm}/${d.getFullYear()}`;
+    }
+
+    function escHtml(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escAttr(str) {
+        return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function loadContracts() {
+        fetch('/api/contracts')
+        .then(r => r.json())
+        .then(data => {
+            allContracts = data;
+            applyFilter();
+        })
+        .catch(() => {
+            document.getElementById('contract-tbody').innerHTML =
+            '<tr><td colspan="8" style="text-align:center;padding:40px;color:#ef4444">Gagal memuat data.</td></tr>';
+        });
+    }
+
+    function applyFilter() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        const statusVal = document.getElementById('filter-status').value;
+
+        filtered = allContracts.filter(c => {
+            const matchSearch = !q ||
+            (c.contract_no && c.contract_no.toLowerCase().includes(q)) ||
+            (c.customer_name && c.customer_name.toLowerCase().includes(q));
+            const matchStatus = !statusVal || c.status === statusVal;
+            return matchSearch && matchStatus;
+        });
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('contract-tbody');
+        const total = filtered.length;
+        const totalPages = Math.ceil(total / PER_PAGE) || 1;
+        currentPage = Math.min(currentPage, totalPages);
+
+        const start = (currentPage - 1) * PER_PAGE;
+        const end = start + PER_PAGE;
+        const pageData = filtered.slice(start, end);
+
+        if (total === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data contract.</td></tr>';
+            document.getElementById('pagination-info').textContent = '0 data';
+            document.getElementById('pagination-controls').innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = pageData.map((c, i) => `
+            <tr style="transition:background .15s" onmouseover="this.style.background='#fafafe'" onmouseout="this.style.background=''">
+            <td style="padding:13px 18px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
+            <td style="padding:13px 18px">
+            <span style="font-weight:800;font-size:0.92rem;color:var(--primary)">${escHtml(c.contract_no)}</span>
+            </td>
+            <td style="padding:13px 18px;font-weight:600">${escHtml(c.customer_name || '-')}</td>
+            <td style="padding:13px 18px;text-align:center">
+            <span style="display:inline-block;min-width:28px;padding:4px 10px;background:${c.item_count > 0 ? 'var(--primary-light)' : '#f1f5f9'};color:${c.item_count > 0 ? 'var(--primary)' : '#94a3b8'};border-radius:20px;font-size:0.78rem;font-weight:800">
+            ${c.item_count || 0}
+            </span>
+            </td>
+            <td style="padding:13px 18px;font-size:0.88rem;color:var(--text-muted)">${formatDate(c.date_ship)}</td>
+            <td style="padding:13px 18px;font-size:0.82rem;color:var(--text-muted)">${formatDate(c.created_at)}</td>
+            <td style="padding:13px 18px;text-align:center">${statusBadge(c.status)}</td>
+            <td style="padding:13px 18px;text-align:center">
+            <button onclick="openDeleteModal(${c.id}, '${escAttr(c.contract_no)}')"
+            style="display:inline-flex;align-items:center;gap:4px;padding:6px 12px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">
+            <i class="ti ti-trash" style="font-size:13px"></i> Hapus
+            </button>
+            </td>
+            </tr>
+            `).join('');
+
+        document.getElementById('pagination-info').textContent =
+        `Menampilkan ${start + 1}–${Math.min(end, total)} dari ${total} data`;
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        const ctrl = document.getElementById('pagination-controls');
+        if (totalPages <= 1) { ctrl.innerHTML = ''; return; }
+
+        const btnStyle = (active) =>
+        `padding:6px 12px;border-radius:7px;border:1px solid ${active ? 'var(--primary)' : 'var(--border-color)'};
+        background:${active ? 'var(--primary)' : '#fff'};color:${active ? '#fff' : 'var(--text-muted)'};
+        font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s`;
+
+        let html = `<button style="${btnStyle(false)}" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="ti ti-chevron-left"></i></button>`;
+
+        let pages = [];
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1))
+                pages.push(i);
+            else if (pages[pages.length - 1] !== '...')
+                pages.push('...');
+        }
+        pages.forEach(p => {
+            if (p === '...') html += `<span style="padding:6px 8px;color:var(--text-muted);font-size:0.8rem">…</span>`;
+            else html += `<button style="${btnStyle(p === currentPage)}" onclick="goPage(${p})">${p}</button>`;
+        });
+
+        html += `<button style="${btnStyle(false)}" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        <i class="ti ti-chevron-right"></i></button>`;
+
+        ctrl.innerHTML = html;
+    }
+
+    function goPage(page) {
+        const totalPages = Math.ceil(filtered.length / PER_PAGE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderTable();
+    }
+
+    function openDeleteModal(id, contractNo) {
+        deleteId = id;
+        document.getElementById('delete-name').textContent = contractNo;
+        document.getElementById('delete-modal').style.display = 'flex';
+    }
+    function closeDeleteModal() {
+        deleteId = null;
+        document.getElementById('delete-modal').style.display = 'none';
+    }
+    function confirmDelete() {
+        fetch('/api/contracts/' + deleteId, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeDeleteModal();
+                loadContracts();
+            } else {
+                alert('Gagal menghapus: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(() => alert('Gagal menghapus data.'));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadContracts();
+        document.getElementById('search-input').addEventListener('input', applyFilter);
+        document.getElementById('filter-status').addEventListener('change', applyFilter);
+    });
+</script>
+</body>
+</html>

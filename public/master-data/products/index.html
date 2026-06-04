@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Product - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
+            <input type="text" id="search-input" placeholder="🔍  Cari fabric no, customer, atau warna..."
+            style="padding:10px 16px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;width:320px;outline:none;font-family:inherit">
+            <a href="/master-data/products/tambah"
+            style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--primary);color:white;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem">
+            <i class="ti ti-plus"></i> Tambah Product
+        </a>
+    </div>
+
+    <div class="bento-item" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+        <table class="data-table" style="margin:0;min-width:900px">
+            <thead>
+                <tr style="background:var(--bg-main)">
+                    <th style="padding:14px 16px;width:44px">#</th>
+                    <th style="padding:14px 16px">FABRIC NO</th>
+                    <th style="padding:14px 16px">CUSTOMER</th>
+                    <th style="padding:14px 16px">COLOR</th>
+                    <th style="padding:14px 16px;text-align:right">PRICE/M</th>
+                    <th style="padding:14px 16px;text-align:right">PRICE/Y</th>
+                    <th style="padding:14px 16px">SPECIAL CONDITION</th>
+                    <th style="padding:14px 16px">UPDATED</th>
+                    <th style="padding:14px 16px;width:140px">AKSI</th>
+                </tr>
+            </thead>
+            <tbody id="product-tbody">
+                <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">Memuat data...</td></tr>
+            </tbody>
+        </table>
+        </div>
+
+        <!-- Footer tabel: info + pagination -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--border-color);background:var(--bg-main)">
+            <span id="pagination-info" style="font-size:0.8rem;color:var(--text-muted)">-</span>
+            <div id="pagination-controls" style="display:flex;gap:6px"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Hapus -->
+<div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15)">
+        <div style="font-size:48px;margin-bottom:10px">🗑️</div>
+        <h3 style="margin:0 0 8px;color:#0f172a">Hapus Product?</h3>
+        <p style="color:#64748b;font-size:0.88rem;margin-bottom:24px">Data <b id="delete-name"></b> akan dihapus permanen.</p>
+        <div style="display:flex;gap:10px;justify-content:center">
+            <button onclick="closeDeleteModal()"
+            style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
+            <button onclick="confirmDelete()"
+            style="padding:10px 24px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    let allProducts = [];
+    let filtered = [];
+    let currentPage = 1;
+    const PER_PAGE = 10;
+    let deleteId = null;
+
+    function loadProducts() {
+        fetch('/api/products')
+        .then(r => r.json())
+        .then(data => {
+            allProducts = data;
+            filtered = data;
+            currentPage = 1;
+            renderTable();
+        })
+        .catch(() => {
+            document.getElementById('product-tbody').innerHTML =
+            '<tr><td colspan="9" style="text-align:center;padding:40px;color:#ef4444">Gagal memuat data.</td></tr>';
+        });
+    }
+
+    function formatDate(str) {
+        if (!str) return '-';
+        const d = new Date(str);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yy = d.getFullYear();
+        return `${dd}/${mm}/${yy}`;
+    }
+
+    function formatCurrency(val) {
+        if (val === null || val === undefined || val === '') return '-';
+        return 'Rp ' + Number(val).toLocaleString('id-ID');
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('product-tbody');
+        const total = filtered.length;
+        const totalPages = Math.ceil(total / PER_PAGE) || 1;
+        currentPage = Math.min(currentPage, totalPages);
+
+        const start = (currentPage - 1) * PER_PAGE;
+        const end = start + PER_PAGE;
+        const pageData = filtered.slice(start, end);
+
+        if (total === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data product.</td></tr>';
+            document.getElementById('pagination-info').textContent = '0 data';
+            document.getElementById('pagination-controls').innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = pageData.map((p, i) => `
+            <tr>
+            <td style="padding:12px 16px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
+            <td style="padding:12px 16px;font-weight:700;color:var(--primary)">${escHtml(p.fabric_no || '-')}</td>
+            <td style="padding:12px 16px;font-weight:600">${escHtml(p.customer || '-')}</td>
+            <td style="padding:12px 16px">
+                <span style="display:inline-flex;align-items:center;gap:6px">
+                    <span style="width:10px;height:10px;border-radius:50%;background:#e2e8f0;border:1px solid #cbd5e1;flex-shrink:0"></span>
+                    ${escHtml(p.color || '-')}
+                </span>
+            </td>
+            <td style="padding:12px 16px;text-align:right;font-weight:600;font-size:0.85rem">${formatCurrency(p.price_m)}</td>
+            <td style="padding:12px 16px;text-align:right;font-weight:600;font-size:0.85rem">${formatCurrency(p.price_y)}</td>
+            <td style="padding:12px 16px;font-size:0.82rem;color:var(--text-muted);max-width:160px">
+                <span style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(p.special_condition || '')}">
+                    ${escHtml(p.special_condition || '-')}
+                </span>
+            </td>
+            <td style="padding:12px 16px;font-size:0.82rem;color:var(--text-muted)">${formatDate(p.updated_at)}</td>
+            <td style="padding:12px 16px">
+            <div style="display:flex;gap:6px">
+            <a href="/master-data/products/edit?id=${p.id}"
+            style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">
+            <i class="ti ti-edit" style="font-size:13px"></i> Edit
+            </a>
+            <button onclick="openDeleteModal(${p.id}, '${escAttr(p.fabric_no)}')"
+            style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">
+            <i class="ti ti-trash" style="font-size:13px"></i> Hapus
+            </button>
+            </div>
+            </td>
+            </tr>
+            `).join('');
+
+        document.getElementById('pagination-info').textContent =
+        `Menampilkan ${start + 1}–${Math.min(end, total)} dari ${total} data`;
+
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        const ctrl = document.getElementById('pagination-controls');
+        if (totalPages <= 1) { ctrl.innerHTML = ''; return; }
+
+        const btnStyle = (active) =>
+        `padding:6px 12px;border-radius:7px;border:1px solid ${active ? 'var(--primary)' : 'var(--border-color)'};
+        background:${active ? 'var(--primary)' : '#fff'};color:${active ? '#fff' : 'var(--text-muted)'};
+        font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s`;
+
+        let html = `<button style="${btnStyle(false)}" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
+        <i class="ti ti-chevron-left"></i></button>`;
+
+        let pages = [];
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                pages.push(i);
+            } else if (pages[pages.length - 1] !== '...') {
+                pages.push('...');
+            }
+        }
+
+        pages.forEach(p => {
+            if (p === '...') {
+                html += `<span style="padding:6px 8px;color:var(--text-muted);font-size:0.8rem">…</span>`;
+            } else {
+                html += `<button style="${btnStyle(p === currentPage)}" onclick="goPage(${p})">${p}</button>`;
+            }
+        });
+
+        html += `<button style="${btnStyle(false)}" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
+        <i class="ti ti-chevron-right"></i></button>`;
+
+        ctrl.innerHTML = html;
+    }
+
+    function goPage(page) {
+        const totalPages = Math.ceil(filtered.length / PER_PAGE) || 1;
+        if (page < 1 || page > totalPages) return;
+        currentPage = page;
+        renderTable();
+    }
+
+    function escHtml(str) {
+        return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escAttr(str) {
+        return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function openDeleteModal(id, name) {
+        deleteId = id;
+        document.getElementById('delete-name').textContent = name;
+        document.getElementById('delete-modal').style.display = 'flex';
+    }
+    function closeDeleteModal() {
+        deleteId = null;
+        document.getElementById('delete-modal').style.display = 'none';
+    }
+    function confirmDelete() {
+        fetch('/api/products/' + deleteId, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(() => { closeDeleteModal(); loadProducts(); })
+        .catch(() => alert('Gagal menghapus data.'));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadProducts();
+        document.getElementById('search-input').addEventListener('input', function () {
+            const q = this.value.toLowerCase();
+            filtered = allProducts.filter(p =>
+                (p.fabric_no && p.fabric_no.toLowerCase().includes(q)) ||
+                (p.customer && p.customer.toLowerCase().includes(q)) ||
+                (p.color && p.color.toLowerCase().includes(q))
+            );
+            currentPage = 1;
+            renderTable();
+        });
+    });
+</script>
+</body>
+</html>

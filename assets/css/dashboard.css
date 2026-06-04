@@ -261,6 +261,18 @@
     transition: all 0.15s;
 }
 .nav-sub-link:hover { background: var(--bg-main); color: var(--primary); }
+/* Tambahkan di bawah .nav-sub-link:hover */
+
+.nav-sub-link.active {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.nav-sub-admin.active {
+    background: #f5f3ff;
+    color: #7c3aed;
+}
 .nav-sub-link i { font-size: 14px; }
 
 .nav-link { display: flex; align-items: center; gap: 10px; }
@@ -282,6 +294,7 @@
 
 .nav-sub-admin { color: #7c3aed; font-weight: 600; }
 .nav-sub-admin:hover { background: #f5f3ff; color: #7c3aed; }
+
 
 /* Form fields shared */
 .form-row {

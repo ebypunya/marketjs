@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Kurs - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+        <div class="bento-item" style="max-width:520px;box-sizing:border-box">
+
+            <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:0.88rem;font-weight:600"></div>
+
+            <!-- Info helper -->
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 16px;margin-bottom:24px;font-size:0.85rem;color:#1e40af">
+                <i class="ti ti-info-circle" style="margin-right:6px"></i>
+                Masukkan kurs USD terhadap Rupiah. Data akan tersimpan dengan timestamp otomatis.
+            </div>
+
+            <div class="form-row" style="margin-bottom:20px">
+                <div class="form-field">
+                    <label class="field-label">Sell Rate (USD → Rp) <span style="color:#ef4444">*</span></label>
+                    <input type="number" id="f-sell_rate" placeholder="Contoh: 15500" class="field-input" step="1" min="0" oninput="calcSelisih()">
+                    <small style="color:var(--text-muted);font-size:0.75rem;margin-top:4px;display:block">Harga jual USD ke Rupiah</small>
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Buy Rate (Rp → USD) <span style="color:#ef4444">*</span></label>
+                    <input type="number" id="f-buy_rate" placeholder="Contoh: 15300" class="field-input" step="1" min="0" oninput="calcSelisih()">
+                    <small style="color:var(--text-muted);font-size:0.75rem;margin-top:4px;display:block">Harga beli USD dari Rupiah</small>
+                </div>
+            </div>
+
+            <!-- Preview selisih -->
+            <div id="selisih-box" style="display:none;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px 16px;margin-bottom:24px;font-size:0.85rem">
+                <span style="color:#92400e;font-weight:600"><i class="ti ti-arrows-diff"></i> Selisih (Spread): </span>
+                <span id="selisih-val" style="color:#c2410c;font-weight:800;font-size:1rem"></span>
+            </div>
+
+            <div style="display:flex;gap:10px">
+                <a href="/master-data/kurs"
+                style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+                <i class="ti ti-arrow-left"></i> Batal
+            </a>
+            <button onclick="submitForm()"
+            style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+            <i class="ti ti-device-floppy"></i> Simpan Kurs
+        </button>
+    </div>
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.style.display = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent = msg;
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function calcSelisih() {
+        const sell = parseFloat(document.getElementById('f-sell_rate').value) || 0;
+        const buy  = parseFloat(document.getElementById('f-buy_rate').value) || 0;
+        const box  = document.getElementById('selisih-box');
+        const val  = document.getElementById('selisih-val');
+        if (sell > 0 && buy > 0) {
+            box.style.display = 'block';
+            val.textContent = 'Rp ' + (sell - buy).toLocaleString('id-ID');
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    function submitForm() {
+        const sell_rate = document.getElementById('f-sell_rate').value.trim();
+        const buy_rate  = document.getElementById('f-buy_rate').value.trim();
+
+        if (!sell_rate) { showAlert('❌ Sell Rate wajib diisi.', 'error'); return; }
+        if (!buy_rate)  { showAlert('❌ Buy Rate wajib diisi.', 'error'); return; }
+
+        const body = new URLSearchParams({ sell_rate, buy_rate });
+
+        fetch('/api/rates', {
+            method: 'POST', body,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('✅ Kurs berhasil ditambahkan!', 'success');
+                setTimeout(() => window.location.href = '/master-data/kurs', 1200);
+            } else {
+                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(() => showAlert('❌ Terjadi kesalahan server.', 'error'));
+    }
+</script>
+</body>
+</html>

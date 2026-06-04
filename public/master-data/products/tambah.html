@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Product - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary);
+            margin: 24px 0 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-light);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .form-grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 14px;
+        }
+        .form-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+    </style>
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+        <div class="bento-item" style="width:100%;box-sizing:border-box">
+
+            <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:0.88rem;font-weight:600"></div>
+
+            <!-- IDENTITAS -->
+            <div class="section-title"><i class="ti ti-tag"></i> Identitas Fabric</div>
+            <div class="form-grid-3" style="margin-bottom:14px">
+                <div class="form-field">
+                    <label class="field-label">Fabric No <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="f-fabric_no" placeholder="Contoh: FB-001" class="field-input">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Customer Fabric No</label>
+                    <input type="text" id="f-customer_fabric_no" placeholder="No. fabric dari customer" class="field-input">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Fabric Name</label>
+                    <input type="text" id="f-fabric_name" placeholder="Nama fabric" class="field-input">
+                </div>
+            </div>
+            <div class="form-grid-2" style="margin-bottom:14px">
+                <div class="form-field">
+                    <label class="field-label">Customer</label>
+                    <input type="text" id="f-customer" placeholder="Nama customer" class="field-input">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Color</label>
+                    <input type="text" id="f-color" placeholder="Warna fabric" class="field-input">
+                </div>
+            </div>
+            <div class="form-field" style="margin-bottom:14px">
+                <label class="field-label">Composition</label>
+                <input type="text" id="f-composition" placeholder="Komposisi bahan, misal: 60% Cotton 40% Polyester" class="field-input">
+            </div>
+
+            <!-- HARGA -->
+            <div class="section-title"><i class="ti ti-currency-dollar"></i> Harga & Biaya</div>
+            <div class="form-grid-3" style="margin-bottom:14px">
+                <div class="form-field">
+                    <label class="field-label">Price Greige</label>
+                    <input type="number" id="f-price_greige" placeholder="0" class="field-input" step="0.01">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Additional Fee</label>
+                    <input type="number" id="f-additional_fee" placeholder="0" class="field-input" step="0.01">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Dyeing Fee</label>
+                    <input type="number" id="f-dyeing_fee" placeholder="0" class="field-input" step="0.01">
+                </div>
+            </div>
+            <div class="form-grid-3" style="margin-bottom:14px">
+                <div class="form-field">
+                    <label class="field-label">After Risk</label>
+                    <input type="number" id="f-after_risk" placeholder="0" class="field-input" step="0.01">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Sub Final</label>
+                    <input type="number" id="f-sub_final" placeholder="0" class="field-input" step="0.01">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Price/M</label>
+                    <input type="number" id="f-price_m" placeholder="0" class="field-input" step="0.01">
+                </div>
+            </div>
+            <div class="form-grid-2" style="margin-bottom:14px">
+                <div class="form-field">
+                    <label class="field-label">Price/Y</label>
+                    <input type="number" id="f-price_y" placeholder="0" class="field-input" step="0.01">
+                </div>
+            </div>
+
+            <!-- SHRINKAGE -->
+            <div class="section-title"><i class="ti ti-arrows-minimize"></i> Data Shrinkage</div>
+            <div class="form-grid-3" style="margin-bottom:14px">
+                <div class="form-field">
+                    <label class="field-label">Shrinkage Standard (%)</label>
+                    <input type="number" id="f-shrinkge_standard" placeholder="0" class="field-input" step="0.01">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">Shrinkage Actual (%)</label>
+                    <input type="number" id="f-shrinkge_actual" placeholder="0" class="field-input" step="0.01">
+                </div>
+                <div class="form-field">
+                    <label class="field-label">After Shrinkage</label>
+                    <input type="number" id="f-after_shrinkge" placeholder="0" class="field-input" step="0.01">
+                </div>
+            </div>
+
+            <!-- KONDISI & KETERANGAN -->
+            <div class="section-title"><i class="ti ti-notes"></i> Kondisi & Keterangan</div>
+            <div class="form-field" style="margin-bottom:14px">
+                <label class="field-label">Special Condition</label>
+                <textarea id="f-special_condition" placeholder="Kondisi khusus jika ada..." class="field-input" rows="2" style="resize:vertical"></textarea>
+            </div>
+            <div class="form-field" style="margin-bottom:24px">
+                <label class="field-label">Keterangan</label>
+                <textarea id="f-keterangan" placeholder="Catatan tambahan..." class="field-input" rows="2" style="resize:vertical"></textarea>
+            </div>
+
+            <div style="display:flex;gap:10px">
+                <a href="/master-data/products"
+                style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+                <i class="ti ti-arrow-left"></i> Batal
+            </a>
+            <button onclick="submitForm()"
+            style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+            <i class="ti ti-device-floppy"></i> Simpan Product
+        </button>
+    </div>
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.style.display = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent = msg;
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function getVal(id) { return document.getElementById(id).value.trim(); }
+
+    function submitForm() {
+        const fabric_no = getVal('f-fabric_no');
+        if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
+
+        const body = new URLSearchParams({
+            fabric_no,
+            customer_fabric_no: getVal('f-customer_fabric_no'),
+            fabric_name:        getVal('f-fabric_name'),
+            customer:           getVal('f-customer'),
+            color:              getVal('f-color'),
+            composition:        getVal('f-composition'),
+            price_greige:       getVal('f-price_greige'),
+            additional_fee:     getVal('f-additional_fee'),
+            dyeing_fee:         getVal('f-dyeing_fee'),
+            after_risk:         getVal('f-after_risk'),
+            sub_final:          getVal('f-sub_final'),
+            price_m:            getVal('f-price_m'),
+            price_y:            getVal('f-price_y'),
+            shrinkge_standard:  getVal('f-shrinkge_standard'),
+            shrinkge_actual:    getVal('f-shrinkge_actual'),
+            after_shrinkge:     getVal('f-after_shrinkge'),
+            special_condition:  getVal('f-special_condition'),
+            keterangan:         getVal('f-keterangan'),
+        });
+
+        fetch('/api/products', {
+            method: 'POST', body,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('✅ Product berhasil ditambahkan!', 'success');
+                setTimeout(() => window.location.href = '/master-data/products', 1200);
+            } else {
+                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+            }
+        })
+        .catch(() => showAlert('❌ Terjadi kesalahan server.', 'error'));
+    }
+</script>
+</body>
+</html>

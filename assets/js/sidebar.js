@@ -6,6 +6,13 @@ function getPageMeta() {
         '/master-data/customers/tambah':    { title: 'Tambah Customer',     sub: 'Tambah data customer baru.' },
         '/master-data/customers/edit':      { title: 'Edit Customer',       sub: 'Ubah data customer.' },
         '/admin/manage-users':              { title: 'Manage Users',        sub: 'Kelola akun pengguna sistem.' },
+        '/master-data/products':           { title: 'Manage Product',      sub: 'Data seluruh product terdaftar.' },
+        '/master-data/products/tambah':    { title: 'Tambah Product',      sub: 'Tambah data product baru.' },
+        '/master-data/products/edit':      { title: 'Edit Product',        sub: 'Ubah data product.' },
+        '/master-data/kurs':               { title: 'Kurs',                sub: 'Manajemen kurs USD/Rupiah.' },
+        '/master-data/kurs/tambah':        { title: 'Tambah Kurs',         sub: 'Input kurs baru.' },
+        '/master-data/kurs/edit':          { title: 'Edit Kurs',           sub: 'Ubah data kurs.' },
+        '/sales/sales-contract': { title: 'Sales Contract', sub: 'Daftar seluruh sales contract.' },
     };
     return map[path] || { title: 'MarketJS', sub: '' };
 }
@@ -135,6 +142,8 @@ function renderLayout() {
     setActiveAndExpand();
 }
 
+// GANTI fungsi setActiveAndExpand() dengan ini:
+
 function setActiveAndExpand() {
     const current = window.location.pathname;
 
@@ -142,13 +151,17 @@ function setActiveAndExpand() {
         const href = link.getAttribute('href');
         if (!href) return;
 
-        // Exact match atau startsWith untuk sub-halaman (edit, tambah)
-        const isActive = (href === current) || (href !== '/' && current.startsWith(href) && href !== '/dashboard');
+        // Exact match untuk nav-link utama (Dashboard)
+        // Untuk sub-link: exact match ATAU startsWith tapi hanya jika href lebih panjang dari '/'
+        const isTopLink = link.classList.contains('nav-link');
+        const isActive = isTopLink
+        ? href === current
+        : href === current || (href.length > 1 && current.startsWith(href + '/'));
 
         if (isActive) {
             link.classList.add('active');
 
-            // Jika ini sub-link, buka parent submenu
+            // Buka parent submenu jika ini sub-link
             const submenu = link.closest('.nav-submenu');
             if (submenu) {
                 submenu.classList.add('open');
@@ -158,7 +171,7 @@ function setActiveAndExpand() {
                 }
             }
 
-            // Jika ada di dalam admin-panel-section, tampilkan
+            // Tampilkan admin section jika aktif
             const adminSection = link.closest('#admin-panel-section');
             if (adminSection) {
                 adminSection.style.display = 'block';

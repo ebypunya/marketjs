@@ -258,6 +258,221 @@ app.delete('/api/customers/:id', requireLogin, (req, res) => {
         res.json({ success: true });
     });
 });
+
+
+// ===== 9. HALAMAN PRODUCTS =====
+app.get('/master-data/products', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'master-data', 'products', 'index.html'));
+});
+app.get('/master-data/products/tambah', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'master-data', 'products', 'tambah.html'));
+});
+app.get('/master-data/products/edit', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'master-data', 'products', 'edit.html'));
+});
+
+// ===== API PRODUCTS =====
+app.get('/api/products', requireLogin, (req, res) => {
+    const sql = `SELECT id, fabric_no, customer_fabric_no, fabric_name, customer, color,
+    price_greige, shrinkge_standard, shrinkge_actual, after_shrinkge,
+    additional_fee, after_risk, dyeing_fee, sub_final, price_m, price_y,
+    special_condition, keterangan, composition, created_at, updated_at
+    FROM products ORDER BY created_at DESC`;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+app.get('/api/products/:id', requireLogin, (req, res) => {
+    db.query("SELECT * FROM products WHERE id = ?", [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length === 0) return res.status(404).json({ error: 'Not found' });
+        res.json(results[0]);
+    });
+});
+
+app.post('/api/products', requireLogin, (req, res) => {
+    const { fabric_no, customer_fabric_no, fabric_name, customer, color,
+        price_greige, shrinkge_standard, shrinkge_actual, after_shrinkge,
+        additional_fee, after_risk, dyeing_fee, sub_final, price_m, price_y,
+        special_condition, keterangan, composition } = req.body;
+
+    // Helper: return null jika string kosong, supaya tidak insert string kosong ke kolom numerik
+    const num = v => (v === '' || v === undefined || v === null) ? null : v;
+
+    const sql = `INSERT INTO products
+    (fabric_no, customer_fabric_no, fabric_name, customer, color,
+    price_greige, shrinkge_standard, shrinkge_actual, after_shrinkge,
+    additional_fee, after_risk, dyeing_fee, sub_final, price_m, price_y,
+    special_condition, keterangan, composition)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.query(sql, [
+        fabric_no, customer_fabric_no || null, fabric_name || null, customer || null, color || null,
+        num(price_greige), num(shrinkge_standard), num(shrinkge_actual), num(after_shrinkge),
+        num(additional_fee), num(after_risk), num(dyeing_fee), num(sub_final),
+        num(price_m), num(price_y),
+        special_condition || null, keterangan || null, composition || null
+        ], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, id: result.insertId });
+        });
+});
+
+app.put('/api/products/:id', requireLogin, (req, res) => {
+    const { fabric_no, customer_fabric_no, fabric_name, customer, color,
+        price_greige, shrinkge_standard, shrinkge_actual, after_shrinkge,
+        additional_fee, after_risk, dyeing_fee, sub_final, price_m, price_y,
+        special_condition, keterangan, composition } = req.body;
+
+        const num = v => (v === '' || v === undefined || v === null) ? null : v;
+
+        const sql = `UPDATE products SET
+        fabric_no=?, customer_fabric_no=?, fabric_name=?, customer=?, color=?,
+        price_greige=?, shrinkge_standard=?, shrinkge_actual=?, after_shrinkge=?,
+        additional_fee=?, after_risk=?, dyeing_fee=?, sub_final=?, price_m=?, price_y=?,
+        special_condition=?, keterangan=?, composition=?, updated_at=NOW()
+        WHERE id=?`;
+
+        db.query(sql, [
+            fabric_no, customer_fabric_no || null, fabric_name || null, customer || null, color || null,
+            num(price_greige), num(shrinkge_standard), num(shrinkge_actual), num(after_shrinkge),
+            num(additional_fee), num(after_risk), num(dyeing_fee), num(sub_final),
+            num(price_m), num(price_y),
+            special_condition || null, keterangan || null, composition || null,
+            req.params.id
+            ], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true });
+            });
+    });
+
+app.delete('/api/products/:id', requireLogin, (req, res) => {
+    db.query("DELETE FROM products WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+
+// ===== 10. HALAMAN KURS =====
+app.get('/master-data/kurs', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'master-data', 'kurs', 'index.html'));
+});
+app.get('/master-data/kurs/tambah', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'master-data', 'kurs', 'tambah.html'));
+});
+app.get('/master-data/kurs/edit', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'master-data', 'kurs', 'edit.html'));
+});
+
+// ===== API RATES (KURS) =====
+app.get('/api/rates', requireLogin, (req, res) => {
+    const sql = "SELECT id, sell_rate, buy_rate, created_at, updated_at FROM rates ORDER BY created_at DESC";
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+app.get('/api/rates/:id', requireLogin, (req, res) => {
+    db.query("SELECT * FROM rates WHERE id = ?", [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length === 0) return res.status(404).json({ error: 'Not found' });
+        res.json(results[0]);
+    });
+});
+
+app.post('/api/rates', requireLogin, (req, res) => {
+    const { sell_rate, buy_rate } = req.body;
+    const sql = "INSERT INTO rates (sell_rate, buy_rate) VALUES (?, ?)";
+    db.query(sql, [sell_rate, buy_rate], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+app.put('/api/rates/:id', requireLogin, (req, res) => {
+    const { sell_rate, buy_rate } = req.body;
+    const sql = "UPDATE rates SET sell_rate=?, buy_rate=?, updated_at=NOW() WHERE id=?";
+    db.query(sql, [sell_rate, buy_rate, req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/rates/:id', requireLogin, (req, res) => {
+    db.query("DELETE FROM rates WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// ===== 11. HALAMAN SALES CONTRACT =====
+app.get('/sales/sales-contract', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract.html'));
+});
+
+// ===== API CONTRACTS =====
+// GET all contracts — JOIN customers untuk nama, COUNT contract_details untuk item
+app.get('/api/contracts', requireLogin, (req, res) => {
+    const sql = `
+    SELECT
+    c.id,
+    c.contract_no,
+    c.order_no,
+    c.customer_id,
+    cu.name AS customer_name,
+    c.date_ship,
+    c.status,
+    c.currency,
+    c.jenis,
+    c.total,
+    c.created_at,
+    c.updated_at,
+    COUNT(cd.id) AS item_count
+    FROM contracts c
+    LEFT JOIN customers cu ON cu.id = c.customer_id
+    LEFT JOIN contract_details cd ON cd.contract_id = c.id
+    GROUP BY c.id
+    ORDER BY c.contract_no DESC
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// GET single contract
+app.get('/api/contracts/:id', requireLogin, (req, res) => {
+    const sql = `
+    SELECT c.*, cu.name AS customer_name
+    FROM contracts c
+    LEFT JOIN customers cu ON cu.id = c.customer_id
+    WHERE c.id = ?
+    `;
+    db.query(sql, [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (results.length === 0) return res.status(404).json({ error: 'Not found' });
+        res.json(results[0]);
+    });
+});
+
+// DELETE contract — hapus juga contract_details terkait
+app.delete('/api/contracts/:id', requireLogin, (req, res) => {
+    const id = req.params.id;
+    // Hapus details dulu (foreign key), baru hapus header
+    db.query("DELETE FROM contract_details WHERE contract_id = ?", [id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        db.query("DELETE FROM contracts WHERE id = ?", [id], (err2) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ success: true });
+        });
+    });
+});
+
+
 // ---  START SERVER ---
 app.listen(port, () => {
     console.clear();
