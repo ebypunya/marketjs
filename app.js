@@ -26,6 +26,7 @@ db.getConnection((err, conn) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); 
 
 app.use(session({
     secret: 'dev477-secret-key-ganti-ini',
@@ -489,51 +490,54 @@ app.get('/api/contracts/:id', requireLogin, (req, res) => {
 app.post('/api/contracts', requireLogin, (req, res) => {
     const {
         contract_no, customer_id, currency, rate_id, jenis,
-        order_no, status, contract_date, date_ship,
+        order_no, status, created_at, date_ship,
         greige_no, dyeing_no, dyeing_int,
         quality, quality_note, note_ship, note
     } = req.body;
-
+    
     // Validasi wajib
-    if (!contract_no || !customer_id || !jenis || !contract_date) {
+    if (!contract_no || !customer_id || !jenis) {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
-
+    
     // Cek duplikat contract_no
     db.query('SELECT id FROM contracts WHERE contract_no = ?', [contract_no], (err, dup) => {
         if (err) return res.status(500).json({ error: err.message });
         if (dup.length > 0) return res.status(400).json({ error: `Contract No "${contract_no}" sudah digunakan.` });
-
+        
+        // Gunakan created_at dari payload jika ada, fallback ke NOW()
+        const createdAtVal = created_at || null;
+        
         const sql = `
         INSERT INTO contracts
         (contract_no, customer_id, currency, rate_id, jenis,
         order_no, status, created_at, updated_at,
         date_ship, greige_no, dyeing_no, dyeing_int,
         quality, quality_note, note_ship, note, total)
-        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, 0)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ${createdAtVal ? '?' : 'NOW()'}, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, 0)
         `;
-        db.query(sql, [
-            contract_no,
-            customer_id,
-            currency    || 'USD',
-            rate_id     || null,
-            jenis,
-            order_no    || null,
-            status      || 'draft',
-            date_ship   || null,
-            greige_no   || null,
-            dyeing_no   || null,
-            dyeing_int  || null,
-            quality     || null,
-            quality_note|| null,
-            note_ship   || null,
-            note        || null,
-            ], (err2, result) => {
-                if (err2) return res.status(500).json({ error: err2.message });
-                res.json({ success: true, id: result.insertId });
-            });
+        
+        const params = createdAtVal
+        ? [
+        contract_no, customer_id, currency || 'USD', rate_id || null, jenis,
+        order_no || null, status || 'draft',
+        createdAtVal,
+        date_ship || null, greige_no || null, dyeing_no || null, dyeing_int || null,
+        quality || null, quality_note || null, note_ship || null, note || null,
+        ]
+        : [
+        contract_no, customer_id, currency || 'USD', rate_id || null, jenis,
+        order_no || null, status || 'draft',
+        date_ship || null, greige_no || null, dyeing_no || null, dyeing_int || null,
+        quality || null, quality_note || null, note_ship || null, note || null,
+        ];
+        
+        db.query(sql, params, (err2, result) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ success: true, id: result.insertId });
+        });
     });
-});
+})
 
 // ===== API: DELETE contract =====
 app.delete('/api/contracts/:id', requireLogin, (req, res) => {

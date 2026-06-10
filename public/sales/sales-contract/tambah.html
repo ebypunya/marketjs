@@ -43,22 +43,44 @@
         .rate-cal-header span { font-weight: 700; font-size: 0.88rem; color: var(--primary); }
         .rate-cal-nav { background: none; border: none; cursor: pointer; color: var(--primary); font-size: 1rem; padding: 2px 8px; border-radius: 6px; font-family: inherit; }
         .rate-cal-nav:hover { background: #c7d2fe; }
-        .rate-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: #fff; }
-        .rate-cal-day-label { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); padding: 8px 0 4px; }
+        .rate-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: #fff; padding: 4px; gap: 2px; }
+        .rate-cal-day-label { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); padding: 6px 0 4px; }
         .rate-cal-day {
             text-align: center; padding: 7px 2px; font-size: 0.82rem; cursor: default;
-            border-radius: 6px; margin: 1px; transition: background 0.15s; position: relative;
+            border-radius: 6px; transition: background 0.15s; position: relative;
+            color: #94a3b8; border: 1.5px solid transparent;
         }
-        .rate-cal-day.has-rate { cursor: pointer; background: #eff6ff; color: #2563eb; font-weight: 700; }
-        .rate-cal-day.has-rate:hover { background: #bfdbfe; }
-        .rate-cal-day.selected { background: var(--primary) !important; color: #fff !important; }
+        /* Tanggal punya kurs: background biru muda + border biru */
+        .rate-cal-day.has-rate {
+            cursor: pointer;
+            background: #eff6ff;
+            color: #1d4ed8;
+            font-weight: 800;
+            border-color: #bfdbfe;
+        }
+        .rate-cal-day.has-rate:hover { background: #dbeafe; border-color: #93c5fd; }
+        /* Terpilih */
+        .rate-cal-day.selected { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; }
+        /* Hari ini */
         .rate-cal-day.today { outline: 2px solid var(--primary); outline-offset: -2px; }
-        .rate-dot { width: 5px; height: 5px; background: #2563eb; border-radius: 50%; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); }
-        .rate-cal-day.selected .rate-dot { background: #fff; }
-        .rate-result { padding: 14px 16px; border-top: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; min-height: 52px; }
+        /* Dot penanda kurs */
+        .rate-dot { width: 5px; height: 5px; background: #3b82f6; border-radius: 50%; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); }
+        .rate-cal-day.selected .rate-dot { background: rgba(255,255,255,0.7); }
+
+        .rate-result { padding: 14px 16px; border-top: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; min-height: 60px; }
+
+        /* Legend kurs */
+        .cal-legend {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;
+        }
+        .cal-legend-dot {
+            width: 14px; height: 14px; border-radius: 4px;
+            background: #eff6ff; border: 1.5px solid #bfdbfe; flex-shrink: 0;
+        }
 
         .warn-box {
-            display: none; padding: 10px 14px; background: #fff7ed; border: 1px solid #fed7aa;
+            padding: 10px 14px; background: #fff7ed; border: 1px solid #fed7aa;
             border-radius: 8px; font-size: 0.83rem; color: #92400e; margin-top: 8px; font-weight: 600;
         }
     </style>
@@ -122,23 +144,55 @@
 
                 <!-- USD: Calendar picker -->
                 <div id="usd-rate-section">
-                    <p style="font-size:0.83rem;color:var(--text-muted);margin:0 0 12px">
-                        Pilih tanggal yang memiliki data kurs. Tanggal bertanda
-                        <span style="display:inline-block;width:10px;height:10px;background:#eff6ff;border:2px solid #2563eb;border-radius:3px;vertical-align:middle;margin:0 2px"></span>
-                        memiliki data kurs tersedia.
-                    </p>
-                    <div class="rate-calendar-wrap" style="max-width:380px">
-                        <div class="rate-cal-header">
-                            <button class="rate-cal-nav" onclick="calPrev()"><i class="ti ti-chevron-left"></i></button>
-                            <span id="cal-label">—</span>
-                            <button class="rate-cal-nav" onclick="calNext()"><i class="ti ti-chevron-right"></i></button>
+                    <div class="cal-legend">
+                        <div class="cal-legend-dot"></div>
+                        Tanggal dengan latar biru = ada data kurs tersedia. Klik untuk memilih.
+                    </div>
+                    <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:stretch">
+                        <!-- Kalender -->
+                        <div class="rate-calendar-wrap" style="width:340px;flex-shrink:0">
+                            <div class="rate-cal-header">
+                                <button class="rate-cal-nav" onclick="calPrev()"><i class="ti ti-chevron-left"></i></button>
+                                <span id="cal-label">—</span>
+                                <button class="rate-cal-nav" onclick="calNext()"><i class="ti ti-chevron-right"></i></button>
+                            </div>
+                            <div class="rate-cal-grid" id="cal-grid"></div>
+                            <div class="rate-result" id="rate-result">
+                                <span style="color:var(--text-muted);font-size:0.83rem">Belum ada tanggal dipilih.</span>
+                            </div>
                         </div>
-                        <div class="rate-cal-grid" id="cal-grid"></div>
-                        <div class="rate-result" id="rate-result">
-                            <span style="color:var(--text-muted);font-size:0.83rem">Belum ada tanggal dipilih.</span>
+                        <!-- Panel info kurs -->
+                        <div id="rate-info-panel" style="border:1px solid var(--border-color);border-radius:10px;background:#f8fafc;display:flex;flex-direction:column;justify-content:center;padding:24px 28px;min-height:100%">
+                            <div id="rate-info-empty" style="text-align:center;color:var(--text-muted)">
+                                <i class="ti ti-calendar-search" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.3"></i>
+                                <div style="font-size:0.83rem">Pilih tanggal yang bertanda biru<br>untuk melihat data kurs.</div>
+                            </div>
+                            <div id="rate-info-data" style="display:none">
+                                <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:6px">
+                                    <i class="ti ti-check-circle" style="font-size:14px"></i> Kurs Terpilih
+                                </div>
+                                <div style="margin-bottom:12px">
+                                    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Tanggal</div>
+                                    <div id="ri-date" style="font-weight:700;font-size:0.95rem;color:var(--text-main)">—</div>
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+                                        <div style="font-size:0.65rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sell Rate</div>
+                                        <div id="ri-sell" style="font-weight:800;font-size:1.1rem;color:#15803d">—</div>
+                                    </div>
+                                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px">
+                                        <div style="font-size:0.65rem;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Buy Rate</div>
+                                        <div id="ri-buy" style="font-weight:800;font-size:1.1rem;color:#1d4ed8">—</div>
+                                    </div>
+                                </div>
+                                <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 14px;font-size:0.82rem">
+                                    <span style="color:#92400e;font-weight:700">Selisih (Spread): </span>
+                                    <span id="ri-spread" style="color:#c2410c;font-weight:800">—</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div id="rate-warn" class="warn-box">
+                    <div id="rate-warn" class="warn-box" style="display:none;margin-top:10px">
                         <i class="ti ti-alert-triangle"></i>
                         Tidak ada data kurs untuk tanggal ini. Silakan pilih tanggal lain atau
                         <a href="/master-data/kurs/tambah" target="_blank" style="color:#92400e;font-weight:800">tambah kurs baru</a>.
@@ -152,7 +206,7 @@
                         Mata uang <b>IDR</b> — menggunakan kurs terbaru (otomatis):
                         <span id="idr-rate-val" style="margin-left:6px;font-weight:800"></span>
                     </div>
-                    <div id="idr-rate-none" class="warn-box" style="margin-top:0">
+                    <div id="idr-rate-none" class="warn-box" style="display:none">
                         <i class="ti ti-alert-triangle"></i>
                         Tidak ada data kurs tersedia.
                         <a href="/master-data/kurs/tambah" target="_blank" style="color:#92400e;font-weight:800">Tambah kurs baru</a> sebelum melanjutkan.
@@ -218,7 +272,7 @@
                 style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
                 <i class="ti ti-arrow-left"></i> Batal
             </a>
-            <button onclick="submitForm()"
+            <button onclick="submitForm()" id="btn-submit"
             style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
             <i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Produk
         </button>
@@ -231,239 +285,269 @@
 <script src="/assets/js/layout.js"></script>
 <script>
     let allRates    = [];
-let ratesByDate = {};   // 'YYYY-MM-DD' -> rate object
-let selectedRate = null;
-let calYear  = 0;
-let calMonth = 0;
+    let ratesByDate = {};   // 'YYYY-MM-DD' -> rate object
+    let selectedRate = null;
+    let calYear  = 0;
+    let calMonth = 0;
+    let selectedDateStr = null;
 
-const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni',
-'Juli','Agustus','September','Oktober','November','Desember'];
-const DAYS   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+    const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni',
+    'Juli','Agustus','September','Oktober','November','Desember'];
+    const DAYS   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 
-// ---- INIT ----
-document.addEventListener('DOMContentLoaded', async () => {
-    const now = new Date();
-    calYear  = now.getFullYear();
-    calMonth = now.getMonth();
-    document.getElementById('f-contract_date').value = now.toISOString().slice(0,10);
-
-    await Promise.all([loadCustomers(), loadRates(), loadNextContractNo()]);
-    renderCalendar();
-    // Auto-select hari ini
-    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-    selectDate(todayStr);
-    onCurrencyChange();
-});
-
-// ---- LOAD ----
-async function loadCustomers() {
-    const data = await fetch('/api/customers').then(r => r.json());
-    const sel  = document.getElementById('f-customer_id');
-    data.forEach(c => {
-        const o = document.createElement('option');
-        o.value = c.id; o.textContent = c.name;
-        sel.appendChild(o);
-    });
-}
-
-async function loadRates() {
-    allRates = await fetch('/api/rates').then(r => r.json());
-    ratesByDate = {};
-    allRates.forEach(r => {
-        const key = r.created_at.slice(0,10);
-        if (!ratesByDate[key]) ratesByDate[key] = r;
-    });
-}
-
-async function loadNextContractNo() {
-    try {
-        const data = await fetch('/api/contracts/next-no').then(r => r.json());
-        document.getElementById('f-contract_no').value = data.next_no || '';
-        if (data.prev_no) {
-            document.getElementById('prev-contract-wrap').style.display = 'inline-flex';
-            document.getElementById('prev-no-val').textContent = data.prev_no;
+    // ---- Helper: lokal date string YYYY-MM-DD tanpa timezone shift ----
+    function toLocalDateStr(dateInput) {
+        // dateInput bisa string ISO atau Date object
+        // Untuk string "2025-06-03T..." ambil langsung 10 karakter pertama
+        // Untuk string "2025-06-03 ..." (MySQL format) juga aman
+        if (typeof dateInput === 'string') {
+            return dateInput.slice(0, 10);
         }
-    } catch(e) {
-        document.getElementById('f-contract_no').placeholder = 'Masukkan no. contract';
-    }
-}
-
-// ---- CURRENCY SWITCH ----
-function onCurrencyChange() {
-    const cur = document.getElementById('f-currency').value;
-    const usdSec = document.getElementById('usd-rate-section');
-    const idrSec = document.getElementById('idr-rate-section');
-
-    if (cur === 'USD') {
-        usdSec.style.display = '';
-        idrSec.style.display = 'none';
-        // Reset selection if coming from IDR
-        if (selectedRate && !document.getElementById('cal-grid').querySelector('.selected')) {
-            selectedRate = null;
-            document.getElementById('rate-result').innerHTML = '<span style="color:var(--text-muted);font-size:0.83rem">Belum ada tanggal dipilih.</span>';
-        }
-    } else {
-        usdSec.style.display = 'none';
-        idrSec.style.display = '';
-        const ok   = document.getElementById('idr-rate-ok');
-        const none = document.getElementById('idr-rate-none');
-        if (allRates.length > 0) {
-            selectedRate = allRates[0];
-            const d = new Date(selectedRate.created_at);
-            document.getElementById('idr-rate-val').innerHTML =
-            `Sell Rate <b style="color:#16a34a">Rp ${Number(selectedRate.sell_rate).toLocaleString('id-ID')}</b>
-            &nbsp;·&nbsp; Buy Rate <b style="color:#2563eb">Rp ${Number(selectedRate.buy_rate).toLocaleString('id-ID')}</b>
-            &nbsp;·&nbsp; <span style="color:var(--text-muted)">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</span>`;
-            ok.style.display   = 'block';
-            none.style.display = 'none';
-        } else {
-            selectedRate = null;
-            ok.style.display   = 'none';
-            none.style.display = 'block';
-        }
-    }
-}
-
-// ---- CALENDAR ----
-function renderCalendar() {
-    document.getElementById('cal-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
-    const now      = new Date();
-    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
-    const selStr   = selectedRate ? selectedRate.created_at.slice(0,10) : null;
-
-    let html = DAYS.map(d => `<div class="rate-cal-day-label">${d}</div>`).join('');
-
-    const firstDay    = new Date(calYear, calMonth, 1).getDay();
-    const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
-
-    for (let i = 0; i < firstDay; i++) html += `<div class="rate-cal-day"></div>`;
-
-        for (let d = 1; d <= daysInMonth; d++) {
-            const ds  = `${calYear}-${pad(calMonth+1)}-${pad(d)}`;
-            const hasRate  = !!ratesByDate[ds];
-            const isToday  = ds === todayStr;
-            const isSel    = ds === selStr;
-            let cls = 'rate-cal-day';
-            if (hasRate) cls += ' has-rate';
-            if (isToday) cls += ' today';
-            if (isSel)   cls += ' selected';
-            const click = hasRate ? `onclick="selectDate('${ds}')"` : '';
-            const dot   = hasRate ? '<span class="rate-dot"></span>' : '';
-            html += `<div class="${cls}" ${click}>${d}${dot}</div>`;
-        }
-        document.getElementById('cal-grid').innerHTML = html;
+        const d = dateInput;
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
     }
 
-    function pad(n) { return String(n).padStart(2,'0'); }
-    function calPrev() { calMonth--; if (calMonth < 0) { calMonth=11; calYear--; } renderCalendar(); }
-    function calNext() { calMonth++; if (calMonth > 11) { calMonth=0; calYear++; } renderCalendar(); }
+    // ---- INIT ----
+    document.addEventListener('DOMContentLoaded', async () => {
+        const now = new Date();
+        calYear  = now.getFullYear();
+        calMonth = now.getMonth();
 
-    function selectDate(dateStr) {
-        const rate = ratesByDate[dateStr];
-        const d    = new Date(dateStr);
+        await Promise.all([loadCustomers(), loadRates(), loadNextContractNo()]);
 
-        if (!rate) {
-        // Tetap highlight tanggal, tapi selectedRate null
-        selectedRate = null;
-        // Re-render supaya today tetap ter-highlight
+        // Default contract date = hari ini
+        const todayStr2 = toLocalDateStr(now);
+        document.getElementById('f-contract_date').value = todayStr2;
+
         renderCalendar();
-        document.getElementById('rate-warn').style.display = 'block';
-        document.getElementById('rate-result').innerHTML =
-        `<span style="color:var(--text-muted);font-size:0.83rem">Tidak ada data kurs untuk ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}.</span>`;
-        return;
-    }
-    document.getElementById('rate-warn').style.display = 'none';
-    selectedRate = rate;
-    renderCalendar();
+        onCurrencyChange();
 
-    document.getElementById('rate-result').innerHTML = `
-    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-    <div>
-    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Tanggal</div>
-    <div style="font-weight:700;font-size:0.9rem">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
-    </div>
-    <div>
-    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Sell Rate</div>
-    <div style="font-weight:800;font-size:1rem;color:#16a34a">Rp ${Number(rate.sell_rate).toLocaleString('id-ID')}</div>
-    </div>
-    <div>
-    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Buy Rate</div>
-    <div style="font-weight:800;font-size:1rem;color:#2563eb">Rp ${Number(rate.buy_rate).toLocaleString('id-ID')}</div>
-    </div>
-    </div>
-    `;
-}
+        // Auto-select hari ini jika ada kursnya
+        const todayStr = toLocalDateStr(now);
+        if (ratesByDate[todayStr]) {
+            selectDate(todayStr);
+        }
+    });
 
-// ---- SUBMIT ----
-function showAlert(msg, type) {
-    const box = document.getElementById('alert-box');
-    box.style.display    = 'block';
-    box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
-    box.style.color      = type === 'success' ? '#16a34a' : '#dc2626';
-    box.textContent      = msg;
-    box.scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
-function gv(id) { return document.getElementById(id).value.trim(); }
-
-function submitForm() {
-    if (!gv('f-contract_no'))   { showAlert('❌ Contract No wajib diisi.', 'error'); return; }
-    if (!gv('f-customer_id'))   { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
-    if (!gv('f-jenis'))         { showAlert('❌ Jenis contract wajib dipilih.', 'error'); return; }
-    if (!gv('f-contract_date')) { showAlert('❌ Contract Date wajib diisi.', 'error'); return; }
-    if (!selectedRate) {
-        showAlert('❌ Data kurs belum tersedia. Tambahkan kurs terlebih dahulu.', 'error'); return;
-    }
-    if (document.getElementById('f-currency').value === 'USD' && !selectedRate) {
-        showAlert('❌ Pilih tanggal kurs untuk USD.', 'error'); return;
+    // ---- LOAD DATA ----
+    async function loadCustomers() {
+        try {
+            const data = await fetch('/api/customers').then(r => r.json());
+            const sel  = document.getElementById('f-customer_id');
+            data.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c.id; o.textContent = c.name;
+                sel.appendChild(o);
+            });
+        } catch(e) { console.error('Gagal load customers', e); }
     }
 
-    const payload = {
-        contract_no:   gv('f-contract_no'),
-        customer_id:   parseInt(gv('f-customer_id')),
-        currency:      gv('f-currency'),
-        rate_id:       selectedRate.id,
-        jenis:         gv('f-jenis'),
-        order_no:      gv('f-order_no')      || null,
-        status:        'draft',
-        contract_date: gv('f-contract_date'),
-        date_ship:     gv('f-date_ship')     || null,
-        greige_no:     gv('f-greige_no')     || null,
-        dyeing_no:     gv('f-dyeing_no')     || null,
-        dyeing_int:    gv('f-dyeing_int')    || null,
-        quality:       gv('f-quality')       || null,
-        quality_note:  gv('f-quality_note')  || null,
-        note_ship:     gv('f-note_ship')     || null,
-        note:          gv('f-note')          || null,
-    };
+    async function loadRates() {
+        try {
+            allRates = await fetch('/api/rates').then(r => r.json());
+            ratesByDate = {};
+            allRates.forEach(r => {
+                // Gunakan slice(0,10) langsung dari string — hindari timezone shift
+                const key = r.created_at.slice(0, 10);
+                if (!ratesByDate[key]) ratesByDate[key] = r;
+            });
+        } catch(e) { console.error('Gagal load rates', e); }
+    }
 
-    const btn = document.querySelector('button[onclick="submitForm()"]');
-    btn.disabled = true;
-    btn.textContent = 'Menyimpan...';
+    async function loadNextContractNo() {
+        try {
+            const data = await fetch('/api/contracts/next-no').then(r => r.json());
+            document.getElementById('f-contract_no').value = data.next_no || '';
+            if (data.prev_no) {
+                document.getElementById('prev-contract-wrap').style.display = 'inline-flex';
+                document.getElementById('prev-no-val').textContent = data.prev_no;
+            }
+        } catch(e) {
+            document.getElementById('f-contract_no').placeholder = 'Masukkan no. contract';
+        }
+    }
 
-    fetch('/api/contracts', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(payload)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            showAlert('✅ Contract berhasil disimpan! Mengalihkan ke halaman produk...', 'success');
-            setTimeout(() => {
-                window.location.href = '/sales/sales-contract/detail?id=' + data.id;
-            }, 1200);
+    // ---- CURRENCY SWITCH ----
+    function onCurrencyChange() {
+        const cur = document.getElementById('f-currency').value;
+        const usdSec = document.getElementById('usd-rate-section');
+        const idrSec = document.getElementById('idr-rate-section');
+
+        if (cur === 'USD') {
+            usdSec.style.display = '';
+            idrSec.style.display = 'none';
         } else {
-            showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+            usdSec.style.display = 'none';
+            idrSec.style.display = '';
+            const ok   = document.getElementById('idr-rate-ok');
+            const none = document.getElementById('idr-rate-none');
+            if (allRates.length > 0) {
+                selectedRate = allRates[0];
+                const ds = selectedRate.created_at.slice(0, 10);
+                const parts = ds.split('-');
+                const d = new Date(parts[0], parts[1]-1, parts[2]);
+                document.getElementById('idr-rate-val').innerHTML =
+                `Sell Rate <b style="color:#16a34a">Rp ${Number(selectedRate.sell_rate).toLocaleString('id-ID')}</b>
+                &nbsp;·&nbsp; Buy Rate <b style="color:#2563eb">Rp ${Number(selectedRate.buy_rate).toLocaleString('id-ID')}</b>
+                &nbsp;·&nbsp; <span style="color:var(--text-muted)">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</span>`;
+                ok.style.display   = 'block';
+                none.style.display = 'none';
+            } else {
+                selectedRate = null;
+                ok.style.display   = 'none';
+                none.style.display = 'block';
+            }
+        }
+    }
+
+    // ---- CALENDAR ----
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function renderCalendar() {
+        document.getElementById('cal-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
+
+        const now      = new Date();
+        const todayStr = toLocalDateStr(now);
+
+        let html = DAYS.map(d => `<div class="rate-cal-day-label">${d}</div>`).join('');
+
+        const firstDay    = new Date(calYear, calMonth, 1).getDay();
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) html += `<div class="rate-cal-day"></div>`;
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                const ds       = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
+                const hasRate  = !!ratesByDate[ds];
+                const isToday  = ds === todayStr;
+                const isSel    = ds === selectedDateStr;
+
+                let cls = 'rate-cal-day';
+                if (hasRate) cls += ' has-rate';
+                if (isToday) cls += ' today';
+                if (isSel)   cls += ' selected';
+
+                const click = hasRate ? `onclick="selectDate('${ds}')"` : '';
+                const dot   = hasRate ? '<span class="rate-dot"></span>' : '';
+                html += `<div class="${cls}" ${click}>${d}${dot}</div>`;
+            }
+            document.getElementById('cal-grid').innerHTML = html;
+        }
+
+        function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+        function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0;  calYear++; } renderCalendar(); }
+
+        function selectDate(dateStr) {
+            const rate = ratesByDate[dateStr];
+            document.getElementById('rate-warn').style.display = 'none';
+
+            if (!rate) {
+                selectedRate    = null;
+                selectedDateStr = null;
+                renderCalendar();
+                document.getElementById('rate-warn').style.display = 'block';
+                setRateInfoPanel(null);
+                return;
+            }
+
+            selectedRate    = rate;
+            selectedDateStr = dateStr;
+            renderCalendar();
+            setRateInfoPanel(rate, dateStr);
+        }
+
+        function setRateInfoPanel(rate, dateStr) {
+            const empty = document.getElementById('rate-info-empty');
+            const data  = document.getElementById('rate-info-data');
+            if (!rate) {
+                empty.style.display = '';
+                data.style.display  = 'none';
+                return;
+            }
+            empty.style.display = 'none';
+            data.style.display  = '';
+
+            const parts = dateStr.split('-');
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            const spread = Number(rate.sell_rate) - Number(rate.buy_rate);
+
+            document.getElementById('ri-date').textContent  = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+            document.getElementById('ri-sell').textContent  = 'Rp ' + Number(rate.sell_rate).toLocaleString('id-ID');
+            document.getElementById('ri-buy').textContent   = 'Rp ' + Number(rate.buy_rate).toLocaleString('id-ID');
+            document.getElementById('ri-spread').textContent = 'Rp ' + spread.toLocaleString('id-ID');
+        }
+
+    // ---- ALERT ----
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.style.display    = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color      = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent      = msg;
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function gv(id) { return document.getElementById(id).value.trim(); }
+
+    // ---- SUBMIT ----
+    function submitForm() {
+        if (!gv('f-contract_no'))  { showAlert('❌ Contract No wajib diisi.', 'error'); return; }
+        if (!gv('f-customer_id'))  { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
+        if (!gv('f-jenis'))        { showAlert('❌ Jenis contract wajib dipilih.', 'error'); return; }
+        if (!gv('f-contract_date')) { showAlert('❌ Contract Date wajib diisi.', 'error'); return; }
+        if (!selectedRate) {
+            showAlert('❌ Pilih tanggal kurs terlebih dahulu.', 'error'); return;
+        }
+
+        const payload = {
+            contract_no:   gv('f-contract_no'),
+            customer_id:   parseInt(gv('f-customer_id')),
+            currency:      gv('f-currency'),
+            rate_id:       selectedRate.id,
+            jenis:         gv('f-jenis'),
+            order_no:      gv('f-order_no')      || null,
+            status:        'draft',
+            created_at:    gv('f-contract_date'),
+            date_ship:     gv('f-date_ship')     || null,
+            greige_no:     gv('f-greige_no')     || null,
+            dyeing_no:     gv('f-dyeing_no')     || null,
+            dyeing_int:    gv('f-dyeing_int')    || null,
+            quality:       gv('f-quality')       || null,
+            quality_note:  gv('f-quality_note')  || null,
+            note_ship:     gv('f-note_ship')     || null,
+            note:          gv('f-note')          || null,
+        };
+
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+        fetch('/api/contracts', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('✅ Contract berhasil disimpan! Mengalihkan ke halaman produk...', 'success');
+                setTimeout(() => {
+                    window.location.href = '/sales/sales-contract/detail?id=' + data.id;
+                }, 1200);
+            } else {
+                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Produk';
+            }
+        })
+        .catch(err => {
+            showAlert('❌ Terjadi kesalahan server: ' + err.message, 'error');
             btn.disabled = false;
             btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Produk';
-        }
-    })
-    .catch(() => {
-        showAlert('❌ Terjadi kesalahan server.', 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Produk';
-    });
-}
+        });
+    }
 </script>
 </body>
 </html>

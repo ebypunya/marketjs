@@ -92,9 +92,9 @@ function renderLayout() {
     </a>
     </div>
     </div>
-
-    </nav>
     <a href="/logout" class="btn-logout-modern">Keluar</a>
+    </nav>
+    
     </aside>`;
 
     const headerHTML = `
