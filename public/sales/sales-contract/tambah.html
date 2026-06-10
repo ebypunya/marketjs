@@ -91,7 +91,7 @@
                 </div>
             </div>
 
-            <div class="grid4" style="margin-bottom:14px">
+            <div class="grid3" style="margin-bottom:14px">
                 <div class="fg">
                     <label class="fl">Mata Uang <span style="color:#ef4444">*</span></label>
                     <select id="f-currency" class="fi" onchange="onCurrencyChange()">
@@ -112,15 +112,6 @@
                 <div class="fg">
                     <label class="fl">Order No</label>
                     <input type="text" id="f-order_no" class="fi" placeholder="No. order">
-                </div>
-                <div class="fg">
-                    <label class="fl">Status</label>
-                    <select id="f-status" class="fi">
-                        <option value="draft">Draft</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="done">Done</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
                 </div>
             </div>
 
@@ -258,6 +249,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await Promise.all([loadCustomers(), loadRates(), loadNextContractNo()]);
     renderCalendar();
+    // Auto-select hari ini
+    const todayStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+    selectDate(todayStr);
     onCurrencyChange();
 });
 
@@ -366,32 +360,39 @@ function renderCalendar() {
 
     function selectDate(dateStr) {
         const rate = ratesByDate[dateStr];
-        if (!rate) {
-            document.getElementById('rate-warn').style.display = 'block';
-            return;
-        }
-        document.getElementById('rate-warn').style.display = 'none';
-        selectedRate = rate;
-        renderCalendar();
+        const d    = new Date(dateStr);
 
-        const d = new Date(rate.created_at);
-        document.getElementById('rate-result').innerHTML = `
-        <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-        <div>
-        <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Tanggal</div>
-        <div style="font-weight:700;font-size:0.9rem">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
-        </div>
-        <div>
-        <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Sell Rate</div>
-        <div style="font-weight:800;font-size:1rem;color:#16a34a">Rp ${Number(rate.sell_rate).toLocaleString('id-ID')}</div>
-        </div>
-        <div>
-        <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Buy Rate</div>
-        <div style="font-weight:800;font-size:1rem;color:#2563eb">Rp ${Number(rate.buy_rate).toLocaleString('id-ID')}</div>
-        </div>
-        </div>
-        `;
+        if (!rate) {
+        // Tetap highlight tanggal, tapi selectedRate null
+        selectedRate = null;
+        // Re-render supaya today tetap ter-highlight
+        renderCalendar();
+        document.getElementById('rate-warn').style.display = 'block';
+        document.getElementById('rate-result').innerHTML =
+        `<span style="color:var(--text-muted);font-size:0.83rem">Tidak ada data kurs untuk ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}.</span>`;
+        return;
     }
+    document.getElementById('rate-warn').style.display = 'none';
+    selectedRate = rate;
+    renderCalendar();
+
+    document.getElementById('rate-result').innerHTML = `
+    <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+    <div>
+    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Tanggal</div>
+    <div style="font-weight:700;font-size:0.9rem">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</div>
+    </div>
+    <div>
+    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Sell Rate</div>
+    <div style="font-weight:800;font-size:1rem;color:#16a34a">Rp ${Number(rate.sell_rate).toLocaleString('id-ID')}</div>
+    </div>
+    <div>
+    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Buy Rate</div>
+    <div style="font-weight:800;font-size:1rem;color:#2563eb">Rp ${Number(rate.buy_rate).toLocaleString('id-ID')}</div>
+    </div>
+    </div>
+    `;
+}
 
 // ---- SUBMIT ----
 function showAlert(msg, type) {
@@ -412,7 +413,7 @@ function submitForm() {
     if (!selectedRate) {
         showAlert('❌ Data kurs belum tersedia. Tambahkan kurs terlebih dahulu.', 'error'); return;
     }
-    if (document.getElementById('f-currency').value === 'USD' && !document.getElementById('cal-grid').querySelector('.selected')) {
+    if (document.getElementById('f-currency').value === 'USD' && !selectedRate) {
         showAlert('❌ Pilih tanggal kurs untuk USD.', 'error'); return;
     }
 
@@ -423,7 +424,7 @@ function submitForm() {
         rate_id:       selectedRate.id,
         jenis:         gv('f-jenis'),
         order_no:      gv('f-order_no')      || null,
-        status:        gv('f-status'),
+        status:        'draft',
         contract_date: gv('f-contract_date'),
         date_ship:     gv('f-date_ship')     || null,
         greige_no:     gv('f-greige_no')     || null,

@@ -409,71 +409,10 @@ app.delete('/api/rates/:id', requireLogin, (req, res) => {
     });
 });
 
-// ===== 11. HALAMAN SALES CONTRACT =====
-app.get('/sales/sales-contract', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract.html'));
-});
 
-// ===== API CONTRACTS =====
-// GET all contracts — JOIN customers untuk nama, COUNT contract_details untuk item
-app.get('/api/contracts', requireLogin, (req, res) => {
-    const sql = `
-    SELECT
-    c.id,
-    c.contract_no,
-    c.order_no,
-    c.customer_id,
-    cu.name AS customer_name,
-    c.date_ship,
-    c.status,
-    c.currency,
-    c.jenis,
-    c.total,
-    c.created_at,
-    c.updated_at,
-    COUNT(cd.id) AS item_count
-    FROM contracts c
-    LEFT JOIN customers cu ON cu.id = c.customer_id
-    LEFT JOIN contract_details cd ON cd.contract_id = c.id
-    GROUP BY c.id
-    ORDER BY c.contract_no DESC
-    `;
-    db.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
-
-// GET single contract
-app.get('/api/contracts/:id', requireLogin, (req, res) => {
-    const sql = `
-    SELECT c.*, cu.name AS customer_name
-    FROM contracts c
-    LEFT JOIN customers cu ON cu.id = c.customer_id
-    WHERE c.id = ?
-    `;
-    db.query(sql, [req.params.id], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (results.length === 0) return res.status(404).json({ error: 'Not found' });
-        res.json(results[0]);
-    });
-});
-
-// DELETE contract — hapus juga contract_details terkait
-app.delete('/api/contracts/:id', requireLogin, (req, res) => {
-    const id = req.params.id;
-    // Hapus details dulu (foreign key), baru hapus header
-    db.query("DELETE FROM contract_details WHERE contract_id = ?", [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        db.query("DELETE FROM contracts WHERE id = ?", [id], (err2) => {
-            if (err2) return res.status(500).json({ error: err2.message });
-            res.json({ success: true });
-        });
-    });
-});
 
 // ===================================================
-// 12 — Sales Contract routes
+// 11 — Sales Contract routes
 // ===================================================
 
 // ===== HALAMAN =====
@@ -489,31 +428,21 @@ app.get('/sales/sales-contract/detail', requireLogin, (req, res) => {
 });
 
 // ===== API: next contract no =====
-// Format: SC-YYYYMM-XXX (misal SC-202506-001)
 app.get('/api/contracts/next-no', requireLogin, (req, res) => {
-    const now    = new Date();
-    const yyyy   = now.getFullYear();
-    const mm     = String(now.getMonth() + 1).padStart(2, '0');
-    const prefix = `SC-${yyyy}${mm}-`;
-
-    // Ambil contract_no terakhir bulan ini
-    const sql = `SELECT contract_no FROM contracts
-    WHERE contract_no LIKE ?
-    ORDER BY contract_no DESC LIMIT 1`;
-    db.query(sql, [`${prefix}%`], (err, results) => {
+    const sql = `SELECT contract_no FROM contracts ORDER BY contract_no DESC LIMIT 1`;
+    db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
 
-        let nextNum  = 1;
-        let prev_no  = null;
+        let next_no = 'C260001';
+        let prev_no = null;
 
         if (results.length > 0) {
-            prev_no  = results[0].contract_no;
-            const parts = prev_no.split('-');
-            const last  = parseInt(parts[parts.length - 1]) || 0;
-            nextNum = last + 1;
+            prev_no = results[0].contract_no;
+            // Ambil angka di belakang huruf C
+            const num = parseInt(prev_no.replace(/^C/i, '')) || 0;
+            next_no = 'C' + String(num + 1).padStart(prev_no.length - 1, '0');
         }
 
-        const next_no = `${prefix}${String(nextNum).padStart(3, '0')}`;
         res.json({ next_no, prev_no });
     });
 });
