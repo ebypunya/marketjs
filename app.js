@@ -472,6 +472,160 @@ app.delete('/api/contracts/:id', requireLogin, (req, res) => {
     });
 });
 
+// ===================================================
+// 12 — Sales Contract routes
+// ===================================================
+
+// ===== HALAMAN =====
+app.get('/sales/sales-contract', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract.html'));
+});
+app.get('/sales/sales-contract/tambah', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'tambah.html'));
+});
+// Detail/produk — akan dibuat berikutnya
+app.get('/sales/sales-contract/detail', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract-detail.html'));
+});
+
+// ===== API: next contract no =====
+// Format: SC-YYYYMM-XXX (misal SC-202506-001)
+app.get('/api/contracts/next-no', requireLogin, (req, res) => {
+    const now    = new Date();
+    const yyyy   = now.getFullYear();
+    const mm     = String(now.getMonth() + 1).padStart(2, '0');
+    const prefix = `SC-${yyyy}${mm}-`;
+
+    // Ambil contract_no terakhir bulan ini
+    const sql = `SELECT contract_no FROM contracts
+    WHERE contract_no LIKE ?
+    ORDER BY contract_no DESC LIMIT 1`;
+    db.query(sql, [`${prefix}%`], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        let nextNum  = 1;
+        let prev_no  = null;
+
+        if (results.length > 0) {
+            prev_no  = results[0].contract_no;
+            const parts = prev_no.split('-');
+            const last  = parseInt(parts[parts.length - 1]) || 0;
+            nextNum = last + 1;
+        }
+
+        const next_no = `${prefix}${String(nextNum).padStart(3, '0')}`;
+        res.json({ next_no, prev_no });
+    });
+});
+
+// ===== API: GET all contracts (list page) =====
+app.get('/api/contracts', requireLogin, (req, res) => {
+    const sql = `
+    SELECT
+    c.id, c.contract_no, c.order_no, c.customer_id,
+    cu.name AS customer_name,
+    c.date_ship, c.status, c.currency, c.jenis,
+    c.total, c.created_at, c.updated_at,
+    COUNT(cd.id) AS item_count
+    FROM contracts c
+    LEFT JOIN customers cu ON cu.id = c.customer_id
+    LEFT JOIN contract_details cd ON cd.contract_id = c.id
+    GROUP BY c.id
+    ORDER BY c.contract_no DESC
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// ===== API: GET single contract =====
+app.get('/api/contracts/:id', requireLogin, (req, res) => {
+    const sql = `
+    SELECT c.*, cu.name AS customer_name,
+    r.sell_rate, r.buy_rate, r.created_at AS rate_date
+    FROM contracts c
+    LEFT JOIN customers cu ON cu.id = c.customer_id
+    LEFT JOIN rates r      ON r.id  = c.rate_id
+    WHERE c.id = ?
+    `;
+    db.query(sql, [req.params.id], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!results.length) return res.status(404).json({ error: 'Not found' });
+        res.json(results[0]);
+    });
+});
+
+// ===== API: POST create contract =====
+app.post('/api/contracts', requireLogin, (req, res) => {
+    const {
+        contract_no, customer_id, currency, rate_id, jenis,
+        order_no, status, contract_date, date_ship,
+        greige_no, dyeing_no, dyeing_int,
+        quality, quality_note, note_ship, note
+    } = req.body;
+
+    // Validasi wajib
+    if (!contract_no || !customer_id || !jenis || !contract_date) {
+        return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
+    }
+
+    // Cek duplikat contract_no
+    db.query('SELECT id FROM contracts WHERE contract_no = ?', [contract_no], (err, dup) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (dup.length > 0) return res.status(400).json({ error: `Contract No "${contract_no}" sudah digunakan.` });
+
+        const sql = `
+        INSERT INTO contracts
+        (contract_no, customer_id, currency, rate_id, jenis,
+        order_no, status, created_at, updated_at,
+        date_ship, greige_no, dyeing_no, dyeing_int,
+        quality, quality_note, note_ship, note, total)
+        VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, ?, ?, ?, ?, ?, 0)
+        `;
+        db.query(sql, [
+            contract_no,
+            customer_id,
+            currency    || 'USD',
+            rate_id     || null,
+            jenis,
+            order_no    || null,
+            status      || 'draft',
+            date_ship   || null,
+            greige_no   || null,
+            dyeing_no   || null,
+            dyeing_int  || null,
+            quality     || null,
+            quality_note|| null,
+            note_ship   || null,
+            note        || null,
+            ], (err2, result) => {
+                if (err2) return res.status(500).json({ error: err2.message });
+                res.json({ success: true, id: result.insertId });
+            });
+    });
+});
+
+// ===== API: DELETE contract =====
+app.delete('/api/contracts/:id', requireLogin, (req, res) => {
+    const id = req.params.id;
+    db.query('DELETE FROM contract_details WHERE contract_id = ?', [id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        db.query('DELETE FROM contracts WHERE id = ?', [id], (err2) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({ success: true });
+        });
+    });
+});
+
+// ===================================================
+// UPDATE sidebar.js — tambah di getPageMeta():
+// ===================================================
+/*
+'/sales/sales-contract':        { title: 'Sales Contract',        sub: 'Daftar seluruh sales contract.' },
+'/sales/sales-contract/tambah': { title: 'Tambah Sales Contract', sub: 'Buat contract baru.'            },
+'/sales/sales-contract/detail': { title: 'Detail Sales Contract', sub: 'Input produk contract.'         },
+*/
 
 // ---  START SERVER ---
 app.listen(port, () => {
