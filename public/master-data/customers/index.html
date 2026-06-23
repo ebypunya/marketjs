@@ -16,7 +16,7 @@
             style="padding:10px 16px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;width:280px;outline:none;font-family:inherit">
             <a href="/master-data/customers/tambah"
             style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--primary);color:white;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem">
-            <i class="ti ti-plus"></i> Tambah Customer
+            <i class="ti ti-plus"></i> Tambah Customers
         </a>
     </div>
 
@@ -187,10 +187,28 @@ function closeDeleteModal() {
     document.getElementById('delete-modal').style.display = 'none';
 }
 function confirmDelete() {
+    const btn = document.querySelector('#delete-modal button:last-child');
+    btn.disabled = true;
+    btn.textContent = 'Menghapus...';
+
     fetch('/api/customers/' + deleteId, { method: 'DELETE' })
     .then(r => r.json())
-    .then(() => { closeDeleteModal(); loadCustomers(); })
-    .catch(() => alert('Gagal menghapus data.'));
+    .then(data => {
+        if (data.success) {
+            closeDeleteModal();
+            loadCustomers();
+        } else {
+            alert('❌ Gagal menghapus: ' + (data.error || 'Unknown error'));
+            btn.disabled = false;
+            btn.textContent = 'Hapus';
+        }
+    })
+    .catch(err => {
+        console.error('Delete error:', err);
+        alert('❌ Kesalahan jaringan: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Hapus';
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {

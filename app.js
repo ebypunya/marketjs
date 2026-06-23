@@ -254,12 +254,19 @@ app.put('/api/customers/:id', requireLogin, (req, res) => {
 });
 
 app.delete('/api/customers/:id', requireLogin, (req, res) => {
-    db.query("DELETE FROM customers WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+    const id = req.params.id;
+    db.query("DELETE FROM customers WHERE id = ?", [id], (err, result) => {
+        if (err) {
+            console.error('DELETE customer error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Data tidak ditemukan' });
+        }
+        console.log(`Customer ${id} deleted successfully`);
         res.json({ success: true });
     });
 });
-
 
 // ===== 9. HALAMAN PRODUCTS =====
 app.get('/master-data/products', requireLogin, (req, res) => {
@@ -350,8 +357,16 @@ app.put('/api/products/:id', requireLogin, (req, res) => {
     });
 
 app.delete('/api/products/:id', requireLogin, (req, res) => {
-    db.query("DELETE FROM products WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+    const id = req.params.id;
+    db.query("DELETE FROM products WHERE id = ?", [id], (err, result) => {
+        if (err) {
+            console.error('DELETE product error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Data tidak ditemukan' });
+        }
+        console.log(`Product ${id} deleted successfully`);
         res.json({ success: true });
     });
 });
@@ -404,8 +419,16 @@ app.put('/api/rates/:id', requireLogin, (req, res) => {
 });
 
 app.delete('/api/rates/:id', requireLogin, (req, res) => {
-    db.query("DELETE FROM rates WHERE id = ?", [req.params.id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+    const id = req.params.id;
+    db.query("DELETE FROM rates WHERE id = ?", [id], (err, result) => {
+        if (err) {
+            console.error('DELETE rate error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Data tidak ditemukan' });
+        }
+        console.log(`Rate ${id} deleted successfully`);
         res.json({ success: true });
     });
 });
@@ -542,10 +565,24 @@ app.post('/api/contracts', requireLogin, (req, res) => {
 // ===== API: DELETE contract =====
 app.delete('/api/contracts/:id', requireLogin, (req, res) => {
     const id = req.params.id;
+    
+    // First, delete all contract details
     db.query('DELETE FROM contract_details WHERE contract_id = ?', [id], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
-        db.query('DELETE FROM contracts WHERE id = ?', [id], (err2) => {
-            if (err2) return res.status(500).json({ error: err2.message });
+        if (err) {
+            console.error('DELETE contract_details error:', err);
+            return res.status(500).json({ success: false, error: 'Gagal menghapus detail: ' + err.message });
+        }
+        
+        // Then, delete the contract
+        db.query('DELETE FROM contracts WHERE id = ?', [id], (err2, result) => {
+            if (err2) {
+                console.error('DELETE contract error:', err2);
+                return res.status(500).json({ success: false, error: 'Gagal menghapus contract: ' + err2.message });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, error: 'Contract tidak ditemukan' });
+            }
+            console.log(`Contract ${id} and its details deleted successfully`);
             res.json({ success: true });
         });
     });
@@ -612,20 +649,41 @@ app.post('/api/contract-details', requireLogin, (req, res) => {
 // ===== API: DELETE detail item by detail ID =====
 app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
     const detailId = req.params.id;
-    // Ambil contract_id dulu untuk update total setelah hapus
+    
+    // Get contract_id first to update total after delete
     db.query('SELECT contract_id FROM contract_details WHERE id = ?', [detailId], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!rows.length) return res.status(404).json({ error: 'Item tidak ditemukan.' });
+        if (err) {
+            console.error('SELECT contract_details error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
+        }
+        
         const contractId = rows[0].contract_id;
         
-        db.query('DELETE FROM contract_details WHERE id = ?', [detailId], (err2) => {
-            if (err2) return res.status(500).json({ error: err2.message });
-            // Recalculate total
+        // Delete the detail item
+        db.query('DELETE FROM contract_details WHERE id = ?', [detailId], (err2, result) => {
+            if (err2) {
+                console.error('DELETE contract_details error:', err2);
+                return res.status(500).json({ success: false, error: 'Gagal menghapus item: ' + err2.message });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
+            }
+            
+            // Recalculate total contract
             db.query(
                 `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
-                [contractId, contractId], () => {}
+                [contractId, contractId], 
+                (err3) => {
+                    if (err3) {
+                        console.error('UPDATE contract total error:', err3);
+                    }
+                    console.log(`Contract detail ${detailId} deleted successfully`);
+                    res.json({ success: true });
+                }
                 );
-            res.json({ success: true });
         });
     });
 });

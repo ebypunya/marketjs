@@ -12,7 +12,6 @@
 
     <div id="app-content">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem">
-            <!-- Info kurs terbaru -->
             <div id="latest-kurs" style="display:flex;gap:16px">
                 <div style="padding:8px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:0.82rem">
                     <span style="color:#64748b;font-weight:600">SELL RATE</span>
@@ -51,24 +50,22 @@
             <div id="pagination-controls" style="display:flex;gap:6px"></div>
         </div>
     </div>
-</div>
 
-<!-- Modal Hapus -->
-<div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15)">
-        <div style="font-size:48px;margin-bottom:10px">🗑️</div>
-        <h3 style="margin:0 0 8px;color:#0f172a">Hapus Data Kurs?</h3>
-        <p style="color:#64748b;font-size:0.88rem;margin-bottom:24px">Data kurs tanggal <b id="delete-name"></b> akan dihapus permanen.</p>
-        <div style="display:flex;gap:10px;justify-content:center">
-            <button onclick="closeDeleteModal()"
-            style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
-            <button onclick="confirmDelete()"
-            style="padding:10px 24px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+    <div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
+        <div style="background:#fff;border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.15)">
+            <div style="font-size:48px;margin-bottom:10px">🗑️</div>
+            <h3 style="margin:0 0 8px;color:#0f172a">Hapus Data Kurs?</h3>
+            <p style="color:#64748b;font-size:0.88rem;margin-bottom:24px">Data kurs tanggal <b id="delete-name"></b> akan dihapus permanen.</p>
+            <div style="display:flex;gap:10px;justify-content:center">
+                <button onclick="closeDeleteModal()"
+                style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
+                <button onclick="confirmDelete()"
+                style="padding:10px 24px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="/assets/js/sidebar.js"></script>
+</div> <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
     let allRates = [];
@@ -103,7 +100,7 @@
         const d = new Date(str);
         const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
         const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
-        return `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        return `${days[d.getDay()]} , ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
     }
 
     function formatCurrency(val) {
@@ -131,17 +128,18 @@
         tbody.innerHTML = pageData.map((r, i) => {
             const selisih = (r.sell_rate && r.buy_rate) ? (r.sell_rate - r.buy_rate) : null;
             const isLatest = (start + i === 0);
+            const formattedDateStr = formatDate(r.created_at);
             return `
             <tr style="${isLatest ? 'background:#fafff5;' : ''}">
             <td style="padding:13px 20px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
             <td style="padding:13px 20px;font-weight:600">
-                ${isLatest ? '<span style="display:inline-block;background:#dcfce7;color:#16a34a;font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:20px;margin-right:6px;vertical-align:middle">TERBARU</span>' : ''}
-                ${formatDate(r.created_at)}
+            ${isLatest ? '<span style="display:inline-block;background:#dcfce7;color:#16a34a;font-size:0.65rem;font-weight:800;padding:2px 7px;border-radius:20px;margin-right:6px;vertical-align:middle">TERBARU</span>' : ''}
+            ${formattedDateStr}
             </td>
             <td style="padding:13px 20px;text-align:right;font-weight:700;color:#16a34a;font-size:0.95rem">${formatCurrency(r.sell_rate)}</td>
             <td style="padding:13px 20px;text-align:right;font-weight:700;color:#2563eb;font-size:0.95rem">${formatCurrency(r.buy_rate)}</td>
             <td style="padding:13px 20px;text-align:center;font-size:0.85rem">
-                ${selisih !== null ? `<span style="background:#fff7ed;color:#c2410c;padding:3px 10px;border-radius:20px;font-weight:700">${formatCurrency(selisih)}</span>` : '-'}
+            ${selisih !== null ? `<span style="background:#fff7ed;color:#c2410c;padding:3px 10px;border-radius:20px;font-weight:700">${formatCurrency(selisih)}</span>` : '-'}
             </td>
             <td style="padding:13px 20px">
             <div style="display:flex;gap:6px">
@@ -149,7 +147,7 @@
             style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">
             <i class="ti ti-edit" style="font-size:13px"></i> Edit
             </a>
-            <button onclick="openDeleteModal(${r.id}, '${formatDate(r.created_at)}')"
+            <button onclick="openDeleteModal('${r.id}', '${formattedDateStr}')"
             style="display:flex;align-items:center;gap:4px;padding:6px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">
             <i class="ti ti-trash" style="font-size:13px"></i> Hapus
             </button>
@@ -211,15 +209,45 @@
         document.getElementById('delete-name').textContent = label;
         document.getElementById('delete-modal').style.display = 'flex';
     }
+
+    // 💡 PERBAIKAN 2: Me-reset status dan teks tombol Hapus setiap kali modal ditutup
     function closeDeleteModal() {
         deleteId = null;
         document.getElementById('delete-modal').style.display = 'none';
+        
+        const btn = document.querySelector('#delete-modal button:last-child');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Hapus';
+        }
     }
+
     function confirmDelete() {
+        const btn = document.querySelector('#delete-modal button:last-child');
+        btn.disabled = true;
+        btn.textContent = 'Menghapus...';
+
         fetch('/api/rates/' + deleteId, { method: 'DELETE' })
-        .then(r => r.json())
-        .then(() => { closeDeleteModal(); loadRates(); })
-        .catch(() => alert('Gagal menghapus data.'));
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP error! status: ' + r.status);
+            return r.json();
+        })
+        .then(data => {
+            if (data.success || data.status === 'success') {
+                closeDeleteModal();
+                loadRates();
+            } else {
+                alert('❌ Gagal menghapus: ' + (data.error || 'Unknown error'));
+                btn.disabled = false;
+                btn.textContent = 'Hapus';
+            }
+        })
+        .catch(err => {
+            console.error('Delete error:', err);
+            alert('❌ Kesalahan jaringan: ' + err.message);
+            btn.disabled = false;
+            btn.textContent = 'Hapus';
+        });
     }
 
     document.addEventListener('DOMContentLoaded', loadRates);

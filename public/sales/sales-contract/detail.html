@@ -81,7 +81,6 @@
 <body class="dashboard-page">
     <div id="app-content">
 
-        <!-- INFO CONTRACT -->
         <div class="bento-item" style="margin-bottom:20px">
             <div class="section-title"><i class="ti ti-file-description"></i> Info Contract</div>
             <div class="info-grid">
@@ -96,12 +95,10 @@
             </div>
         </div>
 
-        <!-- FORM TAMBAH ITEM -->
         <div class="bento-item" style="margin-bottom:20px">
             <div class="section-title"><i class="ti ti-plus"></i> Tambah Item Produk</div>
             <div id="alert-form" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;font-weight:600"></div>
 
-            <!-- Baris 1: Produk + Warna + Unit -->
             <div style="display:grid;grid-template-columns:3fr 1.5fr 1fr;gap:12px;margin-bottom:12px">
                 <div class="fg">
                     <label class="fl">Produk <span style="color:#ef4444">*</span></label>
@@ -122,7 +119,6 @@
                 </div>
             </div>
 
-            <!-- Baris 2: Qty + Harga Dasar + Diskon + Subtotal + Tambah -->
             <div style="display:grid;grid-template-columns:1fr 1.4fr 1.5fr 1.5fr auto;gap:12px;align-items:end;margin-bottom:8px">
                 <div class="fg">
                     <label class="fl">Quantity <span style="color:#ef4444">*</span></label>
@@ -133,7 +129,6 @@
                     <input type="text" id="f-base-price" class="fi" disabled placeholder="—">
                 </div>
                 <div class="fg">
-                    <!-- Toggle persen / nominal -->
                     <div class="diskon-toggle">
                         <button id="btn-diskon-pct" class="active" onclick="setDiskonMode('pct')">% Persen</button>
                         <button id="btn-diskon-nom" onclick="setDiskonMode('nom')">Nominal USD</button>
@@ -150,11 +145,9 @@
                 </button>
             </div>
 
-            <!-- Info konversi -->
             <div id="price-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#1e40af;margin-top:4px"></div>
         </div>
 
-        <!-- TABEL DETAIL -->
         <div class="bento-item" style="margin-bottom:20px">
             <div class="section-title"><i class="ti ti-list-details"></i> Detail Item Contract</div>
             <div style="overflow-x:auto">
@@ -179,7 +172,6 @@
                 </table>
             </div>
 
-            <!-- TOTAL -->
             <div style="padding:20px 0 4px">
                 <div class="total-box">
                     <div>
@@ -198,29 +190,26 @@
             </div>
         </div>
 
-        <!-- AKSI -->
         <div style="display:flex;gap:10px;margin-bottom:20px">
             <a href="/sales/sales-contract"
             style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
             <i class="ti ti-arrow-left"></i> Kembali ke Daftar
         </a>
     </div>
-</div>
 
-<!-- Modal Hapus -->
-<div id="del-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
-    <div style="background:#fff;border-radius:16px;padding:28px;max-width:340px;width:90%;text-align:center">
-        <div style="font-size:40px;margin-bottom:8px">🗑️</div>
-        <h3 style="margin:0 0 8px;color:#0f172a;font-size:1rem">Hapus item ini?</h3>
-        <p style="color:#64748b;font-size:0.85rem;margin-bottom:20px">Data tidak bisa dikembalikan.</p>
-        <div style="display:flex;gap:8px;justify-content:center">
-            <button onclick="closeDelModal()" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
-            <button onclick="confirmDel()" style="padding:9px 20px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+    <div id="del-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
+        <div style="background:#fff;border-radius:16px;padding:28px;max-width:340px;width:90%;text-align:center">
+            <div style="font-size:40px;margin-bottom:8px">🗑️</div>
+            <h3 style="margin:0 0 8px;color:#0f172a;font-size:1rem">Hapus item ini?</h3>
+            <p style="color:#64748b;font-size:0.85rem;margin-bottom:20px">Data tidak bisa dikembalikan.</p>
+            <div style="display:flex;gap:8px;justify-content:center">
+                <button onclick="closeDelModal()" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
+                <button onclick="confirmDel()" style="padding:9px 20px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+            </div>
         </div>
     </div>
-</div>
 
-<script src="/assets/js/sidebar.js"></script>
+</div> <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
     const contractId = new URLSearchParams(window.location.search).get('id');
@@ -230,405 +219,397 @@
     let products   = [];
     let details    = [];
     let delId      = null;
-let diskonMode = 'pct'; // 'pct' | 'nom'
+    let diskonMode = 'pct'; // 'pct' | 'nom'
 
-const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+    const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
-// ==================== INIT ====================
-document.addEventListener('DOMContentLoaded', async () => {
-    await Promise.all([loadContract(), loadProducts()]);
-    await loadDetails();
-    updateFormLabels();
-    updateTableHeaders();
-});
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', async () => {
+        await Promise.all([loadContract(), loadProducts()]);
+        await loadDetails();
+        updateFormLabels();
+        updateTableHeaders();
+    });
 
-// ==================== LOAD ====================
-async function loadContract() {
-    try {
-        contract = await fetch('/api/contracts/' + contractId).then(r => r.json());
-        renderContractInfo();
-    } catch(e) { showAlert('Gagal memuat data contract.', 'error'); }
-}
+    // ==================== LOAD ====================
+    async function loadContract() {
+        try {
+            contract = await fetch('/api/contracts/' + contractId).then(r => r.json());
+            renderContractInfo();
+        } catch(e) { showAlert('Gagal memuat data contract.', 'error'); }
+    }
 
-async function loadProducts() {
-    try {
-        products = await fetch('/api/products').then(r => r.json());
+    async function loadProducts() {
+        try {
+            products = await fetch('/api/products').then(r => r.json());
+            const sel = document.getElementById('f-product_id');
+            products.forEach(p => {
+                const o = document.createElement('option');
+                o.value = p.id;
+                o.textContent = [p.fabric_no, p.fabric_name, p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' — ');
+                o.dataset.priceM = p.price_m || 0;
+                o.dataset.priceY = p.price_y || 0;
+                o.dataset.color  = p.color   || '';
+                sel.appendChild(o);
+            });
+        } catch(e) { console.error('Gagal load products', e); }
+    }
+
+    async function loadDetails() {
+        try {
+            details = await fetch('/api/contract-details/by-contract/' + contractId).then(r => r.json());
+            renderDetails();
+            updateTotal();
+        } catch(e) { console.error('Gagal load details', e); }
+    }
+
+    // ==================== RENDER INFO ====================
+    function renderContractInfo() {
+        const c = contract;
+        document.getElementById('ic-no').textContent       = c.contract_no  || '—';
+        document.getElementById('ic-customer').textContent = c.customer_name || '—';
+        document.getElementById('ic-jenis').textContent    = c.jenis         || '—';
+        document.getElementById('ic-status').innerHTML     = statusBadge(c.status);
+        document.getElementById('ic-currency').innerHTML   =
+        `<span class="badge-status ${c.currency==='USD'?'badge-usd':'badge-idr'}">${c.currency}</span>`;
+        document.getElementById('ic-rate').textContent     =
+        c.sell_rate ? 'Rp '+Number(c.sell_rate).toLocaleString('id-ID') : '—';
+        document.getElementById('ic-ship').textContent     = c.date_ship  ? fmtDate(c.date_ship)  : '—';
+        document.getElementById('ic-created').textContent  = c.created_at ? fmtDate(c.created_at) : '—';
+    }
+
+    function statusBadge(s) {
+        const map = { draft:'#f1f5f9:#475569', confirmed:'#eff6ff:#2563eb', done:'#f0fdf4:#16a34a', cancelled:'#fef2f2:#dc2626' };
+        const [bg,color] = (map[s]||'#f1f5f9:#64748b').split(':');
+        return `<span class="badge-status" style="background:${bg};color:${color}">${s||'—'}</span>`;
+    }
+
+    // ==================== LABEL DINAMIS ====================
+    function updateFormLabels() {
+        if (!contract) return;
+        const cur = contract.currency || 'USD';
+        const unit = document.getElementById('f-unit').value;
+        // Label harga dasar
+        document.getElementById('lbl-base-price').textContent = cur === 'IDR'
+        ? `Harga Dasar (IDR/${unit})`
+        : `Harga Dasar (USD/${unit})`;
+        // Label subtotal
+        document.getElementById('lbl-subtotal').textContent = `Subtotal (${cur})`;
+    }
+
+    function updateTableHeaders() {
+        if (!contract) return;
+        const cur  = contract.currency || 'USD';
+        document.getElementById('th-price').textContent  = `HARGA (${cur})`;
+        document.getElementById('th-diskon').textContent = `DISKON (${cur})`;
+        document.getElementById('th-stotal').textContent = `SUBTOTAL (${cur})`;
+    }
+
+    // ==================== DISKON MODE ====================
+    function setDiskonMode(mode) {
+        diskonMode = mode;
+        document.getElementById('btn-diskon-pct').className = mode==='pct' ? 'active' : '';
+        document.getElementById('btn-diskon-nom').className = mode==='nom' ? 'active' : '';
+        document.getElementById('lbl-diskon-hint').textContent =
+        mode === 'pct' ? '% dari harga dasar USD' : 'Nominal dalam USD';
+        document.getElementById('f-diskon').value = '';
+        calcSubtotal();
+    }
+
+    // ==================== PRODUCT / UNIT CHANGE ====================
+    function onProductChange() {
         const sel = document.getElementById('f-product_id');
-        products.forEach(p => {
-            const o = document.createElement('option');
-            o.value = p.id;
-            o.textContent = [p.fabric_no, p.fabric_name, p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' — ');
-            o.dataset.priceM = p.price_m || 0;
-            o.dataset.priceY = p.price_y || 0;
-            o.dataset.color  = p.color   || '';
-            sel.appendChild(o);
-        });
-    } catch(e) { console.error('Gagal load products', e); }
-}
-
-async function loadDetails() {
-    try {
-        details = await fetch('/api/contract-details/by-contract/' + contractId).then(r => r.json());
-        renderDetails();
-        updateTotal();
-    } catch(e) { console.error('Gagal load details', e); }
-}
-
-// ==================== RENDER INFO ====================
-function renderContractInfo() {
-    const c = contract;
-    document.getElementById('ic-no').textContent       = c.contract_no  || '—';
-    document.getElementById('ic-customer').textContent = c.customer_name || '—';
-    document.getElementById('ic-jenis').textContent    = c.jenis         || '—';
-    document.getElementById('ic-status').innerHTML     = statusBadge(c.status);
-    document.getElementById('ic-currency').innerHTML   =
-    `<span class="badge-status ${c.currency==='USD'?'badge-usd':'badge-idr'}">${c.currency}</span>`;
-    document.getElementById('ic-rate').textContent     =
-    c.sell_rate ? 'Rp '+Number(c.sell_rate).toLocaleString('id-ID') : '—';
-    document.getElementById('ic-ship').textContent     = c.date_ship  ? fmtDate(c.date_ship)  : '—';
-    document.getElementById('ic-created').textContent  = c.created_at ? fmtDate(c.created_at) : '—';
-}
-
-function statusBadge(s) {
-    const map = { draft:'#f1f5f9:#475569', confirmed:'#eff6ff:#2563eb', done:'#f0fdf4:#16a34a', cancelled:'#fef2f2:#dc2626' };
-    const [bg,color] = (map[s]||'#f1f5f9:#64748b').split(':');
-    return `<span class="badge-status" style="background:${bg};color:${color}">${s||'—'}</span>`;
-}
-
-// ==================== LABEL DINAMIS ====================
-function updateFormLabels() {
-    if (!contract) return;
-    const cur = contract.currency || 'USD';
-    const unit = document.getElementById('f-unit').value;
-    // Label harga dasar
-    document.getElementById('lbl-base-price').textContent = cur === 'IDR'
-    ? `Harga Dasar (IDR/${unit})`
-    : `Harga Dasar (USD/${unit})`;
-    // Label subtotal
-    document.getElementById('lbl-subtotal').textContent = `Subtotal (${cur})`;
-}
-
-function updateTableHeaders() {
-    if (!contract) return;
-    const cur  = contract.currency || 'USD';
-    const unit = getCurrentUnit(); // unit yang dominan di detail, atau dari form jika kosong
-    document.getElementById('th-price').textContent  = `HARGA (${cur})`;
-    document.getElementById('th-diskon').textContent = `DISKON (${cur})`;
-    document.getElementById('th-stotal').textContent = `SUBTOTAL (${cur})`;
-}
-
-function getCurrentUnit() {
-    return document.getElementById('f-unit').value || 'Meter';
-}
-
-// ==================== DISKON MODE ====================
-function setDiskonMode(mode) {
-    diskonMode = mode;
-    document.getElementById('btn-diskon-pct').className = mode==='pct' ? 'active' : '';
-    document.getElementById('btn-diskon-nom').className = mode==='nom' ? 'active' : '';
-    document.getElementById('lbl-diskon-hint').textContent =
-    mode === 'pct' ? '% dari harga dasar USD' : 'Nominal dalam USD';
-    document.getElementById('f-diskon').value = '';
-    calcSubtotal();
-}
-
-// ==================== PRODUCT / UNIT CHANGE ====================
-function onProductChange() {
-    const sel = document.getElementById('f-product_id');
-    const opt = sel.options[sel.selectedIndex];
-    if (opt && opt.value && !document.getElementById('f-color').value) {
-        document.getElementById('f-color').value = opt.dataset.color || '';
-    }
-    calcSubtotal();
-    updateFormLabels();
-}
-
-function onUnitChange() {
-    calcSubtotal();
-    updateFormLabels();
-    renderDetails(); // re-render tabel: tampilkan/sembunyikan kolom yard
-}
-
-// ==================== HITUNG SUBTOTAL ====================
-function getBasePriceUSD() {
-    const sel  = document.getElementById('f-product_id');
-    const opt  = sel.options[sel.selectedIndex];
-    if (!opt || !opt.value) return 0;
-    return document.getElementById('f-unit').value === 'Yard'
-    ? parseFloat(opt.dataset.priceY) || 0
-    : parseFloat(opt.dataset.priceM) || 0;
-}
-
-function calcSubtotal() {
-    if (!contract) return;
-    const cur       = contract.currency || 'USD';
-    const sellRate  = parseFloat(contract.sell_rate) || 1;
-    const basePriceUSD = getBasePriceUSD();
-    const qty       = parseFloat(document.getElementById('f-qty').value) || 0;
-    const diskonRaw = parseFloat(document.getElementById('f-diskon').value) || 0;
-    const unit      = document.getElementById('f-unit').value;
-
-    // Harga dalam currency contract
-    const priceInCur = cur === 'IDR' ? basePriceUSD * sellRate : basePriceUSD;
-
-    // Diskon — selalu dihitung dari harga dasar USD, hasilnya dikonversi ke cur
-    let diskonUSD = 0;
-    if (diskonMode === 'pct') {
-        diskonUSD = basePriceUSD * (diskonRaw / 100);
-    } else {
-        diskonUSD = diskonRaw; // nominal USD
-    }
-    const diskonInCur = cur === 'IDR' ? diskonUSD * sellRate : diskonUSD;
-
-    // Subtotal = (harga_per_unit_dalam_cur - diskon_per_unit_dalam_cur) * qty
-    const subtotal = Math.max(0, (priceInCur - diskonInCur) * qty);
-
-    // Tampilkan harga dasar
-    document.getElementById('f-base-price').value =
-    basePriceUSD > 0 ? formatCur(priceInCur, cur) : '—';
-
-    document.getElementById('f-stotal').value =
-    subtotal > 0 || qty > 0 ? formatCur(subtotal, cur) : '—';
-
-    // Info konversi
-    const info = document.getElementById('price-info');
-    if (basePriceUSD > 0 && cur === 'IDR') {
-        info.style.display = '';
-        info.innerHTML =
-        `<i class="ti ti-arrows-exchange" style="margin-right:4px"></i>
-        Harga DB: <b>$ ${basePriceUSD.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4})}</b>
-        &times; Kurs <b>Rp ${Number(sellRate).toLocaleString('id-ID')}</b>
-        = <b>Rp ${priceInCur.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}</b> per ${unit}
-        ${diskonRaw>0 ? ' &nbsp;|&nbsp; Diskon: <b>' + formatCur(diskonInCur*qty,'IDR') + '</b>' : ''}`;
-    } else if (basePriceUSD > 0 && diskonRaw > 0) {
-        info.style.display = '';
-        info.innerHTML =
-        `<i class="ti ti-info-circle" style="margin-right:4px"></i>
-        Diskon: ${diskonMode==='pct' ? diskonRaw+'% = ' : ''}
-        <b>${formatCur(diskonInCur,'USD')}</b> per unit
-        &rarr; total diskon <b>${formatCur(diskonInCur*qty,'USD')}</b>`;
-    } else {
-        info.style.display = 'none';
-    }
-
-    updateFormLabels();
-}
-
-// ==================== ADD ITEM ====================
-function showAlert(msg, type) {
-    const box = document.getElementById('alert-form');
-    box.style.display    = 'block';
-    box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
-    box.style.color      = type === 'success' ? '#16a34a' : '#dc2626';
-    box.textContent = msg;
-    if (type === 'success') setTimeout(() => box.style.display='none', 3000);
-}
-
-function gv(id) { return document.getElementById(id).value.trim(); }
-
-async function addItem() {
-    if (!gv('f-product_id')) { showAlert('❌ Pilih produk terlebih dahulu.', 'error'); return; }
-    if (!gv('f-qty') || parseFloat(gv('f-qty')) <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
-
-    const cur          = contract.currency || 'USD';
-    const sellRate     = parseFloat(contract.sell_rate) || 1;
-    const basePriceUSD = getBasePriceUSD();
-    const priceInCur   = cur === 'IDR' ? basePriceUSD * sellRate : basePriceUSD;
-    const qty          = parseFloat(gv('f-qty'));
-    const diskonRaw    = parseFloat(gv('f-diskon')) || 0;
-    const unit         = gv('f-unit');
-
-    let diskonUSD = diskonMode === 'pct' ? basePriceUSD * (diskonRaw/100) : diskonRaw;
-    const diskonInCur = cur === 'IDR' ? diskonUSD * sellRate : diskonUSD;
-    const stotal = Math.max(0, (priceInCur - diskonInCur) * qty);
-
-    // Yard value
-    const yardVal = unit === 'Yard' ? qty : qty / 0.9144;
-
-    const payload = {
-        contract_id: parseInt(contractId),
-        product_id:  parseInt(gv('f-product_id')),
-        color:       gv('f-color') || null,
-        unit,
-        qty,
-        price:       priceInCur,
-        diskon:      diskonInCur * qty,  // total diskon dalam cur
-        stotal,
-        yard:        parseFloat(yardVal.toFixed(4)),
-    };
-
-    try {
-        const data = await fetch('/api/contract-details', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).then(r => r.json());
-
-        if (data.success) {
-            showAlert('✅ Item berhasil ditambahkan.', 'success');
-            document.getElementById('f-product_id').value = '';
-            document.getElementById('f-color').value      = '';
-            document.getElementById('f-qty').value        = '';
-            document.getElementById('f-diskon').value     = '';
-            document.getElementById('f-base-price').value = '';
-            document.getElementById('f-stotal').value     = '';
-            document.getElementById('price-info').style.display = 'none';
-            await loadDetails();
-        } else {
-            showAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
+        const opt = sel.options[sel.selectedIndex];
+        if (opt && opt.value && !document.getElementById('f-color').value) {
+            document.getElementById('f-color').value = opt.dataset.color || '';
         }
-    } catch(e) {
-        showAlert('❌ Kesalahan server: ' + e.message, 'error');
-    }
-}
-
-// ==================== RENDER TABLE ====================
-function renderDetails() {
-    const tbody    = document.getElementById('detail-tbody');
-    const thYard   = document.getElementById('th-yard');
-    const cur      = contract?.currency || 'USD';
-
-    // Cek apakah ada item Yard di detail (untuk tampilkan/sembunyikan kolom yard)
-    const hasYard  = details.some(d => d.unit === 'Yard');
-    const hasMeter = details.some(d => d.unit === 'Meter');
-    // Tampilkan kolom yard hanya jika ada item Yard
-    const showYardCol = hasYard;
-    thYard.style.display = showYardCol ? '' : 'none';
-
-    updateTableHeaders();
-
-    if (!details.length) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
-        return;
+        calcSubtotal();
+        updateFormLabels();
     }
 
-    tbody.innerHTML = details.map((d, i) => `
-        <tr>
-        <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
-        <td style="font-weight:700;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
-        <td>${esc(d.color || '—')}</td>
-        <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
-        <td style="text-align:right;font-weight:600">${fmtNum(d.qty)}</td>
-        <td style="text-align:right;font-weight:600">${formatCur(d.price, cur)}</td>
-        <td style="text-align:right;color:#64748b">${formatCur(d.diskon||0, cur)}</td>
-        <td style="text-align:right;font-weight:700;color:var(--primary)">${formatCur(d.stotal, cur)}</td>
-        <td style="text-align:right;color:#64748b;font-size:0.82rem;${showYardCol?'':'display:none'}">${fmtNum4(d.yard)} yd</td>
-        <td>
-        <button class="btn-del" onclick="openDelModal(${d.id})">
-        <i class="ti ti-trash" style="font-size:12px"></i>
-        </button>
-        </td>
-        </tr>
-        `).join('');
-}
-
-// ==================== TOTAL & TERBILANG ====================
-function updateTotal() {
-    if (!contract) return;
-    const cur   = contract.currency || 'USD';
-    const total = details.reduce((s, d) => s + (parseFloat(d.stotal)||0), 0);
-
-    document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
-    document.getElementById('total-items').textContent   = details.length + ' item';
-
-    const tbEl = document.getElementById('terbilang-box');
-    if (total > 0) {
-        tbEl.style.display = '';
-        document.getElementById('terbilang-text').textContent = terbilang(total, cur);
-    } else {
-        tbEl.style.display = 'none';
+    function onUnitChange() {
+        calcSubtotal();
+        updateFormLabels();
+        renderDetails(); 
     }
 
-    // Sync total ke server
-    fetch('/api/contracts/' + contractId + '/total', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ total })
-    }).catch(()=>{});
-}
+    // ==================== HITUNG SUBTOTAL ====================
+    function getBasePriceUSD() {
+        const sel  = document.getElementById('f-product_id');
+        const opt  = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) return 0;
+        return document.getElementById('f-unit').value === 'Yard'
+        ? parseFloat(opt.dataset.priceY) || 0
+        : parseFloat(opt.dataset.priceM) || 0;
+    }
 
-// ==================== DELETE ====================
-function openDelModal(id) {
-    delId = id;
-    document.getElementById('del-modal').style.display = 'flex';
-}
-function closeDelModal() {
-    delId = null;
-    document.getElementById('del-modal').style.display = 'none';
-}
-async function confirmDel() {
-    if (!delId) { alert('ID tidak ditemukan.'); return; }
-    const btn = document.querySelector('#del-modal button:last-child');
-    btn.disabled = true;
-    btn.textContent = 'Menghapus...';
-    try {
-        const res  = await fetch('/api/contract-details/' + delId, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-            closeDelModal();
-            await loadDetails();
+    function calcSubtotal() {
+        if (!contract) return;
+        const cur       = contract.currency || 'USD';
+        const sellRate  = parseFloat(contract.sell_rate) || 1;
+        const basePriceUSD = getBasePriceUSD();
+        const qty       = parseFloat(document.getElementById('f-qty').value) || 0;
+        const diskonRaw = parseFloat(document.getElementById('f-diskon').value) || 0;
+        const unit      = document.getElementById('f-unit').value;
+
+        const priceInCur = cur === 'IDR' ? basePriceUSD * sellRate : basePriceUSD;
+
+        let diskonUSD = 0;
+        if (diskonMode === 'pct') {
+            diskonUSD = basePriceUSD * (diskonRaw / 100);
         } else {
-            alert('Gagal hapus: ' + (data.error || 'Unknown error'));
+            diskonUSD = diskonRaw; 
+        }
+        const diskonInCur = cur === 'IDR' ? diskonUSD * sellRate : diskonUSD;
+
+        const subtotal = Math.max(0, (priceInCur - diskonInCur) * qty);
+
+        document.getElementById('f-base-price').value =
+        basePriceUSD > 0 ? formatCur(priceInCur, cur) : '—';
+
+        document.getElementById('f-stotal').value =
+        subtotal > 0 || qty > 0 ? formatCur(subtotal, cur) : '—';
+
+        const info = document.getElementById('price-info');
+        if (basePriceUSD > 0 && cur === 'IDR') {
+            info.style.display = '';
+            info.innerHTML =
+            `<i class="ti ti-arrows-exchange" style="margin-right:4px"></i>
+            Harga DB: <b>$ ${basePriceUSD.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4})}</b>
+            &times; Kurs <b>Rp ${Number(sellRate).toLocaleString('id-ID')}</b>
+            = <b>Rp ${priceInCur.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}</b> per ${unit}
+            ${diskonRaw>0 ? ' &nbsp;|&nbsp; Diskon: <b>' + formatCur(diskonInCur*qty,'IDR') + '</b>' : ''}`;
+        } else if (basePriceUSD > 0 && diskonRaw > 0) {
+            info.style.display = '';
+            info.innerHTML =
+            `<i class="ti ti-info-circle" style="margin-right:4px"></i>
+            Diskon: ${diskonMode==='pct' ? diskonRaw+'% = ' : ''}
+            <b>${formatCur(diskonInCur,'USD')}</b> per unit
+            &rarr; total diskon <b>${formatCur(diskonInCur*qty,'USD')}</b>`;
+        } else {
+            info.style.display = 'none';
+        }
+
+        updateFormLabels();
+    }
+
+    // ==================== ADD ITEM ====================
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-form');
+        box.style.display    = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color      = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent = msg;
+        if (type === 'success') setTimeout(() => box.style.display='none', 3000);
+    }
+
+    function gv(id) { return document.getElementById(id).value.trim(); }
+
+    async function addItem() {
+        if (!gv('f-product_id')) { showAlert('❌ Pilih produk terlebih dahulu.', 'error'); return; }
+        if (!gv('f-qty') || parseFloat(gv('f-qty')) <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
+
+        const cur          = contract.currency || 'USD';
+        const sellRate     = parseFloat(contract.sell_rate) || 1;
+        const basePriceUSD = getBasePriceUSD();
+        const priceInCur   = cur === 'IDR' ? basePriceUSD * sellRate : basePriceUSD;
+        const qty          = parseFloat(gv('f-qty'));
+        const diskonRaw    = parseFloat(gv('f-diskon')) || 0;
+        const unit         = gv('f-unit');
+
+        let diskonUSD = diskonMode === 'pct' ? basePriceUSD * (diskonRaw/100) : diskonRaw;
+        const diskonInCur = cur === 'IDR' ? diskonUSD * sellRate : diskonUSD;
+        const stotal = Math.max(0, (priceInCur - diskonInCur) * qty);
+
+        const yardVal = unit === 'Yard' ? qty : qty / 0.9144;
+
+        const payload = {
+            contract_id: parseInt(contractId),
+            product_id:  parseInt(gv('f-product_id')),
+            color:       gv('f-color') || null,
+            unit,
+            qty,
+            price:       priceInCur,
+            diskon:      diskonInCur * qty,  
+            stotal,
+            yard:        parseFloat(yardVal.toFixed(4)),
+        };
+
+        try {
+            const data = await fetch('/api/contract-details', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json());
+
+            if (data.success || data.status === 'success') {
+                showAlert('✅ Item berhasil ditambahkan.', 'success');
+                document.getElementById('f-product_id').value = '';
+                document.getElementById('f-color').value      = '';
+                document.getElementById('f-qty').value        = '';
+                document.getElementById('f-diskon').value     = '';
+                document.getElementById('f-base-price').value = '';
+                document.getElementById('f-stotal').value     = '';
+                document.getElementById('price-info').style.display = 'none';
+                await loadDetails();
+            } else {
+                showAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
+            }
+        } catch(e) {
+            showAlert('❌ Kesalahan server: ' + e.message, 'error');
+        }
+    }
+
+    // ==================== RENDER TABLE ====================
+    function renderDetails() {
+        const tbody    = document.getElementById('detail-tbody');
+        const thYard   = document.getElementById('th-yard');
+        const cur      = contract?.currency || 'USD';
+
+        const showYardCol = details.some(d => d.unit === 'Yard');
+        thYard.style.display = showYardCol ? '' : 'none';
+
+        updateTableHeaders();
+
+        if (!details.length) {
+            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = details.map((d, i) => `
+            <tr>
+            <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
+            <td style="font-weight:700;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
+            <td>${esc(d.color || '—')}</td>
+            <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
+            <td style="text-align:right;font-weight:600">${fmtNum(d.qty)}</td>
+            <td style="text-align:right;font-weight:600">${formatCur(d.price, cur)}</td>
+            <td style="text-align:right;color:#64748b">${formatCur(d.diskon||0, cur)}</td>
+            <td style="text-align:right;font-weight:700;color:var(--primary)">${formatCur(d.stotal, cur)}</td>
+            <td style="text-align:right;color:#64748b;font-size:0.82rem;${showYardCol?'':'display:none'}">${fmtNum4(d.yard)} yd</td>
+            <td>
+            <button class="btn-del" onclick="openDelModal(${d.id})">
+            <i class="ti ti-trash" style="font-size:12px"></i>
+            </button>
+            </td>
+            </tr>
+            `).join('');
+    }
+
+    // ==================== TOTAL & TERBILANG ====================
+    function updateTotal() {
+        if (!contract) return;
+        const cur   = contract.currency || 'USD';
+        const total = details.reduce((s, d) => s + (parseFloat(d.stotal)||0), 0);
+
+        document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
+        document.getElementById('total-items').textContent   = details.length + ' item';
+
+        const tbEl = document.getElementById('terbilang-box');
+        if (total > 0) {
+            tbEl.style.display = '';
+            document.getElementById('terbilang-text').textContent = terbilang(total, cur);
+        } else {
+            tbEl.style.display = 'none';
+        }
+
+        fetch('/api/contracts/' + contractId + '/total', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ total })
+        }).catch(()=>{});
+    }
+
+    // ==================== DELETE ====================
+    function openDelModal(id) {
+        delId = id;
+        document.getElementById('del-modal').style.display = 'flex';
+    }
+
+    // 💡 PERBAIKAN 2: Kembalikan kondisi tombol utama saat modal ditutup
+    function closeDelModal() {
+        delId = null;
+        document.getElementById('del-modal').style.display = 'none';
+        const btn = document.querySelector('#del-modal button:last-child');
+        if (btn) {
             btn.disabled = false;
             btn.textContent = 'Hapus';
         }
-    } catch(e) {
-        alert('Kesalahan server: ' + e.message);
-        btn.disabled = false;
-        btn.textContent = 'Hapus';
-    }
-}
-
-// ==================== HELPERS ====================
-function fmtDate(str) {
-    if (!str) return '—';
-    const s = str.slice(0,10).split('-');
-    return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
-}
-function fmtNum(v)  { return parseFloat(v||0).toLocaleString('id-ID',{maximumFractionDigits:4}); }
-function fmtNum4(v) { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}); }
-function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function formatCur(val, cur) {
-    const n = parseFloat(val)||0;
-    return cur === 'IDR'
-    ? 'Rp ' + n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:0})
-    : '$ '  + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
-}
-
-// ==================== TERBILANG ====================
-function terbilang(angka, cur) {
-    const sat = ['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan',
-    'sepuluh','sebelas','dua belas','tiga belas','empat belas','lima belas','enam belas',
-    'tujuh belas','delapan belas','sembilan belas'];
-    const pul = ['','','dua puluh','tiga puluh','empat puluh','lima puluh',
-    'enam puluh','tujuh puluh','delapan puluh','sembilan puluh'];
-
-    function bil(n) {
-        n = Math.floor(n);
-        if (n===0) return '';
-        if (n<20)  return sat[n];
-        if (n<100) return pul[Math.floor(n/10)] + (n%10?' '+sat[n%10]:'');
-        if (n<200) return 'seratus'+(n%100?' '+bil(n%100):'');
-        if (n<1000) return sat[Math.floor(n/100)]+' ratus'+(n%100?' '+bil(n%100):'');
-        if (n<2000) return 'seribu'+(n%1000?' '+bil(n%1000):'');
-        if (n<1e6)  return bil(Math.floor(n/1000))+' ribu'+(n%1000?' '+bil(n%1000):'');
-        if (n<1e9)  return bil(Math.floor(n/1e6))+' juta'+(n%1e6?' '+bil(n%1e6):'');
-        return bil(Math.floor(n/1e9))+' miliar'+(n%1e9?' '+bil(n%1e9):'');
     }
 
-    let hasil = '';
-    if (cur === 'USD') {
-        const rounded = Math.round(parseFloat(angka)*100);
-        const dollar  = Math.floor(rounded/100);
-        const sen     = rounded%100;
-        hasil = (bil(dollar)||'nol')+' dollar';
-        if (sen>0) hasil += ' '+bil(sen)+' sen';
-    } else {
-        hasil = (bil(Math.round(parseFloat(angka)))||'nol')+' rupiah';
+    async function confirmDel() {
+        if (!delId) { alert('ID tidak ditemukan.'); return; }
+        const btn = document.querySelector('#del-modal button:last-child');
+        btn.disabled = true;
+        btn.textContent = 'Menghapus...';
+        try {
+            const res  = await fetch('/api/contract-details/' + delId, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success || data.status === 'success') {
+                closeDelModal();
+                await loadDetails();
+            } else {
+                alert('Gagal hapus: ' + (data.error || 'Unknown error'));
+                btn.disabled = false;
+                btn.textContent = 'Hapus';
+            }
+        } catch(e) {
+            alert('Kesalahan server: ' + e.message);
+            btn.disabled = false;
+            btn.textContent = 'Hapus';
+        }
     }
-    return hasil.trim().replace(/\b\w/g, c => c.toUpperCase());
-}
+
+    // ==================== HELPERS ====================
+    function fmtDate(str) {
+        if (!str) return '—';
+        const s = str.slice(0,10).split('-');
+        return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
+    }
+    function fmtNum(v)  { return parseFloat(v||0).toLocaleString('id-ID',{maximumFractionDigits:4}); }
+    function fmtNum4(v) { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}); }
+    function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function formatCur(val, cur) {
+        const n = parseFloat(val)||0;
+        return cur === 'IDR'
+        ? 'Rp ' + n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:0})
+        : '$ '  + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
+    }
+
+    // ==================== TERBILANG ====================
+    function terbilang(angka, cur) {
+        const sat = ['','satu','dua','tiga','empat','lima','enam','tujuh','delapan','sembilan',
+        'sepuluh','sebelas','dua belas','tiga belas','empat belas','lima belas','enam belas',
+        'tujuh belas','delapan belas','sembilan belas'];
+        const pul = ['','','dua puluh','tiga puluh','empat puluh','lima puluh',
+        'enam puluh','tujuh puluh','delapan puluh','sembilan puluh'];
+
+        function bil(n) {
+            n = Math.floor(n);
+            if (n===0) return '';
+            if (n<20)  return sat[n];
+            if (n<100) return pul[Math.floor(n/10)] + (n%10?' '+sat[n%10]:'');
+            if (n<200) return 'seratus'+(n%100?' '+bil(n%100):'');
+            if (n<1000) return sat[Math.floor(n/100)]+' ratus'+(n%100?' '+bil(n%100):'');
+            if (n<2000) return 'seribu'+(n%1000?' '+bil(n%1000):'');
+            if (n<1e6)  return bil(Math.floor(n/1000))+' ribu'+(n%1000?' '+bil(n%1000):'');
+            if (n<1e9)  return bil(Math.floor(n/1e6))+' juta'+(n%1e6?' '+bil(n%1e6):'');
+            return bil(Math.floor(n/1e9))+' miliar'+(n%1e9?' '+bil(n%1e9):'');
+        }
+
+        let hasil = '';
+        if (cur === 'USD') {
+            const rounded = Math.round(parseFloat(angka)*100);
+            const dollar  = Math.floor(rounded/100);
+            const sen     = rounded%100;
+            hasil = (bil(dollar)||'nol')+' dollar';
+            if (sen>0) hasil += ' '+bil(sen)+' sen';
+        } else {
+            hasil = (bil(Math.round(parseFloat(angka)))||'nol')+' rupiah';
+        }
+        return hasil.trim().replace(/\b\w/g, c => c.toUpperCase());
+    }
 </script>
 </body>
 </html>
