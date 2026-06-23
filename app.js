@@ -701,6 +701,83 @@ app.put('/api/contracts/:id/total', requireLogin, (req, res) => {
         );
 });
 
+app.get('/sales/sales-contract/edit', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'edit.html'));
+});
+
+// ===== API: PUT update contract (full edit) =====
+app.put('/api/contracts/:id', requireLogin, (req, res) => {
+    const {
+        contract_no, customer_id, currency, rate_id, jenis,
+        order_no, status, created_at, date_ship,
+        greige_no, dyeing_no, dyeing_int,
+        quality, quality_note, note_ship, note
+    } = req.body;
+
+    if (!contract_no || !customer_id || !jenis) {
+        return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
+    }
+
+    // Cek duplikat contract_no, kecuali milik record ini sendiri
+    db.query('SELECT id FROM contracts WHERE contract_no = ? AND id != ?', [contract_no, req.params.id], (err, dup) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (dup.length > 0) return res.status(400).json({ error: `Contract No "${contract_no}" sudah digunakan.` });
+
+        const sql = `
+        UPDATE contracts SET
+        contract_no=?, customer_id=?, currency=?, rate_id=?, jenis=?,
+        order_no=?, status=?, created_at=?, date_ship=?,
+        greige_no=?, dyeing_no=?, dyeing_int=?,
+        quality=?, quality_note=?, note_ship=?, note=?,
+        updated_at=NOW()
+        WHERE id=?`;
+
+        db.query(sql, [
+            contract_no, customer_id, currency || 'USD', rate_id || null, jenis,
+            order_no || null, status || 'draft', created_at || null, date_ship || null,
+            greige_no || null, dyeing_no || null, dyeing_int || null,
+            quality || null, quality_note || null, note_ship || null, note || null,
+            req.params.id
+            ], (err2) => {
+                if (err2) return res.status(500).json({ error: err2.message });
+                res.json({ success: true });
+            });
+    });
+});
+
+// ===== API: PUT update detail item =====
+app.put('/api/contract-details/:id', requireLogin, (req, res) => {
+    const detailId = req.params.id;
+    const { product_id, color, unit, qty, price, diskon, stotal, yard } = req.body;
+
+    db.query('SELECT contract_id FROM contract_details WHERE id = ?', [detailId], (err, rows) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!rows.length) return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
+
+        const contractId = rows[0].contract_id;
+
+        const sql = `
+        UPDATE contract_details SET
+        product_id=?, color=?, unit=?, qty=?, price=?, diskon=?, stotal=?, yard=?, updated_at=NOW()
+        WHERE id=?`;
+
+        db.query(sql, [
+            product_id, color || null, unit || 'Meter',
+            qty, price || 0, diskon || 0, stotal || 0, yard || 0,
+            detailId
+            ], (err2) => {
+                if (err2) return res.status(500).json({ success: false, error: err2.message });
+
+                db.query(
+                    `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
+                    [contractId, contractId], () => {}
+                    );
+
+                res.json({ success: true });
+            });
+    });
+});
+
 // ---  START SERVER ---
 app.listen(port, () => {
     console.clear();
