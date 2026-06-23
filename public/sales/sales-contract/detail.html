@@ -268,7 +268,7 @@ async function loadProducts() {
 
 async function loadDetails() {
     try {
-        details = await fetch('/api/contract-details/' + contractId).then(r => r.json());
+        details = await fetch('/api/contract-details/by-contract/' + contractId).then(r => r.json());
         renderDetails();
         updateTotal();
     } catch(e) { console.error('Gagal load details', e); }
@@ -548,14 +548,35 @@ function updateTotal() {
 }
 
 // ==================== DELETE ====================
-function openDelModal(id) { delId = id; document.getElementById('del-modal').style.display = 'flex'; }
-function closeDelModal()  { delId = null; document.getElementById('del-modal').style.display = 'none'; }
+function openDelModal(id) {
+    delId = id;
+    document.getElementById('del-modal').style.display = 'flex';
+}
+function closeDelModal() {
+    delId = null;
+    document.getElementById('del-modal').style.display = 'none';
+}
 async function confirmDel() {
+    if (!delId) { alert('ID tidak ditemukan.'); return; }
+    const btn = document.querySelector('#del-modal button:last-child');
+    btn.disabled = true;
+    btn.textContent = 'Menghapus...';
     try {
-        const data = await fetch('/api/contract-details/' + delId, { method: 'DELETE' }).then(r => r.json());
-        if (data.success) { closeDelModal(); await loadDetails(); }
-        else alert('Gagal hapus: ' + data.error);
-    } catch(e) { alert('Kesalahan server.'); }
+        const res  = await fetch('/api/contract-details/' + delId, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            closeDelModal();
+            await loadDetails();
+        } else {
+            alert('Gagal hapus: ' + (data.error || 'Unknown error'));
+            btn.disabled = false;
+            btn.textContent = 'Hapus';
+        }
+    } catch(e) {
+        alert('Kesalahan server: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = 'Hapus';
+    }
 }
 
 // ==================== HELPERS ====================
