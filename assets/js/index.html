@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WANALARAS AI - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&display=swap');
+        body {
+            font-family: 'Lato', sans-serif;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <header class="bg-emerald-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-emerald-500 p-2.5 rounded-xl shadow-inner">
+                    <i class="fa-solid fa-leaf text-2xl text-white animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide">WANALARAS <span class="text-emerald-400">AI</span></h1>
+                    <p class="text-xs text-emerald-200">Smart Precision Agriculture • Universitas Kartamulia</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <div class="flex items-center bg-emerald-950 px-4 py-2 rounded-full border border-emerald-800 text-sm">
+                    <span class="w-3 height h-3 bg-emerald-400 rounded-full mr-2 animate-ping"></span>
+                    <span class="font-semibold text-emerald-300">ESP32: ONLINE</span>
+                </div>
+                <div class="flex items-center bg-emerald-800 p-1 rounded-xl">
+                    <button id="btn-ai-mode" onclick="setMode('AI')" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-500 text-white shadow transition-all">AI MODE</button>
+                    <button id="btn-manual-mode" onclick="setMode('MANUAL')" class="px-3 py-1.5 text-xs font-bold rounded-lg text-emerald-300 transition-all">MANUAL</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-8 flex-grow w-full grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <div class="lg:col-span-2 flex flex-col gap-8">
+            
+            <section class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Suhu Udara</p>
+                        <h3 id="txt-suhu" class="text-4xl font-bold text-slate-800 mt-1">31.5 °C</h3>
+                    </div>
+                    <div class="bg-orange-50 text-orange-600 p-4 rounded-xl text-2xl"><i class="fa-solid fa-temperature-high"></i></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Kelembapan Udara</p>
+                        <h3 id="txt-hum-air" class="text-4xl font-bold text-slate-800 mt-1">55 %</h3>
+                    </div>
+                    <div class="bg-blue-50 text-blue-600 p-4 rounded-xl text-2xl"><i class="fa-solid fa-cloud-sun-rain"></i></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Kelembapan Tanah</p>
+                        <h3 id="txt-hum-soil" class="text-4xl font-bold text-emerald-600 mt-1">38 %</h3>
+                    </div>
+                    <div class="bg-emerald-50 text-emerald-600 p-4 rounded-xl text-2xl"><i class="fa-solid fa-faucet-drip"></i></div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500 uppercase tracking-wider">Keasaman (pH) Tanah</p>
+                        <h3 id="txt-ph" class="text-4xl font-bold text-slate-800 mt-1">6.5 pH</h3>
+                    </div>
+                    <div class="bg-purple-50 text-purple-600 p-4 rounded-xl text-2xl"><i class="fa-solid fa-vial"></i></div>
+                </div>
+            </section>
+
+            <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex-grow">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">Grafik Log Kelembapan Tanah</h2>
+                        <p class="text-xs text-slate-500">Monitoring fluktuasi data dalam 24 jam terakhir</p>
+                    </div>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-semibold">Live Update</span>
+                </div>
+                <div class="relative h-64 w-full">
+                    <canvas id="soilChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <div class="flex flex-col gap-8">
+            
+            <section class="bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-300 p-6 rounded-2xl shadow-sm relative overflow-hidden">
+                <div class="absolute -right-6 -bottom-6 text-emerald-200 opacity-20 text-9xl">
+                    <i class="fa-solid fa-brain"></i>
+                </div>
+                <div class="flex items-center gap-2 text-emerald-800 font-bold mb-3">
+                    <i class="fa-solid fa-robot text-lg"></i>
+                    <h2 class="uppercase tracking-wider text-sm">AI Inference Engine</h2>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">Analisis Kondisi Lahan:</h3>
+                <div id="ai-status-badge" class="inline-block bg-amber-100 text-amber-800 px-3 py-1 rounded-lg text-sm font-semibold mb-4">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i> Lahan Cenderung Kering
+                </div>
+                
+                <div class="bg-white/80 backdrop-blur border border-emerald-200 p-4 rounded-xl shadow-inner mb-2">
+                    <p class="text-xs font-bold text-slate-500 uppercase">Rekomendasi Durasi Siram</p>
+                    <div class="flex items-baseline gap-2 mt-1">
+                        <span id="ai-prediction-time" class="text-5xl font-black text-emerald-600">18.5</span>
+                        <span class="text-lg font-bold text-slate-600">Detik</span>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 italic mt-2">*Dihitung otomatis oleh algoritma Random Forest berdasarkan laju evaporasi mikroklimat.</p>
+            </section>
+
+            <section class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex-grow">
+                <h2 class="text-lg font-bold text-slate-800 mb-4">Pusat Kendali Aktuator</h2>
+                
+                <div class="flex flex-col gap-4">
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <div id="icon-pompa" class="w-10 h-10 bg-slate-200 text-slate-600 rounded-lg flex items-center justify-center text-lg"><i class="fa-solid fa-pump-soap"></i></div>
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800">Pompa Irigasi Tetes</h4>
+                                <p id="lbl-pompa" class="text-xs text-slate-500">Standby</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="switch-pompa" class="sr-only peer" onchange="toggleRelay('pompa')" disabled>
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:height after:h-5 after:width after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+                        <div class="flex items-center gap-3">
+                            <div id="icon-kipas" class="w-10 h-10 bg-slate-200 text-slate-600 rounded-lg flex items-center justify-center text-lg"><i class="fa-solid fa-fan"></i></div>
+                            <div>
+                                <h4 class="font-bold text-sm text-slate-800">Kipas Pendingin Ruang</h4>
+                                <p id="lbl-kipas" class="text-xs text-slate-500">Standby</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="switch-kipas" class="sr-only peer" onchange="toggleRelay('kipas')" disabled>
+                            <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:height after:h-5 after:width after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="manual-notice" class="mt-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-xs flex items-start gap-2">
+                    <i class="fa-solid fa-circle-info mt-0.5"></i>
+                    <span>Aktuator dikunci oleh <strong>AI Mode</strong>. Ubah ke mode <strong>Manual</strong> di kanan atas untuk mengaktifkan sakelar fisik secara langsung.</span>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400 text-center py-4 border-t border-slate-800 text-sm">
+        <p>&copy; 2026 WANALARAS AI Project. Tim Informatika Universitas Kartamulia Purwakarta.</p>
+    </footer>
+
+    <script>
+        let currentMode = 'AI';
+
+        // Inisialisasi Chart.js
+        const ctx = document.getElementById('soilChart').getContext('2d');
+        const soilChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', 'Sekarang'],
+                datasets: [{
+                    label: 'Kelembapan Tanah (%)',
+                    data: [65, 58, 42, 35, 38, 45, 38],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { min: 0, max: 100 }
+                }
+            }
+        });
+
+        // Fungsi Switch Mode (AI vs Manual)
+        function setMode(mode) {
+            currentMode = mode;
+            const btnAI = document.getElementById('btn-ai-mode');
+            const btnManual = document.getElementById('btn-manual-mode');
+            const switchPompa = document.getElementById('switch-pompa');
+            const switchKipas = document.getElementById('switch-kipas');
+            const notice = document.getElementById('manual-notice');
+
+            if (mode === 'AI') {
+                btnAI.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-500 text-white shadow transition-all";
+                btnManual.className = "px-3 py-1.5 text-xs font-bold rounded-lg text-emerald-300 transition-all";
+                switchPompa.disabled = true;
+                switchKipas.disabled = true;
+                notice.classList.remove('hidden');
+                runAISimulation();
+            } else {
+                btnManual.className = "px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-500 text-white shadow transition-all";
+                btnAI.className = "px-3 py-1.5 text-xs font-bold rounded-lg text-emerald-300 transition-all";
+                switchPompa.disabled = false;
+                switchKipas.disabled = false;
+                notice.classList.add('hidden');
+            }
+        }
+
+        // Kontrol Manual Aktuator
+        function toggleRelay(type) {
+            if (currentMode === 'AI') return;
+            
+            const isChecked = document.getElementById(`switch-${type}`).checked;
+            const lbl = document.getElementById(`lbl-${type}`);
+            const icon = document.getElementById(`icon-${type}`);
+
+            if (isChecked) {
+                lbl.innerText = "MENYALA (Manual)";
+                lbl.className = "text-xs text-blue-600 font-bold";
+                icon.className = "w-10 h-10 bg-blue-500 text-white rounded-lg flex items-center justify-center text-lg animate-spin";
+            } else {
+                lbl.innerText = "Standby";
+                lbl.className = "text-xs text-slate-500";
+                icon.className = "w-10 h-10 bg-slate-200 text-slate-600 rounded-lg flex items-center justify-center text-lg";
+            }
+        }
+
+        // Simulasi Logika AI Mode Terhadap Perubahan Cuaca Virtual
+        function runAISimulation() {
+            if (currentMode !== 'AI') return;
+            
+            const lblPompa = document.getElementById('lbl-pompa');
+            const iconPompa = document.getElementById('icon-pompa');
+            const switchPompa = document.getElementById('switch-pompa');
+
+            // Simulasi AI mendeteksi tanah kering, lalu menyalakan pompa selama 5 detik
+            setTimeout(() => {
+                if (currentMode !== 'AI') return;
+                lblPompa.innerText = "MENYALA (AI Engine Active)";
+                lblPompa.className = "text-xs text-emerald-600 font-bold";
+                iconPompa.className = "w-10 h-10 bg-emerald-500 text-white rounded-lg flex items-center justify-center text-lg animate-bounce";
+                switchPompa.checked = true;
+
+                // Setelah 5 detik, matikan kembali (sesuai kalkulasi limit durasi AI)
+                setTimeout(() => {
+                    if (currentMode !== 'AI') return;
+                    lblPompa.innerText = "Standby (Selesai Menyiram)";
+                    lblPompa.className = "text-xs text-slate-500";
+                    iconPompa.className = "w-10 h-10 bg-slate-200 text-slate-600 rounded-lg flex items-center justify-center text-lg";
+                    switchPompa.checked = false;
+                }, 5000);
+
+            }, 3000);
+        }
+
+        // Jalankan simulasi otomatis pertama kali dimuat
+        window.onload = () => {
+            runAISimulation();
+        };
+    </script>
+</body>
+</html>

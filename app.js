@@ -423,9 +423,9 @@ app.get('/sales/sales-contract', requireLogin, (req, res) => {
 app.get('/sales/sales-contract/tambah', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'tambah.html'));
 });
-// Detail/produk — akan dibuat berikutnya
+
 app.get('/sales/sales-contract/detail', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract-detail.html'));
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'detail.html'));
 });
 
 // ===== API: next contract no =====
@@ -494,20 +494,20 @@ app.post('/api/contracts', requireLogin, (req, res) => {
         greige_no, dyeing_no, dyeing_int,
         quality, quality_note, note_ship, note
     } = req.body;
-    
+
     // Validasi wajib
     if (!contract_no || !customer_id || !jenis) {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
-    
+
     // Cek duplikat contract_no
     db.query('SELECT id FROM contracts WHERE contract_no = ?', [contract_no], (err, dup) => {
         if (err) return res.status(500).json({ error: err.message });
         if (dup.length > 0) return res.status(400).json({ error: `Contract No "${contract_no}" sudah digunakan.` });
-        
+
         // Gunakan created_at dari payload jika ada, fallback ke NOW()
         const createdAtVal = created_at || null;
-        
+
         const sql = `
         INSERT INTO contracts
         (contract_no, customer_id, currency, rate_id, jenis,
@@ -516,7 +516,7 @@ app.post('/api/contracts', requireLogin, (req, res) => {
         quality, quality_note, note_ship, note, total)
         VALUES (?, ?, ?, ?, ?, ?, ?, ${createdAtVal ? '?' : 'NOW()'}, NOW(), ?, ?, ?, ?, ?, ?, ?, ?, 0)
         `;
-        
+
         const params = createdAtVal
         ? [
         contract_no, customer_id, currency || 'USD', rate_id || null, jenis,
@@ -531,7 +531,7 @@ app.post('/api/contracts', requireLogin, (req, res) => {
         date_ship || null, greige_no || null, dyeing_no || null, dyeing_int || null,
         quality || null, quality_note || null, note_ship || null, note || null,
         ];
-        
+
         db.query(sql, params, (err2, result) => {
             if (err2) return res.status(500).json({ error: err2.message });
             res.json({ success: true, id: result.insertId });
@@ -551,14 +551,100 @@ app.delete('/api/contracts/:id', requireLogin, (req, res) => {
     });
 });
 
-// ===================================================
-// UPDATE sidebar.js — tambah di getPageMeta():
-// ===================================================
-/*
-'/sales/sales-contract':        { title: 'Sales Contract',        sub: 'Daftar seluruh sales contract.' },
-'/sales/sales-contract/tambah': { title: 'Tambah Sales Contract', sub: 'Buat contract baru.'            },
-'/sales/sales-contract/detail': { title: 'Detail Sales Contract', sub: 'Input produk contract.'         },
-*/
+// ===== API: GET detail items by contract =====
+app.get('/api/contract-details/:contractId', requireLogin, (req, res) => {
+    const sql = `
+    SELECT cd.*, 
+    p.fabric_no, p.fabric_name, p.color AS product_color,
+    p.price_m, p.price_y
+    FROM contract_details cd
+    LEFT JOIN products p ON p.id = cd.product_id
+    WHERE cd.contract_id = ?
+    ORDER BY cd.created_at ASC
+    `;
+    db.query(sql, [req.params.contractId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// ===== API: POST tambah detail item =====
+app.post('/api/contract-details', requireLogin, (req, res) => {
+    const { contract_id, product_id, color, unit, qty, price, diskon, stotal, yard } = req.body;
+
+    if (!contract_id || !product_id || !qty) {
+        return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
+    }
+
+    const sql = `
+    INSERT INTO contract_details
+    (contract_id, product_id, color, unit, qty, price, diskon, stotal, yard, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `;
+    db.query(sql, [
+        contract_id,
+        product_id,
+        color  || null,
+        unit   || 'Meter',
+        qty,
+        price  || 0,
+        diskon || 0,
+        stotal || 0,
+        yard   || 0,
+        ], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+        // Update total di contracts
+        const updTotal = `
+        UPDATE contracts SET
+        total = (SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id = ?),
+        updated_at = NOW()
+        WHERE id = ?
+        `;
+        db.query(updTotal, [contract_id, contract_id], () => {});
+
+        res.json({ success: true, id: result.insertId });
+    });
+});
+
+// ===== API: DELETE detail item =====
+app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
+    // Ambil contract_id dulu untuk update total
+    db.query('SELECT contract_id FROM contract_details WHERE id = ?', [req.params.id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const contractId = rows[0]?.contract_id;
+
+        db.query('DELETE FROM contract_details WHERE id = ?', [req.params.id], (err2) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+
+            // Update total
+            if (contractId) {
+                const updTotal = `
+                UPDATE contracts SET
+                total = (SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id = ?),
+                updated_at = NOW()
+                WHERE id = ?
+                `;
+                db.query(updTotal, [contractId, contractId], () => {});
+            }
+
+            res.json({ success: true });
+        });
+    });
+});
+
+// ===== API: PUT update total contract =====
+app.put('/api/contracts/:id/total', requireLogin, (req, res) => {
+    const { total } = req.body;
+    db.query(
+        'UPDATE contracts SET total = ?, updated_at = NOW() WHERE id = ?',
+        [total || 0, req.params.id],
+        (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        }
+        );
+});
 
 // ---  START SERVER ---
 app.listen(port, () => {
