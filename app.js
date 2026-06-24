@@ -623,27 +623,35 @@ app.get('/api/contract-details/by-contract/:contractId', requireLogin, (req, res
 
 // ===== API: POST tambah detail item =====
 app.post('/api/contract-details', requireLogin, (req, res) => {
-    const { contract_id, product_id, color, unit, qty, price, diskon, stotal, yard } = req.body;
+    const {
+        contract_id, product_id, color, unit, qty, price, diskon, stotal, yard,
+        price_usd, price_idr, qty_meter, qty_yard, stotal_usd, stotal_idr,
+        kurs, greige_no, dyeing_no
+    } = req.body;
+
     if (!contract_id || !product_id || !qty) {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
     const sql = `
     INSERT INTO contract_details
-    (contract_id, product_id, color, unit, qty, price, diskon, stotal, yard, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    (contract_id, product_id, color, unit, qty, price, diskon, stotal, yard,
+    price_usd, price_idr, qty_meter, qty_yard, stotal_usd, stotal_idr,
+    kurs, greige_no, dyeing_no, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     db.query(sql, [
         contract_id, product_id, color||null, unit||'Meter',
-        qty, price||0, diskon||0, stotal||0, yard||0
+        qty, price||0, diskon||0, stotal||0, yard||0,
+        price_usd||0, price_idr||0, qty_meter||0, qty_yard||0,
+        stotal_usd||0, stotal_idr||0, kurs||0, greige_no||null, dyeing_no||null
         ], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
-        // Update total contract
-        db.query(
-            `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
-            [contract_id, contract_id], () => {}
-            );
-        res.json({ success: true, id: result.insertId });
-    });
+            db.query(
+                `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
+                [contract_id, contract_id], () => {}
+                );
+            res.json({ success: true, id: result.insertId });
+        });
 });
 
 // ===== API: DELETE detail item by detail ID =====
@@ -750,31 +758,36 @@ app.put('/api/contracts/:id', requireLogin, (req, res) => {
 // ===== API: PUT update detail item =====
 app.put('/api/contract-details/:id', requireLogin, (req, res) => {
     const detailId = req.params.id;
-    const { product_id, color, unit, qty, price, diskon, stotal, yard } = req.body;
+    const {
+        product_id, color, unit, qty, price, diskon, stotal, yard,
+        price_usd, price_idr, qty_meter, qty_yard, stotal_usd, stotal_idr,
+        kurs, greige_no, dyeing_no
+    } = req.body;
 
     db.query('SELECT contract_id FROM contract_details WHERE id = ?', [detailId], (err, rows) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
         if (!rows.length) return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
 
         const contractId = rows[0].contract_id;
-
         const sql = `
         UPDATE contract_details SET
-        product_id=?, color=?, unit=?, qty=?, price=?, diskon=?, stotal=?, yard=?, updated_at=NOW()
+        product_id=?, color=?, unit=?, qty=?, price=?, diskon=?, stotal=?, yard=?,
+        price_usd=?, price_idr=?, qty_meter=?, qty_yard=?, stotal_usd=?, stotal_idr=?,
+        kurs=?, greige_no=?, dyeing_no=?, updated_at=NOW()
         WHERE id=?`;
 
         db.query(sql, [
             product_id, color || null, unit || 'Meter',
             qty, price || 0, diskon || 0, stotal || 0, yard || 0,
+            price_usd||0, price_idr||0, qty_meter||0, qty_yard||0,
+            stotal_usd||0, stotal_idr||0, kurs||0, greige_no||null, dyeing_no||null,
             detailId
             ], (err2) => {
                 if (err2) return res.status(500).json({ success: false, error: err2.message });
-
                 db.query(
                     `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
                     [contractId, contractId], () => {}
                     );
-
                 res.json({ success: true });
             });
     });

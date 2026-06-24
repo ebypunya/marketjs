@@ -119,7 +119,7 @@
                 <div class="fg">
                     <label class="fl">Produk <span style="color:#ef4444">*</span></label>
                     <div class="product-search-wrap">
-                        <input type="text" id="f-product-search" class="fi" placeholder="Ketik fabric no / nama produk..."
+                        <input type="text" id="f-product-search" class="fi" placeholder="Ketik nama produk.."
                         autocomplete="off" oninput="onProductSearch()" onfocus="onProductSearch()" onblur="hideDropdownDelayed()">
                         <input type="hidden" id="f-product_id">
                         <div class="product-dropdown" id="product-dropdown" style="display:none"></div>
@@ -189,17 +189,15 @@
                         <tr>
                             <th>#</th>
                             <th>FABRIC NO</th>
+                            <th>NAMA PRODUK</th>
                             <th>GREIGE NO</th>
                             <th>DYEING NO</th>
                             <th>COLOR</th>
                             <th>UNIT</th>
-                            <th style="text-align:right">QTY (M)</th>
-                            <th style="text-align:right">QTY (Y)</th>
-                            <th style="text-align:right" id="th-price-usd">PRICE (USD)</th>
-                            <th style="text-align:right" id="th-price-idr">PRICE (IDR)</th>
+                            <th style="text-align:right">QTY</th>
+                            <th style="text-align:right" id="th-price">PRICE</th>
                             <th style="text-align:right" id="th-diskon">DISKON</th>
-                            <th style="text-align:right" id="th-stotal-usd">SUBTOTAL (USD)</th>
-                            <th style="text-align:right" id="th-stotal-idr">SUBTOTAL (IDR)</th>
+                            <th style="text-align:right" id="th-stotal">SUBTOTAL</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -340,9 +338,9 @@
 
         dd.innerHTML = filtered.map(p => `
             <div class="product-dropdown-item" onmousedown="selectProduct(${p.id})">
-            <div class="fn">${esc(p.fabric_no || '—')}</div>
+            <div class="fn">${esc(p.fabric_name || '—')}</div>
             <div class="fm">
-            ${p.fabric_name ? esc(p.fabric_name) + ' · ' : ''}
+            ${p.fabric_no ? 'Fabric No: ' + esc(p.fabric_no) + ' · ' : ''}
             ${p.customer ? esc(p.customer) + ' · ' : ''}
             ${p.color ? esc(p.color) : ''}
             &nbsp;|&nbsp; USD/M: ${p.price_m ? '$ '+parseFloat(p.price_m).toFixed(4) : '-'}
@@ -366,7 +364,8 @@
 
         selectedProduct = p;
         document.getElementById('f-product_id').value       = p.id;
-        document.getElementById('f-product-search').value   =
+        document.getElementById('f-product-search').value =
+        [p.fabric_name, p.fabric_no ? '('+p.fabric_no+')' : '', p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' ');
         [p.fabric_no, p.fabric_name, p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' — ');
         document.getElementById('product-dropdown').style.display = 'none';
 
@@ -564,35 +563,43 @@
         const tbody = document.getElementById('detail-tbody');
         const cur   = contract?.currency || 'USD';
 
+        const thPrice  = document.getElementById('th-price');
+        const thStotal = document.getElementById('th-stotal');
+        if (thPrice)  thPrice.textContent  = `PRICE (${cur})`;
+        if (thStotal) thStotal.textContent = `SUBTOTAL (${cur})`;
+
         if (!details.length) {
-            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = details.map((d, i) => {
-            const qtyM = parseFloat(d.qty_meter || (d.unit === 'Yard' ? (d.qty * 0.9144) : d.qty) || 0);
-            const qtyY = parseFloat(d.qty_yard  || (d.unit === 'Meter' ? (d.qty / 0.9144) : d.qty) || 0);
             const pUSD = parseFloat(d.price_usd || d.price || 0);
             const pIDR = parseFloat(d.price_idr || (pUSD * (parseFloat(d.kurs || contract?.sell_rate) || 1)) || 0);
             const sUSD = parseFloat(d.stotal_usd || (cur === 'USD' ? d.stotal : 0) || 0);
             const sIDR = parseFloat(d.stotal_idr || (cur === 'IDR' ? d.stotal : 0) || 0);
             const diskon = parseFloat(d.diskon || 0);
+            const qty    = parseFloat(d.qty || 0);
+
+            const priceShown  = cur === 'IDR' ? pIDR : pUSD;
+            const stotalShown = cur === 'IDR' ? sIDR : sUSD;
+            const priceStr  = cur === 'IDR' ? ('Rp ' + fmtNum(priceShown)) : ('$ ' + fmtUS(priceShown));
+            const stotalStr = cur === 'IDR' ? ('Rp ' + fmtNum(stotalShown)) : ('$ ' + fmtUS(stotalShown));
+            const unitLbl    = d.unit === 'Yard' ? 'Y' : 'm';
 
             return `
             <tr>
             <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
             <td style="font-weight:700;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
+            <td style="font-size:0.85rem">${esc(d.fabric_name || '—')}</td>
             <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.greige_no || '—')}</td>
             <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.dyeing_no || '—')}</td>
             <td>${esc(d.color || '—')}</td>
             <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
-            <td style="text-align:right;font-weight:600">${fmtNum(qtyM)} m</td>
-            <td style="text-align:right;font-weight:600">${fmtNum4(qtyY)} Y</td>
-            <td style="text-align:right;font-size:0.8rem">$ ${fmtUS(pUSD)}</td>
-            <td style="text-align:right;font-size:0.8rem">Rp ${fmtNum(pIDR)}</td>
+            <td style="text-align:right;font-weight:600">${fmtNum4(qty)} ${unitLbl}</td>
+            <td style="text-align:right;font-weight:600">${priceStr}</td>
             <td style="text-align:right;color:#64748b;font-size:0.8rem">${formatCur(diskon, cur)}</td>
-            <td style="text-align:right;font-weight:700;color:#2563eb">$ ${fmtUS(sUSD)}</td>
-            <td style="text-align:right;font-weight:700;color:#16a34a">Rp ${fmtNum(sIDR)}</td>
+            <td style="text-align:right;font-weight:700;color:#2563eb">${stotalStr}</td>
             <td>
             <button class="btn-del" onclick="openDelModal(${d.id})">
             <i class="ti ti-trash" style="font-size:12px"></i>
@@ -601,6 +608,39 @@
             </tr>`;
         }).join('');
     }
+
+    tbody.innerHTML = details.map((d, i) => {
+        const qtyM = parseFloat(d.qty_meter || (d.unit === 'Yard' ? (d.qty * 0.9144) : d.qty) || 0);
+        const qtyY = parseFloat(d.qty_yard  || (d.unit === 'Meter' ? (d.qty / 0.9144) : d.qty) || 0);
+        const pUSD = parseFloat(d.price_usd || d.price || 0);
+        const pIDR = parseFloat(d.price_idr || (pUSD * (parseFloat(d.kurs || contract?.sell_rate) || 1)) || 0);
+        const sUSD = parseFloat(d.stotal_usd || (cur === 'USD' ? d.stotal : 0) || 0);
+        const sIDR = parseFloat(d.stotal_idr || (cur === 'IDR' ? d.stotal : 0) || 0);
+        const diskon = parseFloat(d.diskon || 0);
+
+        return `
+        <tr>
+        <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
+        <td style="font-weight:700;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
+        <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.greige_no || '—')}</td>
+        <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.dyeing_no || '—')}</td>
+        <td>${esc(d.color || '—')}</td>
+        <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
+        <td style="text-align:right;font-weight:600">${fmtNum(qtyM)} m</td>
+        <td style="text-align:right;font-weight:600">${fmtNum4(qtyY)} Y</td>
+        <td style="text-align:right;font-size:0.8rem">$ ${fmtUS(pUSD)}</td>
+        <td style="text-align:right;font-size:0.8rem">Rp ${fmtNum(pIDR)}</td>
+        <td style="text-align:right;color:#64748b;font-size:0.8rem">${formatCur(diskon, cur)}</td>
+        <td style="text-align:right;font-weight:700;color:#2563eb">$ ${fmtUS(sUSD)}</td>
+        <td style="text-align:right;font-weight:700;color:#16a34a">Rp ${fmtNum(sIDR)}</td>
+        <td>
+        <button class="btn-del" onclick="openDelModal(${d.id})">
+        <i class="ti ti-trash" style="font-size:12px"></i>
+        </button>
+        </td>
+        </tr>`;
+    }).join('');
+}
 
     // ==================== TOTAL & TERBILANG ====================
     function updateTotal() {
