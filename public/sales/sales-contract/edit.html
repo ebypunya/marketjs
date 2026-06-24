@@ -496,9 +496,9 @@
 
     // ---- SUBMIT (UPDATE) ----
     function submitForm() {
-        if (!gv('f-contract_no'))  { showAlert('❌ Contract No wajib diisi.', 'error'); return; }
-        if (!gv('f-customer_id'))  { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
-        if (!gv('f-jenis'))        { showAlert('❌ Jenis contract wajib dipilih.', 'error'); return; }
+        if (!gv('f-contract_no'))   { showAlert('❌ Contract No wajib diisi.', 'error'); return; }
+        if (!gv('f-customer_id'))   { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
+        if (!gv('f-jenis'))         { showAlert('❌ Jenis contract wajib dipilih.', 'error'); return; }
         if (!gv('f-contract_date')) { showAlert('❌ Contract Date wajib diisi.', 'error'); return; }
         if (!selectedRate) {
             showAlert('❌ Pilih tanggal kurs terlebih dahulu.', 'error'); return;
@@ -523,34 +523,39 @@
             note:          gv('f-note')          || null,
         };
 
-        const btn = document.getElementById('btn-submit');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+    // Validasi customer_id
+    if (isNaN(payload.customer_id) || payload.customer_id <= 0) {
+        showAlert('❌ Customer tidak valid, silakan pilih ulang.', 'error'); return;
+    }
 
-        fetch('/api/contracts/' + contractId, {
-            method:  'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify(payload)
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                showAlert('✅ Contract berhasil diperbarui!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/sales/sales-contract/detail?id=' + contractId;
-                }, 1200);
-            } else {
-                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
-            }
-        })
-        .catch(err => {
-            showAlert('❌ Terjadi kesalahan server: ' + err.message, 'error');
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+    fetch('/api/contracts/' + contractId, {
+        method:  'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('✅ Contract berhasil diperbarui!', 'success');
+            setTimeout(() => {
+                window.location.href = '/sales/sales-contract';
+            }, 1200);
+        } else {
+            showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
             btn.disabled = false;
             btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
-        });
-    }
+        }
+    })
+    .catch(err => {
+        showAlert('❌ Terjadi kesalahan server: ' + err.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
+    });
+}
 </script>
 </body>
 </html>

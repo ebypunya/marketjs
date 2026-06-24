@@ -700,7 +700,9 @@ app.put('/api/contracts/:id/total', requireLogin, (req, res) => {
         }
         );
 });
-
+app.get('/sales/sales-contract/print', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'print.html'));
+});
 app.get('/sales/sales-contract/edit', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'edit.html'));
 });

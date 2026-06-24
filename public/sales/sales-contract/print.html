@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Contract - Print</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; background: #e5e7eb; color: #000; }
+        .page-wrapper { display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px; min-height: 100vh; }
+        .action-bar { display: flex; gap: 10px; margin-bottom: 18px; align-items: center; }
+        .btn { padding: 9px 22px; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
+        .btn-primary { background: #4f46e5; color: #fff; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+        .btn-secondary:hover { background: #f9fafb; }
+
+        .page { width: 210mm; min-height: 297mm; background: #fff; padding: 13mm 15mm; box-shadow: 0 4px 32px rgba(0,0,0,0.13); }
+
+        /* HEADER */
+        .co-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 8px; border-bottom: 2.5px solid #000; margin-bottom: 10px; }
+        .co-name { font-size: 14pt; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 3px; }
+        .co-addr { font-size: 7.5pt; color: #333; line-height: 1.55; }
+        .sc-title { font-size: 17pt; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; padding-top: 4px; }
+
+        /* TO / DATE */
+        .to-row { display: flex; justify-content: space-between; align-items: flex-start; margin: 10px 0; }
+        .to-lbl { font-size: 9pt; font-weight: 700; margin-bottom: 2px; }
+        .to-name { font-size: 9pt; font-weight: 700; }
+        .to-addr { font-size: 8pt; color: #222; line-height: 1.55; max-width: 270px; margin-top: 2px; }
+        .date-box { border: 1px solid #999; border-radius: 3px; overflow: hidden; min-width: 210px; }
+        .date-box table { width: 100%; border-collapse: collapse; }
+        .date-box td { padding: 4px 9px; border-bottom: 1px solid #ccc; font-size: 8.5pt; }
+        .date-box td:first-child { font-weight: 700; white-space: nowrap; width: 105px; }
+        .date-box tr:last-child td { border-bottom: none; }
+
+        /* INTRO */
+        .intro { font-size: 8pt; margin-bottom: 9px; line-height: 1.5; font-style: italic; }
+
+        /* ITEMS */
+        .tbl { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8pt; }
+        .tbl th { background: #ebebeb; border: 1px solid #aaa; padding: 5px 6px; text-align: center; font-weight: 700; font-size: 7.5pt; text-transform: uppercase; line-height: 1.3; }
+        .tbl td { border: 1px solid #bbb; padding: 5px 7px; vertical-align: middle; line-height: 1.4; }
+        .tbl td.c { text-align: center; }
+        .tbl td.r { text-align: right; }
+        .tbl tbody tr:nth-child(even) { background: #fafafa; }
+
+        /* INFO TABLE */
+        .info-tbl { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 8.5pt; }
+        .info-tbl td { padding: 2px 4px; vertical-align: top; }
+        .info-tbl td.lbl { font-weight: 700; white-space: nowrap; width: 95px; }
+        .info-tbl td.col { width: 12px; }
+
+        /* PAYMENT */
+        .pay-sec { font-size: 8.5pt; line-height: 1.65; margin-bottom: 10px; }
+
+        /* REMARKS */
+        .rem-title { font-weight: 700; font-size: 8.5pt; margin-bottom: 3px; }
+        .rem-list { font-size: 8pt; line-height: 1.65; padding-left: 0; list-style: none; margin-bottom: 10px; }
+
+        /* SIGNATURE */
+        .sig-row { display: flex; justify-content: space-between; margin-top: 26px; font-size: 8.5pt; }
+        .sig-box { width: 46%; }
+        .sig-role { font-size: 7.5pt; color: #555; margin-bottom: 2px; margin-top: 2px; }
+        .sig-line { border-bottom: 1px solid #000; margin: 44px 0 4px; }
+        .sig-name { font-weight: 700; }
+
+        @media print {
+            body { background: #fff; }
+            .page-wrapper { padding: 0; }
+            .action-bar { display: none; }
+            .page { width: 100%; min-height: 100%; padding: 10mm 14mm; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="window.history.back()">← Kembali</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+        </div>
+
+        <div class="page">
+            <!-- HEADER -->
+            <div class="co-header">
+                <div>
+                    <div class="co-name">PT URASE PRIMA</div>
+                    <div class="co-addr">
+                        Desa Cibinong, Ubrug - Jatiluhur, Purwakarta 41152, Jawa Barat - Indonesia<br>
+                        Phone: +62 264 822 4018 &nbsp;&nbsp; Email: sales@uraseprima.com
+                    </div>
+                </div>
+                <div class="sc-title">SALES CONTRACT</div>
+            </div>
+
+            <!-- TO + DATE -->
+            <div class="to-row">
+                <div>
+                    <div class="to-lbl">To:</div>
+                    <div class="to-name" id="c-customer-name">—</div>
+                    <div class="to-addr" id="c-customer-addr"></div>
+                </div>
+                <div class="date-box">
+                    <table>
+                        <tr><td>Date</td><td>:</td><td id="c-date">—</td></tr>
+                        <tr><td>Contract No.</td><td>:</td><td id="c-no">—</td></tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- INTRO -->
+            <div class="intro">We hereby confirm below processing to you or your purchase from us, the undermentioned goods, subject to the following terms and conditions:</div>
+
+            <!-- ITEMS TABLE -->
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th style="width:17%">Article<br>Nomor</th>
+                        <th style="width:13%">Color</th>
+                        <th style="width:18%">Quantity<br>About</th>
+                        <th style="width:6%">Unit</th>
+                        <th style="width:20%">Price</th>
+                        <th style="width:16%">Total Amount<br>About</th>
+                        <th style="width:10%">Shipping Schedule<br><span style="font-size:6.5pt;font-weight:400">EXW URASE PRIMA*</span></th>
+                    </tr>
+                </thead>
+                <tbody id="items-tbody">
+                    <tr><td colspan="7" style="text-align:center;padding:18px;color:#999">Memuat data...</td></tr>
+                </tbody>
+            </table>
+
+            <!-- FIELDS (Quality, Inspection, Delivery etc) -->
+            <div id="fields-section"></div>
+
+            <!-- PAYMENT -->
+            <div class="pay-sec">
+                <b>Payment</b> &nbsp;:&nbsp; By T/T within 2 weeks after shipment<br>
+                <span style="display:inline-block;width:90px"></span>To this account number:<br>
+                <span style="display:inline-block;width:90px"></span>Bank Central Asia<br>
+                <span style="display:inline-block;width:90px"></span>Jl. Asia Afrika No. 122-124, Bandung / Indonesia<br>
+                <span style="display:inline-block;width:90px"></span>A/C No. : 008-6-09272-1<br>
+                <span style="display:inline-block;width:90px"></span>Swift Code : CENAIDJA<br>
+                <span style="display:inline-block;width:90px"></span>Under Name : PT. Urase Prima
+            </div>
+
+            <!-- REMARKS -->
+            <div id="remarks-wrap" style="display:none">
+                <div class="rem-title">Remarks :</div>
+                <ul class="rem-list" id="rem-list"></ul>
+            </div>
+
+            <!-- SIGNATURES -->
+            <div class="sig-row">
+                <div class="sig-box">
+                    <div>Accepted and Confirmed by,</div>
+                    <div class="sig-role">Buyer:</div>
+                    <div class="sig-line"></div>
+                    <div class="sig-name" id="sig-buyer">—</div>
+                </div>
+                <div class="sig-box" style="text-align:right">
+                    <div>Your Faithfully,</div>
+                    <div class="sig-role">Seller:</div>
+                    <div class="sig-line"></div>
+                    <div class="sig-name">PT URASE PRIMA</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const contractId = new URLSearchParams(window.location.search).get('id');
+        if (!contractId) window.location.href = '/sales/sales-contract';
+
+        const MO_S = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+        const MO_L = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+        function dateLong(s)  { if(!s)return'—'; const p=s.slice(0,10).split('-'); return `${parseInt(p[2])} ${MO_L[parseInt(p[1])-1]} ${p[0]}`; }
+        function dateShort(s) { if(!s)return'—'; const p=s.slice(0,10).split('-'); return `${parseInt(p[2])} ${MO_S[parseInt(p[1])-1]} ${p[0]}`; }
+        function fmtID(v,d=2) { return parseFloat(v||0).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+        function fmtUS(v)     { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}); }
+
+        async function load() {
+            try {
+                const [contract, details, customers] = await Promise.all([
+                    fetch('/api/contracts/'+contractId).then(r=>r.json()),
+                    fetch('/api/contract-details/by-contract/'+contractId).then(r=>r.json()),
+                    fetch('/api/customers').then(r=>r.json()),
+                    ]);
+
+                const cur      = contract.currency || 'USD';
+                const sellRate = parseFloat(contract.sell_rate) || 0;
+                const cust     = customers.find(c => c.id == contract.customer_id);
+
+                document.getElementById('c-customer-name').textContent = contract.customer_name || '—';
+                if (cust && cust.address) {
+                    document.getElementById('c-customer-addr').innerHTML = cust.address.replace(/\n/g,'<br>');
+                }
+                document.getElementById('c-date').textContent = dateLong(contract.created_at);
+                document.getElementById('c-no').textContent   = contract.contract_no || '—';
+                document.getElementById('sig-buyer').textContent = contract.customer_name || '—';
+                document.title = 'SC - ' + (contract.contract_no || contractId);
+
+            // ITEMS
+            const tbody = document.getElementById('items-tbody');
+            if (!details || !details.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:#999">Tidak ada item produk.</td></tr>';
+            } else {
+                tbody.innerHTML = details.map(d => {
+                    const qty    = parseFloat(d.qty)    || 0;
+                    const yard   = parseFloat(d.yard)   || 0;
+                    const price  = parseFloat(d.price)  || 0;
+                    const stotal = parseFloat(d.stotal) || 0;
+                    let qCell, pCell, tCell;
+
+                    if (cur === 'IDR') {
+                        if (d.unit === 'Meter') {
+                            const pY = price * 0.9144;
+                            qCell = `${fmtID(qty,2)} m<br><span style="color:#555;font-size:7pt">(${fmtID(yard,2)} Y)</span>`;
+                            pCell = `IDR ${fmtID(price,2)}/m<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(pY,2)}/Y)</span>`;
+                            tCell = `IDR ${fmtID(stotal,2)}<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(stotal,2)})</span>`;
+                        } else {
+                            const pM = price / 0.9144;
+                            qCell = `${fmtID(qty,2)} Y<br><span style="color:#555;font-size:7pt">(${fmtID(qty*0.9144,2)} m)</span>`;
+                            pCell = `IDR ${fmtID(price,2)}/Y<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(pM,2)}/m)</span>`;
+                            tCell = `IDR ${fmtID(stotal,2)}`;
+                        }
+                    } else {
+                        const ul = d.unit==='Yard'?'Y':'m';
+                        qCell = `${fmtID(qty,2)} ${d.unit}`;
+                        pCell = `$ ${fmtUS(price)}/${ul}`;
+                        tCell = `$ ${fmtUS(stotal)}`;
+                    }
+
+                    return `<tr>
+                    <td style="font-weight:700">${d.fabric_no||'—'}</td>
+                    <td>${d.color||'—'}</td>
+                    <td class="r">${qCell}</td>
+                    <td class="c">${d.unit}</td>
+                    <td class="r">${pCell}</td>
+                    <td class="r" style="font-weight:700">${tCell}</td>
+                    <td class="c">${dateShort(contract.date_ship)}</td>
+                    </tr>`;
+                }).join('');
+            }
+
+            // FIELDS SECTION
+            let fHtml = '<table class="info-tbl">';
+            if (contract.note_ship) {
+                fHtml += `<tr><td class="lbl">Note</td><td class="col">:</td><td>${contract.note_ship}</td></tr>`;
+            }
+            if (contract.quality) {
+                fHtml += `<tr><td class="lbl">Quality</td><td class="col">:</td><td>${contract.quality}</td></tr>`;
+            }
+            if (contract.quality_note) {
+                fHtml += `<tr><td class="lbl"></td><td class="col"></td><td>${contract.quality_note}</td></tr>`;
+            }
+            fHtml += `
+            <tr><td class="lbl">Inspection</td><td class="col">:</td><td>Ours to be final</td></tr>
+            <tr><td class="lbl">Delivery</td><td class="col">:</td><td>45 days after our receipt confirmation of order</td></tr>
+            <tr><td class="lbl">Destination</td><td class="col">:</td><td>Jakarta</td></tr>
+            </table>`;
+            document.getElementById('fields-section').innerHTML = fHtml;
+
+            // REMARKS
+            const rem = [
+            'Partial delivery is allowed',
+            'Price exclude PPN 11%',
+            '10% more or less in amount and quantity to be allowed',
+            'C-grade allowance for dyeing error debitable to buyer at max. 5% on greige value',
+            ];
+            if (sellRate > 0) {
+                rem.push(`Unit price is based on exchange rate date ${dateLong(contract.created_at)} at IDR ${fmtID(sellRate,2)}`);
+            }
+            rem.push(`Payment is in ${cur}, the exchange rate will be adjusted on delivery date's exchange rate`);
+            rem.push('The defect product with original length (uncut) can be return after submit complaint form, within 180 days for anycolor, 360 days for FBK &amp; Uniform, from the invoice date');
+            if (contract.note) rem.push(contract.note);
+
+            document.getElementById('rem-list').innerHTML = rem.map((r,i) => `<li>${i+1}. ${r}</li>`).join('');
+            document.getElementById('remarks-wrap').style.display = '';
+
+        } catch(e) {
+            console.error(e);
+            document.getElementById('items-tbody').innerHTML =
+            '<tr><td colspan="7" style="text-align:center;color:red;padding:18px">Gagal memuat: ' + e.message + '</td></tr>';
+        }
+    }
+
+    load();
+</script>
+</body>
+</html>

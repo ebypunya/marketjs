@@ -176,9 +176,9 @@
             <td style="padding:13px 18px;text-align:center">${statusBadge(c.status)}</td>
             <td style="padding:13px 18px;text-align:center">
             <div style="display:flex;gap:6px;justify-content:center">
-            <a href="/sales/sales-contract/detail?id=${c.id}" title="Detail"
-            style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#f1f5f9;color:#475569;border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">
-            <i class="ti ti-eye" style="font-size:13px"></i>
+            <a href="/sales/sales-contract/print?id=${c.id}" title="Print" target="_blank"
+            style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#f0fdf4;color:#16a34a;border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">
+            <i class="ti ti-printer" style="font-size:13px"></i>
             </a>
             <a href="/sales/sales-contract/edit?id=${c.id}" title="Edit"
             style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">
@@ -245,7 +245,7 @@
     function closeDeleteModal() {
         deleteId = null;
         document.getElementById('delete-modal').style.display = 'none';
-        
+
     // 💡 PERBAIKAN: Kembalikan tombol ke kondisi awal saat modal ditutup
     const btn = document.querySelector('#delete-modal button:last-child');
     if (btn) {
