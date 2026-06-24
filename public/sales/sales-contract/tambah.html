@@ -50,26 +50,17 @@
             border-radius: 6px; transition: background 0.15s; position: relative;
             color: #94a3b8; border: 1.5px solid transparent;
         }
-        /* Tanggal punya kurs: background biru muda + border biru */
         .rate-cal-day.has-rate {
-            cursor: pointer;
-            background: #eff6ff;
-            color: #1d4ed8;
-            font-weight: 800;
-            border-color: #bfdbfe;
+            cursor: pointer; background: #eff6ff; color: #1d4ed8; font-weight: 800; border-color: #bfdbfe;
         }
         .rate-cal-day.has-rate:hover { background: #dbeafe; border-color: #93c5fd; }
-        /* Terpilih */
         .rate-cal-day.selected { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; }
-        /* Hari ini */
         .rate-cal-day.today { outline: 2px solid var(--primary); outline-offset: -2px; }
-        /* Dot penanda kurs */
         .rate-dot { width: 5px; height: 5px; background: #3b82f6; border-radius: 50%; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); }
         .rate-cal-day.selected .rate-dot { background: rgba(255,255,255,0.7); }
 
         .rate-result { padding: 14px 16px; border-top: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; min-height: 60px; }
 
-        /* Legend kurs */
         .cal-legend {
             display: flex; align-items: center; gap: 6px;
             font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;
@@ -106,17 +97,17 @@
                     </div>
                     <div class="fg">
                         <label class="fl">Customer <span style="color:#ef4444">*</span></label>
-                        <select id="f-customer_id" class="fi">
+                        <select id="f-customer_id" class="fi" onchange="onCustomerChange()">
                             <option value="">-- Pilih Customer --</option>
                         </select>
                     </div>
                 </div>
             </div>
 
-            <div class="grid3" style="margin-bottom:14px">
+            <div class="grid2" style="margin-bottom:14px">
                 <div class="fg">
                     <label class="fl">Mata Uang <span style="color:#ef4444">*</span></label>
-                    <select id="f-currency" class="fi" onchange="onCurrencyChange()">
+                    <select id="f-currency" class="fi">
                         <option value="USD">USD (Dollar)</option>
                         <option value="IDR">IDR (Rupiah)</option>
                     </select>
@@ -131,94 +122,72 @@
                         <option value="makloon">Makloon</option>
                     </select>
                 </div>
-                <div class="fg">
-                    <label class="fl">Order No</label>
-                    <input type="text" id="f-order_no" class="fi" placeholder="No. order">
-                </div>
+            </div>
+
+            <div class="fg" style="margin-bottom:14px">
+                <label class="fl">Order No</label>
+                <input type="text" id="f-order_no" class="fi" placeholder="No. order">
             </div>
 
             <!-- SECTION 2: KURS -->
             <div class="section-title"><i class="ti ti-calendar-dollar"></i> Kurs / Exchange Rate</div>
 
-            <div id="rate-section">
-
-                <!-- USD: Calendar picker -->
-                <div id="usd-rate-section">
-                    <div class="cal-legend">
-                        <div class="cal-legend-dot"></div>
-                        Tanggal dengan latar biru = ada data kurs tersedia. Klik untuk memilih.
+            <div class="cal-legend">
+                <div class="cal-legend-dot"></div>
+                Tanggal dengan latar biru = ada data kurs tersedia. Klik untuk memilih. Wajib dipilih untuk semua mata uang.
+            </div>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:stretch">
+                <div class="rate-calendar-wrap" style="width:340px;flex-shrink:0">
+                    <div class="rate-cal-header">
+                        <button class="rate-cal-nav" onclick="calPrev()"><i class="ti ti-chevron-left"></i></button>
+                        <span id="cal-label">—</span>
+                        <button class="rate-cal-nav" onclick="calNext()"><i class="ti ti-chevron-right"></i></button>
                     </div>
-                    <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:stretch">
-                        <!-- Kalender -->
-                        <div class="rate-calendar-wrap" style="width:340px;flex-shrink:0">
-                            <div class="rate-cal-header">
-                                <button class="rate-cal-nav" onclick="calPrev()"><i class="ti ti-chevron-left"></i></button>
-                                <span id="cal-label">—</span>
-                                <button class="rate-cal-nav" onclick="calNext()"><i class="ti ti-chevron-right"></i></button>
-                            </div>
-                            <div class="rate-cal-grid" id="cal-grid"></div>
-                            <div class="rate-result" id="rate-result">
-                                <span style="color:var(--text-muted);font-size:0.83rem">Belum ada tanggal dipilih.</span>
-                            </div>
-                        </div>
-                        <!-- Panel info kurs -->
-                        <div id="rate-info-panel" style="border:1px solid var(--border-color);border-radius:10px;background:#f8fafc;display:flex;flex-direction:column;justify-content:center;padding:24px 28px;min-height:100%">
-                            <div id="rate-info-empty" style="text-align:center;color:var(--text-muted)">
-                                <i class="ti ti-calendar-search" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.3"></i>
-                                <div style="font-size:0.83rem">Pilih tanggal yang bertanda biru<br>untuk melihat data kurs.</div>
-                            </div>
-                            <div id="rate-info-data" style="display:none">
-                                <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:6px">
-                                    <i class="ti ti-check-circle" style="font-size:14px"></i> Kurs Terpilih
-                                </div>
-                                <div style="margin-bottom:12px">
-                                    <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Tanggal</div>
-                                    <div id="ri-date" style="font-weight:700;font-size:0.95rem;color:var(--text-main)">—</div>
-                                </div>
-                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-                                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
-                                        <div style="font-size:0.65rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sell Rate</div>
-                                        <div id="ri-sell" style="font-weight:800;font-size:1.1rem;color:#15803d">—</div>
-                                    </div>
-                                    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px">
-                                        <div style="font-size:0.65rem;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Buy Rate</div>
-                                        <div id="ri-buy" style="font-weight:800;font-size:1.1rem;color:#1d4ed8">—</div>
-                                    </div>
-                                </div>
-                                <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 14px;font-size:0.82rem">
-                                    <span style="color:#92400e;font-weight:700">Selisih (Spread): </span>
-                                    <span id="ri-spread" style="color:#c2410c;font-weight:800">—</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="rate-warn" class="warn-box" style="display:none;margin-top:10px">
-                        <i class="ti ti-alert-triangle"></i>
-                        Tidak ada data kurs untuk tanggal ini. Silakan pilih tanggal lain atau
-                        <a href="/master-data/kurs/tambah" target="_blank" style="color:#92400e;font-weight:800">tambah kurs baru</a>.
+                    <div class="rate-cal-grid" id="cal-grid"></div>
+                    <div class="rate-result" id="rate-result">
+                        <span style="color:var(--text-muted);font-size:0.83rem">Belum ada tanggal dipilih.</span>
                     </div>
                 </div>
-
-                <!-- IDR: tampilkan kurs terbaru otomatis -->
-                <div id="idr-rate-section" style="display:none">
-                    <div id="idr-rate-ok" style="padding:12px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:0.85rem;color:#166534;display:none">
-                        <i class="ti ti-info-circle"></i>
-                        Mata uang <b>IDR</b> — menggunakan kurs terbaru (otomatis):
-                        <span id="idr-rate-val" style="margin-left:6px;font-weight:800"></span>
+                <div id="rate-info-panel" style="border:1px solid var(--border-color);border-radius:10px;background:#f8fafc;display:flex;flex-direction:column;justify-content:center;padding:24px 28px;min-height:100%">
+                    <div id="rate-info-empty" style="text-align:center;color:var(--text-muted)">
+                        <i class="ti ti-calendar-search" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.3"></i>
+                        <div style="font-size:0.83rem">Pilih tanggal yang bertanda biru<br>untuk melihat data kurs.</div>
                     </div>
-                    <div id="idr-rate-none" class="warn-box" style="display:none">
-                        <i class="ti ti-alert-triangle"></i>
-                        Tidak ada data kurs tersedia.
-                        <a href="/master-data/kurs/tambah" target="_blank" style="color:#92400e;font-weight:800">Tambah kurs baru</a> sebelum melanjutkan.
+                    <div id="rate-info-data" style="display:none">
+                        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:6px">
+                            <i class="ti ti-check-circle" style="font-size:14px"></i> Kurs Terpilih
+                        </div>
+                        <div style="margin-bottom:12px">
+                            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Tanggal</div>
+                            <div id="ri-date" style="font-weight:700;font-size:0.95rem;color:var(--text-main)">—</div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+                                <div style="font-size:0.65rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sell Rate</div>
+                                <div id="ri-sell" style="font-weight:800;font-size:1.1rem;color:#15803d">—</div>
+                            </div>
+                            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px">
+                                <div style="font-size:0.65rem;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Buy Rate</div>
+                                <div id="ri-buy" style="font-weight:800;font-size:1.1rem;color:#1d4ed8">—</div>
+                            </div>
+                        </div>
+                        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 14px;font-size:0.82rem">
+                            <span style="color:#92400e;font-weight:700">Selisih (Spread): </span>
+                            <span id="ri-spread" style="color:#c2410c;font-weight:800">—</span>
+                        </div>
                     </div>
                 </div>
-
+            </div>
+            <div id="rate-warn" class="warn-box" style="display:none;margin-top:10px">
+                <i class="ti ti-alert-triangle"></i>
+                Tidak ada data kurs untuk tanggal ini. Silakan pilih tanggal lain atau
+                <a href="/master-data/kurs/tambah" target="_blank" style="color:#92400e;font-weight:800">tambah kurs baru</a>.
             </div>
 
-            <!-- SECTION 3: JADWAL & FABRIC -->
-            <div class="section-title"><i class="ti ti-calendar-event"></i> Jadwal & Informasi Fabric</div>
+            <!-- SECTION 3: JADWAL -->
+            <div class="section-title"><i class="ti ti-calendar-event"></i> Jadwal</div>
 
-            <div class="grid4" style="margin-bottom:14px">
+            <div class="grid2" style="margin-bottom:14px">
                 <div class="fg">
                     <label class="fl">Contract Date <span style="color:#ef4444">*</span></label>
                     <input type="date" id="f-contract_date" class="fi">
@@ -227,38 +196,24 @@
                     <label class="fl">Shipping Schedule</label>
                     <input type="date" id="f-date_ship" class="fi">
                 </div>
-                <div class="fg">
-                    <label class="fl">Greige No</label>
-                    <input type="text" id="f-greige_no" class="fi" placeholder="No. greige">
-                </div>
-                <div class="fg">
-                    <label class="fl">Dyeing No</label>
-                    <input type="text" id="f-dyeing_no" class="fi" placeholder="No. dyeing">
-                </div>
-            </div>
-
-            <div class="grid2" style="margin-bottom:14px">
-                <div class="fg">
-                    <label class="fl">Dyeing Instruction No</label>
-                    <input type="text" id="f-dyeing_int" class="fi" placeholder="No. instruksi dyeing">
-                </div>
-                <div class="fg">
-                    <label class="fl">Quality</label>
-                    <input type="text" id="f-quality" class="fi" placeholder="Standar kualitas">
-                </div>
             </div>
 
             <!-- SECTION 4: CATATAN -->
             <div class="section-title"><i class="ti ti-notes"></i> Catatan & Kualitas</div>
 
+            <div class="fg" style="margin-bottom:14px">
+                <label class="fl">Quality</label>
+                <input type="text" id="f-quality" class="fi" placeholder="Standar kualitas">
+            </div>
+
             <div class="grid2" style="margin-bottom:14px">
                 <div class="fg">
                     <label class="fl">Quality Note</label>
-                    <textarea id="f-quality_note" class="fi" rows="2" placeholder="Catatan kualitas..."></textarea>
+                    <textarea id="f-quality_note" class="fi" rows="3" placeholder="Quality AS PER"></textarea>
                 </div>
                 <div class="fg">
                     <label class="fl">Note Shipping</label>
-                    <textarea id="f-note_ship" class="fi" rows="2" placeholder="Instruksi pengiriman..."></textarea>
+                    <textarea id="f-note_ship" class="fi" rows="3" placeholder="Instruksi pengiriman..."></textarea>
                 </div>
             </div>
             <div class="fg" style="margin-bottom:28px">
@@ -284,8 +239,21 @@
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
+    // ========== DEFAULT QUALITY PER CUSTOMER ==========
+    // Edit bagian ini untuk menyesuaikan default quality per customer_id
+    const QUALITY_DEFAULTS = {
+        1: "Size: isi sendiri cm x min. 80%: 40-55 mts (A Grade) and 20%: 20-39mts & C Grade.",
+        2: "Size: isi sendiri cm x min. 80%: 45-55 mts (A Grade) and 20%: Joint Pcs (Irregular length) & B Grade.",
+        3: "Size: isi sendiri cm x min. 0%: 0-0 mts (A Grade) and 0%: Joint Pcs (Irregular length) & B Grade.",
+        4: "Size: isi sendiri cm x min. 80%: 45-55 mts (A Grade) and 20%: Joint Pcs (Irregular length) & B Grade.",
+        5: "Size: isi sendiri cm x min. 80%: 45-55 mts (A Grade) and 20%: Joint Pcs (Irregular length) & B Grade.",
+        6: "",
+        7: "",
+    };
+    // ===================================================
+
     let allRates    = [];
-    let ratesByDate = {};   // 'YYYY-MM-DD' -> rate object
+    let ratesByDate = {};
     let selectedRate = null;
     let calYear  = 0;
     let calMonth = 0;
@@ -295,14 +263,8 @@
     'Juli','Agustus','September','Oktober','November','Desember'];
     const DAYS   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 
-    // ---- Helper: lokal date string YYYY-MM-DD tanpa timezone shift ----
     function toLocalDateStr(dateInput) {
-        // dateInput bisa string ISO atau Date object
-        // Untuk string "2025-06-03T..." ambil langsung 10 karakter pertama
-        // Untuk string "2025-06-03 ..." (MySQL format) juga aman
-        if (typeof dateInput === 'string') {
-            return dateInput.slice(0, 10);
-        }
+        if (typeof dateInput === 'string') return dateInput.slice(0, 10);
         const d = dateInput;
         const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -318,15 +280,14 @@
 
         await Promise.all([loadCustomers(), loadRates(), loadNextContractNo()]);
 
-        // Default contract date = hari ini
-        const todayStr2 = toLocalDateStr(now);
-        document.getElementById('f-contract_date').value = todayStr2;
+        const todayStr = toLocalDateStr(now);
+        document.getElementById('f-contract_date').value = todayStr;
+
+        // Default quality note
+        document.getElementById('f-quality_note').value = 'Quality AS PER';
 
         renderCalendar();
-        onCurrencyChange();
 
-        // Auto-select hari ini jika ada kursnya
-        const todayStr = toLocalDateStr(now);
         if (ratesByDate[todayStr]) {
             selectDate(todayStr);
         }
@@ -350,7 +311,6 @@
             allRates = await fetch('/api/rates').then(r => r.json());
             ratesByDate = {};
             allRates.forEach(r => {
-                // Gunakan slice(0,10) langsung dari string — hindari timezone shift
                 const key = r.created_at.slice(0, 10);
                 if (!ratesByDate[key]) ratesByDate[key] = r;
             });
@@ -370,36 +330,14 @@
         }
     }
 
-    // ---- CURRENCY SWITCH ----
-    function onCurrencyChange() {
-        const cur = document.getElementById('f-currency').value;
-        const usdSec = document.getElementById('usd-rate-section');
-        const idrSec = document.getElementById('idr-rate-section');
-
-        if (cur === 'USD') {
-            usdSec.style.display = '';
-            idrSec.style.display = 'none';
+    // ---- CUSTOMER CHANGE → isi default quality ----
+    function onCustomerChange() {
+        const customerId = parseInt(document.getElementById('f-customer_id').value);
+        const qualEl = document.getElementById('f-quality');
+        if (customerId && QUALITY_DEFAULTS.hasOwnProperty(customerId)) {
+            qualEl.value = QUALITY_DEFAULTS[customerId];
         } else {
-            usdSec.style.display = 'none';
-            idrSec.style.display = '';
-            const ok   = document.getElementById('idr-rate-ok');
-            const none = document.getElementById('idr-rate-none');
-            if (allRates.length > 0) {
-                selectedRate = allRates[0];
-                const ds = selectedRate.created_at.slice(0, 10);
-                const parts = ds.split('-');
-                const d = new Date(parts[0], parts[1]-1, parts[2]);
-                document.getElementById('idr-rate-val').innerHTML =
-                `Sell Rate <b style="color:#16a34a">Rp ${Number(selectedRate.sell_rate).toLocaleString('id-ID')}</b>
-                &nbsp;·&nbsp; Buy Rate <b style="color:#2563eb">Rp ${Number(selectedRate.buy_rate).toLocaleString('id-ID')}</b>
-                &nbsp;·&nbsp; <span style="color:var(--text-muted)">${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}</span>`;
-                ok.style.display   = 'block';
-                none.style.display = 'none';
-            } else {
-                selectedRate = null;
-                ok.style.display   = 'none';
-                none.style.display = 'block';
-            }
+            qualEl.value = '';
         }
     }
 
@@ -408,28 +346,21 @@
 
     function renderCalendar() {
         document.getElementById('cal-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
-
         const now      = new Date();
         const todayStr = toLocalDateStr(now);
-
         let html = DAYS.map(d => `<div class="rate-cal-day-label">${d}</div>`).join('');
-
         const firstDay    = new Date(calYear, calMonth, 1).getDay();
         const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-
         for (let i = 0; i < firstDay; i++) html += `<div class="rate-cal-day"></div>`;
-
             for (let d = 1; d <= daysInMonth; d++) {
-                const ds       = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
-                const hasRate  = !!ratesByDate[ds];
-                const isToday  = ds === todayStr;
-                const isSel    = ds === selectedDateStr;
-
+                const ds      = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
+                const hasRate = !!ratesByDate[ds];
+                const isToday = ds === todayStr;
+                const isSel   = ds === selectedDateStr;
                 let cls = 'rate-cal-day';
                 if (hasRate) cls += ' has-rate';
                 if (isToday) cls += ' today';
                 if (isSel)   cls += ' selected';
-
                 const click = hasRate ? `onclick="selectDate('${ds}')"` : '';
                 const dot   = hasRate ? '<span class="rate-dot"></span>' : '';
                 html += `<div class="${cls}" ${click}>${d}${dot}</div>`;
@@ -443,18 +374,14 @@
         function selectDate(dateStr) {
             const rate = ratesByDate[dateStr];
             document.getElementById('rate-warn').style.display = 'none';
-
             if (!rate) {
-                selectedRate    = null;
-                selectedDateStr = null;
+                selectedRate = null; selectedDateStr = null;
                 renderCalendar();
                 document.getElementById('rate-warn').style.display = 'block';
                 setRateInfoPanel(null);
                 return;
             }
-
-            selectedRate    = rate;
-            selectedDateStr = dateStr;
+            selectedRate = rate; selectedDateStr = dateStr;
             renderCalendar();
             setRateInfoPanel(rate, dateStr);
         }
@@ -462,18 +389,11 @@
         function setRateInfoPanel(rate, dateStr) {
             const empty = document.getElementById('rate-info-empty');
             const data  = document.getElementById('rate-info-data');
-            if (!rate) {
-                empty.style.display = '';
-                data.style.display  = 'none';
-                return;
-            }
-            empty.style.display = 'none';
-            data.style.display  = '';
-
+            if (!rate) { empty.style.display = ''; data.style.display = 'none'; return; }
+            empty.style.display = 'none'; data.style.display = '';
             const parts = dateStr.split('-');
             const d = new Date(parts[0], parts[1] - 1, parts[2]);
             const spread = Number(rate.sell_rate) - Number(rate.buy_rate);
-
             document.getElementById('ri-date').textContent  = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
             document.getElementById('ri-sell').textContent  = 'Rp ' + Number(rate.sell_rate).toLocaleString('id-ID');
             document.getElementById('ri-buy').textContent   = 'Rp ' + Number(rate.buy_rate).toLocaleString('id-ID');
@@ -493,31 +413,26 @@
 
     // ---- SUBMIT ----
     function submitForm() {
-        if (!gv('f-contract_no'))  { showAlert('❌ Contract No wajib diisi.', 'error'); return; }
-        if (!gv('f-customer_id'))  { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
-        if (!gv('f-jenis'))        { showAlert('❌ Jenis contract wajib dipilih.', 'error'); return; }
+        if (!gv('f-contract_no'))   { showAlert('❌ Contract No wajib diisi.', 'error'); return; }
+        if (!gv('f-customer_id'))   { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
+        if (!gv('f-jenis'))         { showAlert('❌ Jenis contract wajib dipilih.', 'error'); return; }
         if (!gv('f-contract_date')) { showAlert('❌ Contract Date wajib diisi.', 'error'); return; }
-        if (!selectedRate) {
-            showAlert('❌ Pilih tanggal kurs terlebih dahulu.', 'error'); return;
-        }
+        if (!selectedRate)          { showAlert('❌ Pilih tanggal kurs terlebih dahulu.', 'error'); return; }
 
         const payload = {
-            contract_no:   gv('f-contract_no'),
-            customer_id:   parseInt(gv('f-customer_id')),
-            currency:      gv('f-currency'),
-            rate_id:       selectedRate.id,
-            jenis:         gv('f-jenis'),
-            order_no:      gv('f-order_no')      || null,
-            status:        'draft',
-            created_at:    gv('f-contract_date'),
-            date_ship:     gv('f-date_ship')     || null,
-            greige_no:     gv('f-greige_no')     || null,
-            dyeing_no:     gv('f-dyeing_no')     || null,
-            dyeing_int:    gv('f-dyeing_int')    || null,
-            quality:       gv('f-quality')       || null,
-            quality_note:  gv('f-quality_note')  || null,
-            note_ship:     gv('f-note_ship')     || null,
-            note:          gv('f-note')          || null,
+            contract_no:  gv('f-contract_no'),
+            customer_id:  parseInt(gv('f-customer_id')),
+            currency:     gv('f-currency'),
+            rate_id:      selectedRate.id,
+            jenis:        gv('f-jenis'),
+            order_no:     gv('f-order_no')     || null,
+            status:       'draft',
+            created_at:   gv('f-contract_date'),
+            date_ship:    gv('f-date_ship')    || null,
+            quality:      gv('f-quality')      || null,
+            quality_note: gv('f-quality_note') || null,
+            note_ship:    gv('f-note_ship')    || null,
+            note:         gv('f-note')         || null,
         };
 
         const btn = document.getElementById('btn-submit');
@@ -533,9 +448,7 @@
         .then(data => {
             if (data.success) {
                 showAlert('✅ Contract berhasil disimpan! Mengalihkan ke halaman produk...', 'success');
-                setTimeout(() => {
-                    window.location.href = '/sales/sales-contract/detail?id=' + data.id;
-                }, 1200);
+                setTimeout(() => { window.location.href = '/sales/sales-contract/detail?id=' + data.id; }, 1200);
             } else {
                 showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
                 btn.disabled = false;
