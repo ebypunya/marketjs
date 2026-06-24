@@ -263,6 +263,11 @@
 
     const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
+    // Pembulatan ke atas, 2 angka di belakang koma (untuk qty & price yang disimpan ke DB)
+    function ceil2(n) {
+        return Math.ceil((parseFloat(n) || 0) * 100) / 100;
+    }
+
     // ==================== INIT ====================
     document.addEventListener('DOMContentLoaded', async () => {
         await Promise.all([loadContract(), loadProducts()]);
@@ -488,41 +493,38 @@
         let diskonUSD = diskonMode === 'pct' ? basePriceUSD * (diskonRaw/100) : diskonRaw;
         const diskonInCur = cur === 'IDR' ? diskonUSD * sellRate : diskonUSD;
 
-        // Harga per unit dalam USD dan IDR
-        const price_usd = basePriceUSD;
-        const price_idr = basePriceUSD * sellRate;
+        // Harga per unit USD & IDR -> dibulatkan ke atas 2 desimal sebelum disimpan ke DB
+        const price_usd = ceil2(basePriceUSD);
+        const price_idr = ceil2(basePriceUSD * sellRate);
 
-        // Qty dalam meter dan yard
+        // Qty dalam meter dan yard -> dibulatkan ke atas 2 desimal sebelum disimpan ke DB
         let qty_meter, qty_yard;
         if (unit === 'Yard') {
-            qty_yard  = qty;
-            qty_meter = qty * 0.9144;
+            qty_yard  = ceil2(qty);
+            qty_meter = ceil2(qty * 0.9144);
         } else {
-            qty_meter = qty;
-            qty_yard  = qty / 0.9144;
+            qty_meter = ceil2(qty);
+            qty_yard  = ceil2(qty / 0.9144);
         }
 
-        // Subtotal USD dan IDR
-        const stotal_usd = Math.max(0, (price_usd - diskonUSD) * qty);
-        const stotal_idr = Math.max(0, (price_idr - diskonUSD * sellRate) * qty);
-        const stotal     = cur === 'IDR' ? stotal_idr : stotal_usd;
+        // Subtotal USD dan IDR (dihitung dari nilai asli/presisi penuh, agar nominal tetap akurat)
+        const stotal_usd = Math.max(0, (basePriceUSD - diskonUSD) * qty);
+        const stotal_idr = Math.max(0, (basePriceUSD * sellRate - diskonUSD * sellRate) * qty);
 
+        // CATATAN: field price, qty, stotal, yard SUDAH TIDAK dikirim lagi
+        // (kolom tersebut akan dihapus dari tabel contract_details)
         const payload = {
             contract_id: parseInt(contractId),
             product_id:  parseInt(productId),
             color:       gv('f-color') || null,
             unit,
-            qty,
-            qty_meter:   parseFloat(qty_meter.toFixed(4)),
-            qty_yard:    parseFloat(qty_yard.toFixed(4)),
-            price:       cur === 'IDR' ? price_idr : price_usd,
+            qty_meter,
+            qty_yard,
             price_usd,
             price_idr,
             diskon:      diskonInCur * qty,
-            stotal,
             stotal_usd,
             stotal_idr,
-            yard:        parseFloat(qty_yard.toFixed(4)),
             kurs:        sellRate,
             greige_no:   gv('f-greige_no') || null,
             dyeing_no:   gv('f-dyeing_no') || null,
@@ -574,12 +576,13 @@
         }
 
         tbody.innerHTML = details.map((d, i) => {
-            const pUSD = parseFloat(d.price_usd || d.price || 0);
-            const pIDR = parseFloat(d.price_idr || (pUSD * (parseFloat(d.kurs || contract?.sell_rate) || 1)) || 0);
-            const sUSD = parseFloat(d.stotal_usd || (cur === 'USD' ? d.stotal : 0) || 0);
-            const sIDR = parseFloat(d.stotal_idr || (cur === 'IDR' ? d.stotal : 0) || 0);
+            const pUSD = parseFloat(d.price_usd || 0);
+            const pIDR = parseFloat(d.price_idr || 0);
+            const sUSD = parseFloat(d.stotal_usd || 0);
+            const sIDR = parseFloat(d.stotal_idr || 0);
             const diskon = parseFloat(d.diskon || 0);
-            const qty    = parseFloat(d.qty || 0);
+            // qty diambil dari qty_meter/qty_yard sesuai unit (kolom qty generik sudah tidak dipakai)
+            const qty    = parseFloat(d.unit === 'Yard' ? d.qty_yard : d.qty_meter) || 0;
 
             const priceShown  = cur === 'IDR' ? pIDR : pUSD;
             const stotalShown = cur === 'IDR' ? sIDR : sUSD;
@@ -609,14 +612,12 @@
         }).join('');
     }
 
-
-
-
     // ==================== TOTAL & TERBILANG ====================
     function updateTotal() {
         if (!contract) return;
         const cur   = contract.currency || 'USD';
-        const total = details.reduce((s, d) => s + (parseFloat(d.stotal)||0), 0);
+        // total dihitung dari stotal_usd/stotal_idr sesuai currency (kolom "stotal" generik sudah tidak dipakai)
+        const total = details.reduce((s, d) => s + (parseFloat(cur === 'IDR' ? d.stotal_idr : d.stotal_usd) || 0), 0);
 
         document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
         document.getElementById('total-items').textContent   = details.length + ' item';

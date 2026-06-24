@@ -3,235 +3,480 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Product - MarketJS</title>
+    <title>Edit Sales Contract - MarketJS</title>
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <style>
         .section-title {
-            font-size: 0.72rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--primary);
-            margin: 24px 0 14px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid var(--primary-light);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--primary); margin: 28px 0 14px; padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-light); display: flex; align-items: center; gap: 8px;
         }
-        .form-grid-3 {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 14px;
+        .fg { display: flex; flex-direction: column; }
+        .fl { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .fi {
+            padding: 10px 13px; border: 1px solid var(--border-color); border-radius: 9px;
+            font-size: 0.88rem; font-family: inherit; color: var(--text-main); background: var(--bg-main);
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; box-sizing: border-box;
         }
-        .form-grid-2 {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
+        .fi:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.08); }
+        .fi:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+        textarea.fi { resize: vertical; }
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+        .rate-calendar-wrap { border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; }
+        .rate-cal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 14px; background: var(--primary-light); border-bottom: 1px solid var(--border-color);
         }
+        .rate-cal-header span { font-weight: 700; font-size: 0.88rem; color: var(--primary); }
+        .rate-cal-nav { background: none; border: none; cursor: pointer; color: var(--primary); font-size: 1rem; padding: 2px 8px; border-radius: 6px; font-family: inherit; }
+        .rate-cal-nav:hover { background: #c7d2fe; }
+        .rate-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); background: #fff; padding: 4px; gap: 2px; }
+        .rate-cal-day-label { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); padding: 6px 0 4px; }
+        .rate-cal-day {
+            text-align: center; padding: 7px 2px; font-size: 0.82rem; cursor: default;
+            border-radius: 6px; transition: background 0.15s; position: relative;
+            color: #94a3b8; border: 1.5px solid transparent;
+        }
+        .rate-cal-day.has-rate { cursor: pointer; background: #eff6ff; color: #1d4ed8; font-weight: 800; border-color: #bfdbfe; }
+        .rate-cal-day.has-rate:hover { background: #dbeafe; border-color: #93c5fd; }
+        .rate-cal-day.selected { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; }
+        .rate-cal-day.today { outline: 2px solid var(--primary); outline-offset: -2px; }
+        .rate-dot { width: 5px; height: 5px; background: #3b82f6; border-radius: 50%; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); }
+        .rate-cal-day.selected .rate-dot { background: rgba(255,255,255,0.7); }
+        .rate-result { padding: 14px 16px; border-top: 1px solid var(--border-color); background: #f8fafc; font-size: 0.85rem; min-height: 60px; }
+        .cal-legend { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; }
+        .cal-legend-dot { width: 14px; height: 14px; border-radius: 4px; background: #eff6ff; border: 1.5px solid #bfdbfe; flex-shrink: 0; }
+        .warn-box { padding: 10px 14px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; font-size: 0.83rem; color: #92400e; margin-top: 8px; font-weight: 600; }
     </style>
 </head>
 <body class="dashboard-page">
-
     <div id="app-content">
         <div class="bento-item" style="width:100%;box-sizing:border-box">
 
             <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:0.88rem;font-weight:600"></div>
 
-            <!-- IDENTITAS -->
-            <div class="section-title"><i class="ti ti-tag"></i> Identitas Fabric</div>
-            <div class="form-grid-3" style="margin-bottom:14px">
-                <div class="form-field">
-                    <label class="field-label">Fabric No/Greige No/KKP <span style="color:#ef4444">*</span></label>
-                    <input type="text" id="f-fabric_no" placeholder="Contoh: FB-001" class="field-input">
-                </div>
-                <div class="form-field">
-                    <label class="field-label">Customer Fabric No/Kode Kain Marketing</label>
-                    <input type="text" id="f-customer_fabric_no" class="field-input">
-                </div>
-                <div class="form-field">
-                    <label class="field-label">Fabric Name</label>
-                    <input type="text" id="f-fabric_name" class="field-input">
-                </div>
-            </div>
-            <div class="form-grid-2" style="margin-bottom:14px">
-                <div class="form-field">
-                    <label class="field-label">Customer</label>
-                    <input type="text" id="f-customer" class="field-input">
-                </div>
-                <div class="form-field">
-                    <label class="field-label">Color</label>
-                    <input type="text" id="f-color" class="field-input">
-                </div>
-            </div>
-            <div class="form-field" style="margin-bottom:14px">
-                <label class="field-label">Composition</label>
-                <input type="text" id="f-composition" class="field-input">
-            </div>
+            <!-- SECTION 1: IDENTITAS -->
+            <div class="section-title"><i class="ti ti-file-invoice"></i> Identitas Contract</div>
 
-            <!-- HARGA -->
-            <div class="section-title"><i class="ti ti-currency-dollar"></i> Harga & Biaya</div>
-            <div class="form-grid-3" style="margin-bottom:14px">
-                <div class="form-field">
-                    <label class="field-label">Price Greige</label>
-                    <input type="number" id="f-price_greige" class="field-input" step="0.01">
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Contract No <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="f-contract_no" class="fi" placeholder="Memuat...">
                 </div>
-                <div class="form-field">
-                    <label class="field-label">Additional Fee</label>
-                    <input type="number" id="f-additional_fee" class="field-input" step="0.01">
-                </div>
-                <div class="form-field">
-                    <label class="field-label">Dyeing Fee</label>
-                    <input type="number" id="f-dyeing_fee" class="field-input" step="0.01">
-                </div>
-            </div>
-            <div class="form-grid-3" style="margin-bottom:14px">
-                <div class="form-field">
-                    <label class="field-label">After Risk</label>
-                    <input type="number" id="f-after_risk" class="field-input" step="0.01">
-                </div>
-                <div class="form-field">
-                    <label class="field-label">Sub Final</label>
-                    <input type="number" id="f-sub_final" class="field-input" step="0.01">
-                </div>
-                <div class="form-field">
-                    <label class="field-label">Price/M</label>
-                    <input type="number" id="f-price_m" class="field-input" step="0.01">
-                </div>
-            </div>
-            <div class="form-grid-2" style="margin-bottom:14px">
-                <div class="form-field">
-                    <label class="field-label">Price/Y</label>
-                    <input type="number" id="f-price_y" class="field-input" step="0.01">
+                <div class="fg">
+                    <label class="fl">Customer <span style="color:#ef4444">*</span></label>
+                    <select id="f-customer_id" class="fi" onchange="onCustomerChange()">
+                        <option value="">-- Pilih Customer --</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- SHRINKAGE -->
-            <div class="section-title"><i class="ti ti-arrows-minimize"></i> Data Shrinkage</div>
-            <div class="form-grid-3" style="margin-bottom:14px">
-                <div class="form-field">
-                    <label class="field-label">Shrinkage Standard (%)</label>
-                    <input type="number" id="f-shrinkge_standard" class="field-input" step="0.01">
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Mata Uang <span style="color:#ef4444">*</span></label>
+                    <select id="f-currency" class="fi">
+                        <option value="USD">USD (Dollar)</option>
+                        <option value="IDR">IDR (Rupiah)</option>
+                    </select>
                 </div>
-                <div class="form-field">
-                    <label class="field-label">Shrinkage Actual (%)</label>
-                    <input type="number" id="f-shrinkge_actual" class="field-input" step="0.01">
-                </div>
-                <div class="form-field">
-                    <label class="field-label">After Shrinkage</label>
-                    <input type="number" id="f-after_shrinkge" class="field-input" step="0.01">
+                <div class="fg">
+                    <label class="fl">Jenis Contract <span style="color:#ef4444">*</span></label>
+                    <select id="f-jenis" class="fi">
+                        <option value="">-- Pilih Jenis --</option>
+                        <option value="contract">Contract</option>
+                        <option value="retur">Retur</option>
+                        <option value="stocklot">Stocklot</option>
+                        <option value="makloon">Makloon</option>
+                    </select>
                 </div>
             </div>
 
-            <!-- KONDISI & KETERANGAN -->
-            <div class="section-title"><i class="ti ti-notes"></i> Kondisi & Keterangan</div>
-            <div class="form-field" style="margin-bottom:14px">
-                <label class="field-label">Special Condition</label>
-                <textarea id="f-special_condition" class="field-input" rows="2" style="resize:vertical"></textarea>
-            </div>
-            <div class="form-field" style="margin-bottom:24px">
-                <label class="field-label">Keterangan</label>
-                <textarea id="f-keterangan" class="field-input" rows="2" style="resize:vertical"></textarea>
+            <div class="fg" style="margin-bottom:14px">
+                <label class="fl">Order No</label>
+                <input type="text" id="f-order_no" class="fi" placeholder="No. order">
             </div>
 
-            <div style="display:flex;gap:10px">
-                <a href="/master-data/products"
+            <!-- SECTION 2: KURS -->
+            <div class="section-title"><i class="ti ti-calendar-dollar"></i> Kurs / Exchange Rate</div>
+
+            <div class="cal-legend">
+                <div class="cal-legend-dot"></div>
+                Tanggal dengan latar biru = ada data kurs tersedia. Klik untuk memilih. Wajib dipilih untuk semua mata uang.
+            </div>
+            <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:stretch">
+                <div class="rate-calendar-wrap" style="width:340px;flex-shrink:0">
+                    <div class="rate-cal-header">
+                        <button class="rate-cal-nav" onclick="calPrev()"><i class="ti ti-chevron-left"></i></button>
+                        <span id="cal-label">—</span>
+                        <button class="rate-cal-nav" onclick="calNext()"><i class="ti ti-chevron-right"></i></button>
+                    </div>
+                    <div class="rate-cal-grid" id="cal-grid"></div>
+                    <div class="rate-result" id="rate-result">
+                        <span style="color:var(--text-muted);font-size:0.83rem">Belum ada tanggal dipilih.</span>
+                    </div>
+                </div>
+                <div id="rate-info-panel" style="border:1px solid var(--border-color);border-radius:10px;background:#f8fafc;display:flex;flex-direction:column;justify-content:center;padding:24px 28px;min-height:100%">
+                    <div id="rate-info-empty" style="text-align:center;color:var(--text-muted)">
+                        <i class="ti ti-calendar-search" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.3"></i>
+                        <div style="font-size:0.83rem">Pilih tanggal yang bertanda biru<br>untuk melihat data kurs.</div>
+                    </div>
+                    <div id="rate-info-data" style="display:none">
+                        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:6px">
+                            <i class="ti ti-check-circle" style="font-size:14px"></i> Kurs Terpilih
+                        </div>
+                        <div style="margin-bottom:12px">
+                            <div style="font-size:0.7rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Tanggal</div>
+                            <div id="ri-date" style="font-weight:700;font-size:0.95rem;color:var(--text-main)">—</div>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 14px">
+                                <div style="font-size:0.65rem;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Sell Rate</div>
+                                <div id="ri-sell" style="font-weight:800;font-size:1.1rem;color:#15803d">—</div>
+                            </div>
+                            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px">
+                                <div style="font-size:0.65rem;font-weight:700;color:#2563eb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Buy Rate</div>
+                                <div id="ri-buy" style="font-weight:800;font-size:1.1rem;color:#1d4ed8">—</div>
+                            </div>
+                        </div>
+                        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:8px 14px;font-size:0.82rem">
+                            <span style="color:#92400e;font-weight:700">Selisih (Spread): </span>
+                            <span id="ri-spread" style="color:#c2410c;font-weight:800">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="rate-warn" class="warn-box" style="display:none;margin-top:10px">
+                <i class="ti ti-alert-triangle"></i>
+                Tidak ada data kurs untuk tanggal ini. Silakan pilih tanggal lain atau
+                <a href="/master-data/kurs/tambah" target="_blank" style="color:#92400e;font-weight:800">tambah kurs baru</a>.
+            </div>
+
+            <!-- SECTION 3: JADWAL -->
+            <div class="section-title"><i class="ti ti-calendar-event"></i> Jadwal</div>
+
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Contract Date <span style="color:#ef4444">*</span></label>
+                    <input type="date" id="f-contract_date" class="fi">
+                </div>
+                <div class="fg">
+                    <label class="fl">Shipping Schedule</label>
+                    <input type="date" id="f-date_ship" class="fi">
+                </div>
+            </div>
+
+            <!-- SECTION 4: CATATAN -->
+            <div class="section-title"><i class="ti ti-notes"></i> Catatan & Kualitas</div>
+
+            <div class="fg" style="margin-bottom:14px">
+                <label class="fl">Quality</label>
+                <input type="text" id="f-quality" class="fi" placeholder="Standar kualitas">
+            </div>
+
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Quality Note</label>
+                    <textarea id="f-quality_note" class="fi" rows="3" placeholder="Quality AS PER"></textarea>
+                </div>
+                <div class="fg">
+                    <label class="fl">Note Shipping</label>
+                    <textarea id="f-note_ship" class="fi" rows="3" placeholder="Instruksi pengiriman..."></textarea>
+                </div>
+            </div>
+            <div class="fg" style="margin-bottom:28px">
+                <label class="fl">Note</label>
+                <textarea id="f-note" class="fi" rows="2" placeholder="Catatan umum..."></textarea>
+            </div>
+
+            <!-- Tombol -->
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <a href="/sales/sales-contract"
                 style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
                 <i class="ti ti-arrow-left"></i> Batal
             </a>
-            <button onclick="submitEdit()"
+            <button onclick="submitForm('list')" id="btn-submit"
             style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
             <i class="ti ti-device-floppy"></i> Simpan Perubahan
         </button>
-    </div>
+        <button onclick="submitForm('detail')" id="btn-submit-detail"
+        style="padding:11px 28px;background:#fff;color:var(--primary);border:2px solid var(--primary);border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+        <i class="ti ti-package"></i> Simpan & Edit Produk
+    </button>
+</div>
+
 </div>
 </div>
 
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
-    const productId = new URLSearchParams(window.location.search).get('id');
-    if (!productId) window.location.href = '/master-data/products';
+    // ========== DEFAULT QUALITY PER CUSTOMER ==========
+    const QUALITY_DEFAULTS = {
+        1: "Size: isi sendiri cm x min. 80%: 40-55 mts (A Grade) and 20%: 20-39mts & C Grade.",
+        2: "Size: isi sendiri cm x min. 80%: 45-55 mts (A Grade) and 20%: Joint Pcs (Irregular length) & B Grade.",
+        3: "Size: isi sendiri cm x min. 0%: 0-0 mts (A Grade) and 0%: Joint Pcs (Irregular length) & B Grade.",
+        4: "Size: isi sendiri cm x min. 80%: 45-55 mts (A Grade) and 20%: Joint Pcs (Irregular length) & B Grade.",
+        5: "Size: isi sendiri cm x min. 80%: 45-55 mts (A Grade) and 20%: Joint Pcs (Irregular length) & B Grade.",
+        6: "",
+        7: "",
+    };
+    // ===================================================
 
-    function showAlert(msg, type) {
-        const box = document.getElementById('alert-box');
-        box.style.display = 'block';
-        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
-        box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
-        box.textContent = msg;
+    const contractId = new URLSearchParams(window.location.search).get('id');
+
+    let allRates     = [];
+    let ratesByDate  = {};
+    let selectedRate = null;
+    let calYear  = 0;
+    let calMonth = 0;
+    let selectedDateStr = null;
+    let qualityLoadedFromDB = false; // flag: jangan override quality yg sudah ada di DB
+
+    const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni',
+    'Juli','Agustus','September','Oktober','November','Desember'];
+    const DAYS   = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+
+    // Konversi string tanggal dari DB ke format YYYY-MM-DD tanpa timezone shift
+    function toDateInputVal(str) {
+        if (!str) return '';
+        return str.slice(0, 10); // ambil YYYY-MM-DD langsung
     }
 
-    function setVal(id, val) {
-        const el = document.getElementById(id);
-        if (el) el.value = val || '';
+    function toLocalDateStr(d) {
+        if (typeof d === 'string') return d.slice(0, 10);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dd}`;
     }
-    function getVal(id) { return document.getElementById(id).value.trim(); }
 
-    fetch('/api/products/' + productId)
-    .then(r => r.json())
-    .then(p => {
-        setVal('f-fabric_no',          p.fabric_no);
-        setVal('f-customer_fabric_no', p.customer_fabric_no);
-        setVal('f-fabric_name',        p.fabric_name);
-        setVal('f-customer',           p.customer);
-        setVal('f-color',              p.color);
-        setVal('f-composition',        p.composition);
-        setVal('f-price_greige',       p.price_greige);
-        setVal('f-additional_fee',     p.additional_fee);
-        setVal('f-dyeing_fee',         p.dyeing_fee);
-        setVal('f-after_risk',         p.after_risk);
-        setVal('f-sub_final',          p.sub_final);
-        setVal('f-price_m',            p.price_m);
-        setVal('f-price_y',            p.price_y);
-        setVal('f-shrinkge_standard',  p.shrinkge_standard);
-        setVal('f-shrinkge_actual',    p.shrinkge_actual);
-        setVal('f-after_shrinkge',     p.after_shrinkge);
-        setVal('f-special_condition',  p.special_condition);
-        setVal('f-keterangan',         p.keterangan);
-    })
-    .catch(() => showAlert('❌ Gagal memuat data product.', 'error'));
+    document.addEventListener('DOMContentLoaded', async () => {
+        if (!contractId) { window.location.href = '/sales/sales-contract'; return; }
+        const now = new Date();
+        calYear  = now.getFullYear();
+        calMonth = now.getMonth();
+        await Promise.all([loadCustomers(), loadRates()]);
+        await loadContract();
+        renderCalendar();
+    });
 
-    function submitEdit() {
-        const fabric_no = getVal('f-fabric_no');
-        if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
+    async function loadCustomers() {
+        try {
+            const data = await fetch('/api/customers').then(r => r.json());
+            const sel  = document.getElementById('f-customer_id');
+            data.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c.id; o.textContent = c.name;
+                sel.appendChild(o);
+            });
+        } catch(e) { console.error('Gagal load customers', e); }
+    }
 
-        const body = new URLSearchParams({
-            fabric_no,
-            customer_fabric_no: getVal('f-customer_fabric_no'),
-            fabric_name:        getVal('f-fabric_name'),
-            customer:           getVal('f-customer'),
-            color:              getVal('f-color'),
-            composition:        getVal('f-composition'),
-            price_greige:       getVal('f-price_greige'),
-            additional_fee:     getVal('f-additional_fee'),
-            dyeing_fee:         getVal('f-dyeing_fee'),
-            after_risk:         getVal('f-after_risk'),
-            sub_final:          getVal('f-sub_final'),
-            price_m:            getVal('f-price_m'),
-            price_y:            getVal('f-price_y'),
-            shrinkge_standard:  getVal('f-shrinkge_standard'),
-            shrinkge_actual:    getVal('f-shrinkge_actual'),
-            after_shrinkge:     getVal('f-after_shrinkge'),
-            special_condition:  getVal('f-special_condition'),
-            keterangan:         getVal('f-keterangan'),
-        });
+    async function loadRates() {
+        try {
+            allRates = await fetch('/api/rates').then(r => r.json());
+            ratesByDate = {};
+            allRates.forEach(r => {
+                const key = r.created_at.slice(0, 10);
+                if (!ratesByDate[key]) ratesByDate[key] = r;
+            });
+        } catch(e) { console.error('Gagal load rates', e); }
+    }
 
-        fetch('/api/products/' + productId, {
-            method: 'PUT', body,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    async function loadContract() {
+        try {
+            const c = await fetch('/api/contracts/' + contractId).then(r => r.json());
+            if (c.error) { showAlert('❌ Contract tidak ditemukan.', 'error'); return; }
+
+            document.getElementById('f-contract_no').value  = c.contract_no || '';
+            document.getElementById('f-customer_id').value  = c.customer_id || '';
+            document.getElementById('f-currency').value     = c.currency || 'USD';
+            document.getElementById('f-jenis').value        = c.jenis || '';
+            document.getElementById('f-order_no').value     = c.order_no || '';
+
+            // Gunakan slice(0,10) langsung — TIDAK buat objek Date untuk menghindari timezone shift
+            document.getElementById('f-contract_date').value = toDateInputVal(c.created_at);
+            document.getElementById('f-date_ship').value     = toDateInputVal(c.date_ship);
+
+            document.getElementById('f-quality').value      = c.quality || '';
+            document.getElementById('f-quality_note').value = c.quality_note || 'Quality AS PER';
+            document.getElementById('f-note_ship').value    = c.note_ship || '';
+            document.getElementById('f-note').value         = c.note || '';
+
+            qualityLoadedFromDB = true;
+
+            // Restore kurs yang sudah dipilih sebelumnya
+            if (c.rate_id) {
+                const matched = allRates.find(r => r.id === c.rate_id);
+                if (matched) {
+                    selectedRate = matched;
+                    const ds = matched.created_at.slice(0, 10);
+                    const parts = ds.split('-');
+                    calYear  = parseInt(parts[0]);
+                    calMonth = parseInt(parts[1]) - 1;
+                    selectedDateStr = ds;
+                    setRateInfoPanel(matched, ds);
+                }
+            }
+        } catch(e) {
+            showAlert('❌ Gagal memuat data contract.', 'error');
+        }
+    }
+
+    // Hanya ganti quality jika user memilih ulang customer (bukan saat load awal dari DB)
+    function onCustomerChange() {
+        if (qualityLoadedFromDB) {
+            // Setelah load pertama, izinkan user untuk mengganti quality jika memilih customer lain
+            qualityLoadedFromDB = false;
+            return; // skip pertama kali (ini adalah event dari value assignment saat load)
+        }
+        const customerId = parseInt(document.getElementById('f-customer_id').value);
+        const qualEl = document.getElementById('f-quality');
+        if (customerId && QUALITY_DEFAULTS.hasOwnProperty(customerId)) {
+            qualEl.value = QUALITY_DEFAULTS[customerId];
+        } else {
+            qualEl.value = '';
+        }
+    }
+
+    // ---- CALENDAR ----
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    function renderCalendar() {
+        document.getElementById('cal-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
+        const now      = new Date();
+        const todayStr = toLocalDateStr(now);
+        let html = DAYS.map(d => `<div class="rate-cal-day-label">${d}</div>`).join('');
+        const firstDay    = new Date(calYear, calMonth, 1).getDay();
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+        for (let i = 0; i < firstDay; i++) html += `<div class="rate-cal-day"></div>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const ds      = `${calYear}-${pad(calMonth + 1)}-${pad(d)}`;
+                const hasRate = !!ratesByDate[ds];
+                const isToday = ds === todayStr;
+                const isSel   = ds === selectedDateStr;
+                let cls = 'rate-cal-day';
+                if (hasRate) cls += ' has-rate';
+                if (isToday) cls += ' today';
+                if (isSel)   cls += ' selected';
+                const click = hasRate ? `onclick="selectDate('${ds}')"` : '';
+                const dot   = hasRate ? '<span class="rate-dot"></span>' : '';
+                html += `<div class="${cls}" ${click}>${d}${dot}</div>`;
+            }
+            document.getElementById('cal-grid').innerHTML = html;
+        }
+
+        function calPrev() { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); }
+        function calNext() { calMonth++; if (calMonth > 11) { calMonth = 0;  calYear++; } renderCalendar(); }
+
+        function selectDate(dateStr) {
+            const rate = ratesByDate[dateStr];
+            document.getElementById('rate-warn').style.display = 'none';
+            if (!rate) {
+                selectedRate = null; selectedDateStr = null;
+                renderCalendar();
+                document.getElementById('rate-warn').style.display = 'block';
+                setRateInfoPanel(null);
+                return;
+            }
+            selectedRate = rate; selectedDateStr = dateStr;
+            renderCalendar();
+            setRateInfoPanel(rate, dateStr);
+        }
+
+        function setRateInfoPanel(rate, dateStr) {
+            const empty = document.getElementById('rate-info-empty');
+            const data  = document.getElementById('rate-info-data');
+            if (!rate) { empty.style.display = ''; data.style.display = 'none'; return; }
+            empty.style.display = 'none'; data.style.display = '';
+            const parts = dateStr.split('-');
+            const d = new Date(parts[0], parts[1] - 1, parts[2]);
+            const spread = Number(rate.sell_rate) - Number(rate.buy_rate);
+            document.getElementById('ri-date').textContent   = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+            document.getElementById('ri-sell').textContent   = 'Rp ' + Number(rate.sell_rate).toLocaleString('id-ID');
+            document.getElementById('ri-buy').textContent    = 'Rp ' + Number(rate.buy_rate).toLocaleString('id-ID');
+            document.getElementById('ri-spread').textContent = 'Rp ' + spread.toLocaleString('id-ID');
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alert-box');
+            box.style.display    = 'block';
+            box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+            box.style.color      = type === 'success' ? '#16a34a' : '#dc2626';
+            box.textContent      = msg;
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        function gv(id) { return document.getElementById(id).value.trim(); }
+
+        // target: 'list' -> redirect ke /sales/sales-contract
+        //         'detail' -> redirect ke /sales/sales-contract/detail?id=...
+        function submitForm(target) {
+            target = target || 'list';
+
+            if (!gv('f-contract_no'))   { showAlert('❌ Contract No wajib diisi.', 'error'); return; }
+            if (!gv('f-customer_id'))   { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
+            if (!gv('f-jenis'))         { showAlert('❌ Jenis contract wajib dipilih.', 'error'); return; }
+            if (!gv('f-contract_date')) { showAlert('❌ Contract Date wajib diisi.', 'error'); return; }
+            if (!selectedRate)          { showAlert('❌ Pilih tanggal kurs terlebih dahulu.', 'error'); return; }
+
+            const payload = {
+                contract_no:  gv('f-contract_no'),
+                customer_id:  parseInt(gv('f-customer_id')),
+                currency:     gv('f-currency'),
+                rate_id:      selectedRate.id,
+                jenis:        gv('f-jenis'),
+                order_no:     gv('f-order_no')     || null,
+            status:       'draft', // status tidak diubah dari halaman ini
+            created_at:   gv('f-contract_date'),
+            date_ship:    gv('f-date_ship')    || null,
+            quality:      gv('f-quality')      || null,
+            quality_note: gv('f-quality_note') || null,
+            note_ship:    gv('f-note_ship')    || null,
+            note:         gv('f-note')         || null,
+        };
+
+        if (isNaN(payload.customer_id) || payload.customer_id <= 0) {
+            showAlert('❌ Customer tidak valid, silakan pilih ulang.', 'error'); return;
+        }
+
+        const btnClicked = document.getElementById(target === 'detail' ? 'btn-submit-detail' : 'btn-submit');
+        const btnOther    = document.getElementById(target === 'detail' ? 'btn-submit' : 'btn-submit-detail');
+        const originalHTML = btnClicked.innerHTML;
+
+        btnClicked.disabled = true;
+        btnOther.disabled = true;
+        btnClicked.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+        fetch('/api/contracts/' + contractId, {
+            method:  'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload)
         })
         .then(r => r.json())
         .then(data => {
             if (data.success) {
-                showAlert('✅ Data berhasil diperbarui!', 'success');
-                setTimeout(() => window.location.href = '/master-data/products', 1200);
+                showAlert('✅ Contract berhasil diperbarui!', 'success');
+                const dest = target === 'detail'
+                ? '/sales/sales-contract/detail?id=' + contractId
+                : '/sales/sales-contract';
+                setTimeout(() => { window.location.href = dest; }, 1000);
             } else {
                 showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                btnClicked.disabled = false;
+                btnOther.disabled = false;
+                btnClicked.innerHTML = originalHTML;
             }
         })
-        .catch(() => showAlert('❌ Terjadi kesalahan server.', 'error'));
+        .catch(err => {
+            showAlert('❌ Terjadi kesalahan server: ' + err.message, 'error');
+            btnClicked.disabled = false;
+            btnOther.disabled = false;
+            btnClicked.innerHTML = originalHTML;
+        });
     }
 </script>
 </body>

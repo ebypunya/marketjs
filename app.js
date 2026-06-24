@@ -16,7 +16,12 @@ const db = mysql.createPool({
     password: '',
     database: 'marketjs',
     waitForConnections: true,
-    connectionLimit: 10
+    connectionLimit: 10,
+    // PENTING: kembalikan kolom DATE/DATETIME sebagai string mentah apa adanya.
+    // Tanpa ini, mysql2 mengonversi ke objek Date JS berdasarkan timezone server,
+    // lalu saat di-JSON-kan dikonversi lagi ke UTC -> menyebabkan tanggal "mundur"
+    // satu hari ketika frontend mengambil tanggal dengan slice(0,10).
+    dateStrings: true
 });
 
 // Cek koneksi database saat server pertama kali berjalan
@@ -679,6 +684,21 @@ app.delete('/api/contracts/:id', requireLogin, (req, res) => {
 // 11. BACKEND ENDPOINTS (REST API CHILD ITEMS / CONTRACT DETAILS)
 // =========================================================================
 
+// Helper: rekalkulasi ulang total contract berdasarkan currency-nya.
+// Total mengambil SUM(stotal_usd) jika currency USD, atau SUM(stotal_idr) jika IDR.
+// (Kolom lama "stotal" sudah tidak dipakai/akan dihapus dari tabel contract_details)
+function recalcContractTotal(contractId, callback) {
+    const sql = `
+    UPDATE contracts c
+    SET c.total = (
+    SELECT COALESCE(SUM(CASE WHEN c.currency = 'IDR' THEN cd.stotal_idr ELSE cd.stotal_usd END), 0)
+    FROM contract_details cd
+    WHERE cd.contract_id = c.id
+    ), c.updated_at = NOW()
+    WHERE c.id = ?`;
+    db.query(sql, [contractId], callback || (() => {}));
+}
+
 // API: Get Items Detail berdasarkan Contract ID (Cara 1)
 app.get('/api/contract-details/:contractId', requireLogin, (req, res) => {
     const sql = `
@@ -714,45 +734,43 @@ app.get('/api/contract-details/by-contract/:contractId', requireLogin, (req, res
 });
 
 // API: Tambah Item Detail ke dalam Contract (Auto-recalculate Total Nilai Kontrak)
+// CATATAN: kolom price, qty, stotal, yard SUDAH TIDAK di-insert lagi (akan dihapus dari tabel).
 app.post('/api/contract-details', requireLogin, (req, res) => {
     const {
-        contract_id, product_id, color, unit, qty, price, diskon, stotal, yard,
+        contract_id, product_id, color, unit, diskon,
         price_usd, price_idr, qty_meter, qty_yard, stotal_usd, stotal_idr,
         kurs, greige_no, dyeing_no
     } = req.body;
 
-    if (!contract_id || !product_id || !qty) {
+    if (!contract_id || !product_id || (!qty_meter && !qty_yard)) {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
     const sql = `
     INSERT INTO contract_details
-    (contract_id, product_id, color, unit, qty, price, diskon, stotal, yard,
+    (contract_id, product_id, color, unit, diskon,
     price_usd, price_idr, qty_meter, qty_yard, stotal_usd, stotal_idr,
     kurs, greige_no, dyeing_no, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
     db.query(sql, [
-        contract_id, product_id, color||null, unit||'Meter',
-        qty, price||0, diskon||0, stotal||0, yard||0,
+        contract_id, product_id, color||null, unit||'Meter', diskon||0,
         price_usd||0, price_idr||0, qty_meter||0, qty_yard||0,
         stotal_usd||0, stotal_idr||0, kurs||0, greige_no||null, dyeing_no||null
         ], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
-            
-        // Sinkronisasi otomatis kalkulasi total di master contract record
-        db.query(
-            `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
-            [contract_id, contract_id], () => {}
-            );
-        res.json({ success: true, id: result.insertId });
-    });
+
+            // Sinkronisasi otomatis kalkulasi total di master contract record
+            recalcContractTotal(contract_id);
+            res.json({ success: true, id: result.insertId });
+        });
 });
 
 // API: Update Item Detail (Auto-recalculate Total Nilai Kontrak)
+// CATATAN: kolom price, qty, stotal, yard SUDAH TIDAK di-update lagi (akan dihapus dari tabel).
 app.put('/api/contract-details/:id', requireLogin, (req, res) => {
     const detailId = req.params.id;
     const {
-        product_id, color, unit, qty, price, diskon, stotal, yard,
+        product_id, color, unit, diskon,
         price_usd, price_idr, qty_meter, qty_yard, stotal_usd, stotal_idr,
         kurs, greige_no, dyeing_no
     } = req.body;
@@ -764,27 +782,23 @@ app.put('/api/contract-details/:id', requireLogin, (req, res) => {
         const contractId = rows[0].contract_id;
         const sql = `
         UPDATE contract_details SET
-        product_id=?, color=?, unit=?, qty=?, price=?, diskon=?, stotal=?, yard=?,
+        product_id=?, color=?, unit=?, diskon=?,
         price_usd=?, price_idr=?, qty_meter=?, qty_yard=?, stotal_usd=?, stotal_idr=?,
         kurs=?, greige_no=?, dyeing_no=?, updated_at=NOW()
         WHERE id=?`;
 
         db.query(sql, [
-            product_id, color || null, unit || 'Meter',
-            qty, price || 0, diskon || 0, stotal || 0, yard || 0,
+            product_id, color || null, unit || 'Meter', diskon || 0,
             price_usd||0, price_idr||0, qty_meter||0, qty_yard||0,
             stotal_usd||0, stotal_idr||0, kurs||0, greige_no||null, dyeing_no||null,
             detailId
             ], (err2) => {
                 if (err2) return res.status(500).json({ success: false, error: err2.message });
-                
-            // Rekalkulasi total master kontrak
-            db.query(
-                `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
-                [contractId, contractId], () => {}
-                );
-            res.json({ success: true });
-        });
+
+                // Rekalkulasi total master kontrak
+                recalcContractTotal(contractId);
+                res.json({ success: true });
+            });
     });
 });
 
@@ -814,15 +828,11 @@ app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
             }
             
             // Trigger Rekalkulasi total kontrak sesudah penghapusan item berhasil
-            db.query(
-                `UPDATE contracts SET total=(SELECT COALESCE(SUM(stotal),0) FROM contract_details WHERE contract_id=?), updated_at=NOW() WHERE id=?`,
-                [contractId, contractId], 
-                (err3) => {
-                    if (err3) console.error('UPDATE contract total error:', err3);
-                    console.log(`Contract detail ${detailId} deleted successfully`);
-                    res.json({ success: true });
-                }
-                );
+            recalcContractTotal(contractId, (err3) => {
+                if (err3) console.error('UPDATE contract total error:', err3);
+                console.log(`Contract detail ${detailId} deleted successfully`);
+                res.json({ success: true });
+            });
         });
     });
 });

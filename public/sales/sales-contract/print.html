@@ -206,10 +206,12 @@
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:#999">Tidak ada item produk.</td></tr>';
             } else {
                 tbody.innerHTML = details.map(d => {
-                    const qty    = parseFloat(d.qty)    || 0;
-                    const yard   = parseFloat(d.yard)   || 0;
-                    const price  = parseFloat(d.price)  || 0;
-                    const stotal = parseFloat(d.stotal) || 0;
+                    // qty/price/stotal/yard tidak lagi diambil dari kolom generik (sudah dihapus dari tabel),
+                    // melainkan dari kolom qty_meter/qty_yard, price_usd/price_idr, stotal_usd/stotal_idr.
+                    const qty    = parseFloat(d.unit === 'Yard' ? d.qty_yard : d.qty_meter) || 0;
+                    const yard   = parseFloat(d.qty_yard) || 0;
+                    const price  = parseFloat(cur === 'IDR' ? d.price_idr  : d.price_usd)  || 0;
+                    const stotal = parseFloat(cur === 'IDR' ? d.stotal_idr : d.stotal_usd) || 0;
                     let qCell, pCell, tCell;
 
                     if (cur === 'IDR') {
