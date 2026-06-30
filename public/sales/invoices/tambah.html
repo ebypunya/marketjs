@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Invoice - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title {
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--primary); margin: 28px 0 14px; padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-light); display: flex; align-items: center; gap: 8px;
+        }
+        .fg { display: flex; flex-direction: column; }
+        .fl { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .fi {
+            padding: 10px 13px; border: 1px solid var(--border-color); border-radius: 9px;
+            font-size: 0.88rem; font-family: inherit; color: var(--text-main); background: var(--bg-main);
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; box-sizing: border-box;
+        }
+        .fi:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.08); }
+        .fi:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+        .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+        .contract-select-wrap {
+            border: 1px solid var(--border-color); border-radius: 10px; 
+            max-height: 400px; overflow-y: auto; background: #f8fafc;
+        }
+        .contract-item {
+            padding: 14px 16px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
+            transition: background 0.15s;
+        }
+        .contract-item:hover { background: #f1f5f9; }
+        .contract-item:last-child { border-bottom: none; }
+        .contract-item input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; cursor: pointer; }
+        .contract-info { flex: 1; }
+        .contract-no { font-weight: 700; color: var(--primary); font-size: 0.9rem; }
+        .contract-detail { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+        .contract-total { font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin-top: 6px; }
+
+        .summary-box {
+            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
+            color: white; border-radius: 14px; padding: 20px 28px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; font-weight: 600; }
+        .alert-success { background: #f0fdf4; color: #16a34a; }
+        .alert-error { background: #fef2f2; color: #dc2626; }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+        <div class="bento-item" style="width:100%;box-sizing:border-box">
+
+            <div id="alert-box" class="alert" style="display:none"></div>
+
+            <!-- SECTION 1: BASIC INFO -->
+            <div class="section-title"><i class="ti ti-file-invoice"></i> Informasi Invoice</div>
+
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Invoice No <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="f-invoice_no" class="fi" placeholder="Akan auto-generate">
+                </div>
+                <div class="fg">
+                    <label class="fl">Customer <span style="color:#ef4444">*</span></label>
+                    <select id="f-customer_id" class="fi" onchange="onCustomerChange()">
+                        <option value="">-- Pilih Customer --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Mata Uang <span style="color:#ef4444">*</span></label>
+                    <select id="f-currency" class="fi">
+                        <option value="USD">USD (Dollar)</option>
+                        <option value="IDR">IDR (Rupiah)</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label class="fl">Invoice Date <span style="color:#ef4444">*</span></label>
+                    <input type="date" id="f-invoice_date" class="fi">
+                </div>
+            </div>
+
+            <!-- SECTION 2: PILIH CONTRACTS -->
+            <div class="section-title"><i class="ti ti-shopping-cart"></i> Pilih Contracts</div>
+
+            <div class="fg" style="margin-bottom:14px">
+                <label class="fl">Contracts (minimal 1) <span style="color:#ef4444">*</span></label>
+                <div style="margin-bottom:10px;display:flex;gap:10px">
+                    <button onclick="selectAllContracts()" 
+                    style="padding:8px 16px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;font-size:0.82rem;cursor:pointer;font-family:inherit">
+                    Select All
+                </button>
+                <button onclick="clearAllContracts()" 
+                style="padding:8px 16px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;font-size:0.82rem;cursor:pointer;font-family:inherit">
+                Clear All
+            </button>
+        </div>
+        <div id="contract-list" class="contract-select-wrap">
+            <div style="padding:20px;text-align:center;color:var(--text-muted)">Memuat contracts...</div>
+        </div>
+        <small style="color:var(--text-muted);font-size:0.75rem;margin-top:8px">
+            💡 Pilih contracts yang akan dimasukkan ke invoice ini. Total akan dihitung otomatis.
+        </small>
+    </div>
+
+    <!-- SUMMARY -->
+    <div id="summary-box" style="display:none;margin-bottom:24px">
+        <div class="summary-box">
+            <div>
+                <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL INVOICE</div>
+                <div id="summary-total" style="font-size:2rem;font-weight:800;letter-spacing:-1px">—</div>
+            </div>
+            <div style="text-align:right">
+                <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">CONTRACTS</div>
+                <div id="summary-contracts" style="font-size:1.5rem;font-weight:800">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUTTONS -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <a href="/sales/invoices"
+        style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+        <i class="ti ti-arrow-left"></i> Batal
+    </a>
+    <button onclick="submitForm()" id="btn-submit"
+    style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+    <i class="ti ti-device-floppy"></i> Simpan & Lanjut ke Detail
+</button>
+</div>
+
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    let allContracts = [];
+    let selectedContractIds = new Set();
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        document.getElementById('f-invoice_date').value = `${y}-${m}-${d}`;
+        
+        await Promise.all([loadCustomers(), loadContractsForSelection(), loadNextInvoiceNo()]);
+    });
+
+    async function loadCustomers() {
+        try {
+            const data = await fetch('/api/customers').then(r => r.json());
+            const sel = document.getElementById('f-customer_id');
+            data.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c.id; o.textContent = c.name;
+                sel.appendChild(o);
+            });
+        } catch(e) { console.error('Gagal load customers', e); }
+    }
+
+    async function loadContractsForSelection() {
+        try {
+            const data = await fetch('/api/contracts').then(r => r.json());
+            
+        // Filter status dihilangkan, langsung masukkan semua data contracts
+        allContracts = data; 
+        
+        renderContractList();
+    } catch(e) {
+        showAlert('Gagal memuat contracts', 'error');
+        console.error(e);
+    }
+}
+
+async function loadNextInvoiceNo() {
+    try {
+            // Implement counter di backend nanti, untuk sekarang manual
+            const data = await fetch('/api/invoices/next-no').then(r => r.json()).catch(() => ({}));
+            if (data.next_no) {
+                document.getElementById('f-invoice_no').value = data.next_no;
+            }
+        } catch(e) { console.log('Invoice numbering: manual entry'); }
+    }
+
+    function renderContractList() {
+        const list = document.getElementById('contract-list');
+        if (!allContracts.length) {
+            list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Tidak ada contracts tersedia.</div>';
+            return;
+        }
+
+        list.innerHTML = allContracts.map(c => `
+            <div class="contract-item" onclick="toggleContract(${c.id})">
+            <input type="checkbox" id="chk-${c.id}" ${selectedContractIds.has(c.id) ? 'checked' : ''}>
+            <div class="contract-info">
+            <div class="contract-no">${escHtml(c.contract_no)}</div>
+            <div class="contract-detail">
+            <i class="ti ti-user" style="font-size:12px;margin-right:4px"></i>
+            ${escHtml(c.customer_name || '—')}
+            &nbsp; | &nbsp;
+            <i class="ti ti-calendar" style="font-size:12px;margin-right:4px"></i>
+            ${c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID') : '—'}
+            </div>
+            <div class="contract-total" style="color:${c.currency === 'IDR' ? '#16a34a' : '#2563eb'}">
+            Total: ${formatCurrency(c.total, c.currency)}
+            </div>
+            </div>
+            </div>
+            `).join('');
+    }
+
+    function toggleContract(contractId) {
+        if (selectedContractIds.has(contractId)) {
+            selectedContractIds.delete(contractId);
+        } else {
+            selectedContractIds.add(contractId);
+        }
+        document.getElementById('chk-' + contractId).checked = selectedContractIds.has(contractId);
+        updateSummary();
+    }
+
+    function selectAllContracts() {
+        allContracts.forEach(c => selectedContractIds.add(c.id));
+        renderContractList();
+        updateSummary();
+    }
+
+    function clearAllContracts() {
+        selectedContractIds.clear();
+        renderContractList();
+        updateSummary();
+    }
+
+    function updateSummary() {
+        const selected = allContracts.filter(c => selectedContractIds.has(c.id));
+        if (!selected.length) {
+            document.getElementById('summary-box').style.display = 'none';
+            return;
+        }
+
+        const currency = document.getElementById('f-currency').value;
+        const total = selected.reduce((s, c) => s + (parseFloat(c.total) || 0), 0);
+        
+        document.getElementById('summary-box').style.display = 'block';
+        document.getElementById('summary-total').textContent = formatCurrency(total, currency);
+        document.getElementById('summary-contracts').textContent = selected.length;
+    }
+
+    function onCustomerChange() {
+        updateSummary();
+    }
+
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
+        box.textContent = msg;
+        box.style.display = 'block';
+        if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
+    }
+
+    function gv(id) { return document.getElementById(id).value.trim(); }
+
+    function escHtml(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatCurrency(val, cur) {
+        const n = parseFloat(val) || 0;
+        return cur === 'IDR'
+        ? 'Rp ' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+        : '$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    }
+
+    function submitForm() {
+        if (!gv('f-invoice_no'))   { showAlert('❌ Invoice No wajib diisi.', 'error'); return; }
+        if (!gv('f-customer_id'))  { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
+        if (!gv('f-currency'))     { showAlert('❌ Mata uang wajib dipilih.', 'error'); return; }
+        if (!gv('f-invoice_date')) { showAlert('❌ Invoice date wajib diisi.', 'error'); return; }
+        if (!selectedContractIds.size) { showAlert('❌ Pilih minimal 1 contract.', 'error'); return; }
+
+        const selected = allContracts.filter(c => selectedContractIds.has(c.id));
+        const total = selected.reduce((s, c) => s + (parseFloat(c.total) || 0), 0);
+
+        const payload = {
+            invoice_no:  gv('f-invoice_no'),
+            customer_id: parseInt(gv('f-customer_id')),
+            currency:    gv('f-currency'),
+            invoice_date: gv('f-invoice_date'),
+            status:      'draft',
+            total:       total,
+            contracts:   Array.from(selectedContractIds) // Array of contract IDs
+        };
+
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+        fetch('/api/invoices', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('✅ Invoice berhasil dibuat! Mengalihkan...', 'success');
+                setTimeout(() => { window.location.href = '/sales/invoices'; }, 1200);
+            } else {
+                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut ke Detail';
+            }
+        })
+        .catch(err => {
+            showAlert('❌ Kesalahan server: ' + err.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut ke Detail';
+        });
+    }
+</script>
+</body>
+</html>

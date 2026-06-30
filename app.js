@@ -156,6 +156,18 @@ app.get('/sales/sales-contract/print', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'print.html'));
 });
 
+//-- HALAMAN INVOICES----
+app.get('/sales/invoices', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'index.html'));
+});
+
+app.get('/sales/invoices/tambah', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'tambah.html'));
+});
+
+app.get('/sales/invoices/edit', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'edit.html'));
+});
 
 // =========================================================================
 // 5. PROSES OTENTIKASI & LOGOUT (POST/GET AUTH)
@@ -837,6 +849,217 @@ app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
     });
 });
 
+// =========================================================================
+// BACKEND ENDPOINTS (REST API TRANSAKSI INVOICES)
+// =========================================================================
+
+// API: Generate Auto Number untuk Invoice berikutnya
+app.get('/api/invoices/next-no', requireLogin, (req, res) => {
+    const sql = `SELECT invoice_no FROM invoices ORDER BY invoice_no DESC LIMIT 1`;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        let next_no = 'INV260001';
+        if (results.length > 0) {
+            const prev_no = results[0].invoice_no;
+            const num = parseInt(prev_no.replace(/^INV/i, '')) || 0;
+            next_no = 'INV' + String(num + 1).padStart(prev_no.length - 3, '0');
+        }
+        res.json({ next_no });
+    });
+});
+
+// API: Get Semua Data Invoices (Untuk List View)
+app.get('/api/invoices', requireLogin, (req, res) => {
+    const sql = `
+    SELECT
+    i.id, i.invoice_no, i.customer_id, 
+    c.name AS customer_name,
+    i.currency, i.total, i.status, i.created_at, i.updated_at,
+    COUNT(DISTINCT ic.contract_id) AS contract_count
+    FROM invoices i
+    LEFT JOIN customers c ON c.id = i.customer_id
+    LEFT JOIN invoice_contracts ic ON ic.invoice_id = i.id
+    GROUP BY i.id
+    ORDER BY i.created_at DESC
+    `;
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// API: Get Single Invoice dengan contracts-nya
+app.get('/api/invoices/:id', requireLogin, (req, res) => {
+    const invoiceId = req.params.id;
+    const sql = `
+    SELECT i.*, c.name AS customer_name
+    FROM invoices i
+    LEFT JOIN customers c ON c.id = i.customer_id
+    WHERE i.id = ?
+    `;
+    
+    db.query(sql, [invoiceId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!results.length) return res.status(404).json({ error: 'Invoice not found' });
+
+        const invoice = results[0];
+
+        // Get associated contracts
+        const contractSql = `
+        SELECT ct.*, ic.added_at
+        FROM invoice_contracts ic
+        JOIN contracts ct ON ct.id = ic.contract_id
+        WHERE ic.invoice_id = ?
+        ORDER BY ic.added_at ASC
+        `;
+        
+        db.query(contractSql, [invoiceId], (err2, contracts) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            invoice.contracts = contracts || [];
+            res.json(invoice);
+        });
+    });
+});
+
+// API: Create Invoice Baru (dengan multiple contracts)
+app.post('/api/invoices', requireLogin, (req, res) => {
+    const {
+        invoice_no, customer_id, currency, invoice_date, 
+        status, total, contracts // contracts = array of contract IDs
+    } = req.body;
+
+    if (!invoice_no || !customer_id || !contracts || !Array.isArray(contracts) || !contracts.length) {
+        return res.status(400).json({ error: 'Required fields missing or invalid' });
+    }
+
+    // Check invoice no uniqueness
+    db.query('SELECT id FROM invoices WHERE invoice_no = ?', [invoice_no], (err, dup) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (dup.length > 0) return res.status(400).json({ error: `Invoice No "${invoice_no}" already used` });
+
+        // Insert invoice header
+        const insertSql = `
+        INSERT INTO invoices 
+        (invoice_no, customer_id, currency, total, status, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+
+        db.query(insertSql, 
+            [invoice_no, customer_id, currency || 'USD', total || 0, status || 'draft'],
+            (err2, result) => {
+                if (err2) return res.status(500).json({ error: err2.message });
+
+                const invoiceId = result.insertId;
+
+                // Insert invoice_contracts relationships
+                const linkSql = 'INSERT INTO invoice_contracts (invoice_id, contract_id, added_at) VALUES (?, ?, NOW())';
+                let completed = 0;
+                let hasError = false;
+
+                contracts.forEach(contractId => {
+                    db.query(linkSql, [invoiceId, contractId], (err3) => {
+                        completed++;
+                        if (err3 && !hasError) {
+                            hasError = true;
+                            return res.status(500).json({ error: 'Failed to link contracts: ' + err3.message });
+                        }
+                        if (completed === contracts.length && !hasError) {
+                            res.json({ success: true, id: invoiceId });
+                        }
+                    });
+                });
+            }
+            );
+    });
+});
+
+// API: Update Invoice (header only, contracts updated separately)
+app.put('/api/invoices/:id', requireLogin, (req, res) => {
+    const {
+        invoice_no, customer_id, currency, total, status
+    } = req.body;
+
+    if (!invoice_no || !customer_id) {
+        return res.status(400).json({ error: 'Required fields missing' });
+    }
+
+    // Check uniqueness (excluding current invoice)
+    db.query('SELECT id FROM invoices WHERE invoice_no = ? AND id != ?', [invoice_no, req.params.id], (err, dup) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (dup.length > 0) return res.status(400).json({ error: `Invoice No "${invoice_no}" already used` });
+
+        const sql = `
+        UPDATE invoices SET
+        invoice_no=?, customer_id=?, currency=?, total=?, status=?, updated_at=NOW()
+        WHERE id=?
+        `;
+
+        db.query(sql, [invoice_no, customer_id, currency || 'USD', total || 0, status || 'draft', req.params.id],
+            (err2) => {
+                if (err2) return res.status(500).json({ error: err2.message });
+                res.json({ success: true });
+            });
+    });
+});
+
+// API: Delete Invoice (cascade delete invoice_contracts)
+app.delete('/api/invoices/:id', requireLogin, (req, res) => {
+    const invoiceId = req.params.id;
+
+    // Delete invoice_contracts first
+    db.query('DELETE FROM invoice_contracts WHERE invoice_id = ?', [invoiceId], (err) => {
+        if (err) {
+            console.error('DELETE invoice_contracts error:', err);
+            return res.status(500).json({ success: false, error: 'Failed to delete invoice relationships: ' + err.message });
+        }
+
+        // Delete invoice
+        db.query('DELETE FROM invoices WHERE id = ?', [invoiceId], (err2, result) => {
+            if (err2) {
+                console.error('DELETE invoice error:', err2);
+                return res.status(500).json({ success: false, error: 'Failed to delete invoice: ' + err2.message });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, error: 'Invoice not found' });
+            }
+            console.log(`Invoice ${invoiceId} and its relationships deleted successfully`);
+            res.json({ success: true });
+        });
+    });
+});
+
+// API: Add/Remove contracts from invoice (untuk edit nanti)
+app.post('/api/invoices/:id/add-contract', requireLogin, (req, res) => {
+    const { contract_id } = req.body;
+    const invoiceId = req.params.id;
+
+    if (!contract_id) return res.status(400).json({ error: 'contract_id required' });
+
+    const sql = 'INSERT INTO invoice_contracts (invoice_id, contract_id, added_at) VALUES (?, ?, NOW())';
+    db.query(sql, [invoiceId, contract_id], (err) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') {
+                return res.status(400).json({ error: 'Contract already in invoice' });
+            }
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/invoices/:id/remove-contract/:contractId', requireLogin, (req, res) => {
+    const { id: invoiceId, contractId } = req.params;
+
+    db.query('DELETE FROM invoice_contracts WHERE invoice_id = ? AND contract_id = ?', 
+        [invoiceId, contractId], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: 'Relationship not found' });
+            }
+            res.json({ success: true });
+        });
+});
 
 // =========================================================================
 // 12. SERVER INITIALIZATION & LISTENER

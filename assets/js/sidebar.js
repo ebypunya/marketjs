@@ -49,6 +49,7 @@ function renderLayout() {
     <div class="nav-submenu">
     <a href="/sales/order-process" class="nav-sub-link">Order Process</a>
     <a href="/sales/sales-contract" class="nav-sub-link">Sales Contract</a>
+    <a href="/sales/invoices" class="nav-sub-link">Invoices</a>
     </div>
 
     <div class="nav-parent" onclick="toggleMenu(this)">
@@ -66,7 +67,6 @@ function renderLayout() {
     <i class="ti ti-chevron-down arrow"></i>
     </div>
     <div class="nav-submenu">
-    <a href="/finance/invoice" class="nav-sub-link">Invoice</a>
     <a href="/finance/invoice-sample" class="nav-sub-link">Invoice Sample</a>
     <a href="/finance/debit-note" class="nav-sub-link">Debit Note</a>
     </div>
