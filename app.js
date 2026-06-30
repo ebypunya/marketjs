@@ -344,7 +344,7 @@ app.delete('/api/customers/:id', requireLogin, (req, res) => {
 // =========================================================================
 
 app.get('/api/products', requireLogin, (req, res) => {
-    const sql = `SELECT id, fabric_no, customer_fabric_no, fabric_name, customer, color,
+    const sql = `SELECT id, nama, fabric_no, customer_fabric_no, fabric_name, customer, color,
     price_greige, shrinkge_standard, shrinkge_actual, after_shrinkge,
     additional_fee, after_risk, dyeing_fee, sub_final, price_m, price_y,
     special_condition, keterangan, composition, created_at, updated_at

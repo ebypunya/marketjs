@@ -188,8 +188,8 @@
                     <thead id="detail-thead">
                         <tr>
                             <th>#</th>
-                            <th>FABRIC NO</th>
                             <th>NAMA PRODUK</th>
+                            <th>FABRIC NO</th>
                             <th>GREIGE NO</th>
                             <th>DYEING NO</th>
                             <th>COLOR</th>
@@ -343,7 +343,7 @@
 
         dd.innerHTML = filtered.map(p => `
             <div class="product-dropdown-item" onmousedown="selectProduct(${p.id})">
-            <div class="fn">${esc(p.fabric_name || '—')}</div>
+            <div class="fn">${esc(p.nama || '—')}</div>
             <div class="fm">
             ${p.fabric_no ? 'Fabric No: ' + esc(p.fabric_no) + ' · ' : ''}
             ${p.customer ? esc(p.customer) + ' · ' : ''}
@@ -370,8 +370,7 @@
         selectedProduct = p;
         document.getElementById('f-product_id').value       = p.id;
         document.getElementById('f-product-search').value =
-        [p.fabric_name, p.fabric_no ? '('+p.fabric_no+')' : '', p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' ');
-        [p.fabric_no, p.fabric_name, p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' — ');
+        [p.nama, p.fabric_no ? '('+p.fabric_no+')' : '', p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' ');
         document.getElementById('product-dropdown').style.display = 'none';
 
         // Isi color dari produk jika belum diisi user
@@ -593,8 +592,8 @@
             return `
             <tr>
             <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
-            <td style="font-weight:700;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
-            <td style="font-size:0.85rem">${esc(d.fabric_name || '—')}</td>
+            <td style="font-weight:700">${esc(d.nama || '—')}</td>
+            <td style="font-size:0.85rem;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
             <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.greige_no || '—')}</td>
             <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.dyeing_no || '—')}</td>
             <td>${esc(d.color || '—')}</td>
