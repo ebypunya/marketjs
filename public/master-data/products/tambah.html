@@ -194,6 +194,7 @@ function submitForm() {
     const fabric_no = getVal('f-fabric_no');
     if (!nama) { showAlert('❌ Nama product wajib diisi.', 'error'); return; }
     if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
+    
 
     const body = new URLSearchParams({
         nama,

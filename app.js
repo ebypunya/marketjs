@@ -453,6 +453,22 @@ app.get('/api/products/:id', requireLogin, (req, res) => {
         res.json(results[0]);
     });
 });
+
+// DELETE product
+app.delete('/api/products/:id', requireLogin, (req, res) => {
+    const id = req.params.id;
+    db.query("DELETE FROM products WHERE id = ?", [id], (err, result) => {
+        if (err) {
+            console.error('DELETE product error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, error: 'Data tidak ditemukan' });
+        }
+        console.log(`Product ${id} deleted successfully`);
+        res.json({ success: true });
+    });
+});
 // =========================================================================
 // 9. BACKEND ENDPOINTS (REST API MASTER DATA KURS / RATES)
 // =========================================================================
