@@ -67,13 +67,14 @@
         <p style="color:#64748b;font-size:0.88rem;margin-bottom:6px">Invoice <b id="delete-name" style="color:#0f172a"></b> akan dihapus permanen.</p>
         <p style="color:#ef4444;font-size:0.8rem;font-weight:600;margin-bottom:24px">⚠️ Aksi ini tidak bisa dibatalkan.</p>
         <div style="display:flex;gap:10px;justify-content:center">
-            <button onclick="closeDeleteModal()"
+            <button id="btn-cancel-delete"
             style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
-            <button onclick="confirmDelete()"
+            <button id="btn-confirm-delete"
             style="padding:10px 24px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">
             <i class="ti ti-trash"></i> Ya, Hapus
         </button>
     </div>
+</div>
 </div>
 
 </div>
@@ -81,218 +82,250 @@
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
-    let allInvoices = [];
-    let filtered = [];
-    let currentPage = 1;
-    const PER_PAGE = 10;
-    let deleteId = null;
+    (function () {
+        'use strict';
 
-    // Status config
-    const STATUS_CONFIG = {
-        draft:      { label: 'Draft',      bg: '#f1f5f9', color: '#475569' },
-        finalized:  { label: 'Finalized',  bg: '#eff6ff', color: '#2563eb' },
-        paid:       { label: 'Paid',       bg: '#f0fdf4', color: '#16a34a' },
-        cancelled:  { label: 'Cancelled',  bg: '#fef2f2', color: '#dc2626' },
-    };
+        let allInvoices = [];
+        let filtered = [];
+        let currentPage = 1;
+        const PER_PAGE = 10;
+        let deleteId = null;
 
-    function statusBadge(status) {
-        const s = STATUS_CONFIG[status] || { label: status || '-', bg: '#f1f5f9', color: '#64748b' };
-        return `<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.72rem;font-weight:800;letter-spacing:0.4px;background:${s.bg};color:${s.color}">${s.label}</span>`;
-    }
+        const STATUS_CONFIG = {
+            draft:     { label: 'Draft',     bg: '#f1f5f9', color: '#475569' },
+            finalized: { label: 'Finalized', bg: '#eff6ff', color: '#2563eb' },
+            paid:      { label: 'Paid',      bg: '#f0fdf4', color: '#16a34a' },
+            cancelled: { label: 'Cancelled', bg: '#fef2f2', color: '#dc2626' },
+        };
 
-    function formatDate(str) {
-        if (!str) return '-';
-        const d = new Date(str);
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        return `${dd}/${mm}/${d.getFullYear()}`;
-    }
-
-    function formatCurrency(val, cur) {
-        const n = parseFloat(val) || 0;
-        return cur === 'IDR'
-        ? 'Rp ' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 })
-        : '$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-    }
-
-    function escHtml(str) {
-        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-    function escAttr(str) {
-        return String(str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-    }
-
-    function loadInvoices() {
-        fetch('/api/invoices')
-        .then(r => r.json())
-        .then(data => {
-            allInvoices = data;
-            applyFilter();
-        })
-        .catch(() => {
-            document.getElementById('invoice-tbody').innerHTML =
-            '<tr><td colspan="8" style="text-align:center;padding:40px;color:#ef4444">Gagal memuat data.</td></tr>';
-        });
-    }
-
-    function applyFilter() {
-        const q = document.getElementById('search-input').value.toLowerCase();
-        const statusVal = document.getElementById('filter-status').value;
-
-        filtered = allInvoices.filter(inv => {
-            const matchSearch = !q ||
-            (inv.invoice_no && inv.invoice_no.toLowerCase().includes(q)) ||
-            (inv.customer_name && inv.customer_name.toLowerCase().includes(q));
-            const matchStatus = !statusVal || inv.status === statusVal;
-            return matchSearch && matchStatus;
-        });
-        currentPage = 1;
-        renderTable();
-    }
-
-    function renderTable() {
-        const tbody = document.getElementById('invoice-tbody');
-        const total = filtered.length;
-        const totalPages = Math.ceil(total / PER_PAGE) || 1;
-        currentPage = Math.min(currentPage, totalPages);
-
-        const start = (currentPage - 1) * PER_PAGE;
-        const end = start + PER_PAGE;
-        const pageData = filtered.slice(start, end);
-
-        if (total === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data invoice.</td></tr>';
-            document.getElementById('pagination-info').textContent = '0 data';
-            document.getElementById('pagination-controls').innerHTML = '';
-            return;
+        function statusBadge(status) {
+            const s = STATUS_CONFIG[status] || { label: status || '-', bg: '#f1f5f9', color: '#64748b' };
+            return '<span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.72rem;' +
+            'font-weight:800;letter-spacing:0.4px;background:' + s.bg + ';color:' + s.color + '">' + s.label + '</span>';
         }
 
-        tbody.innerHTML = pageData.map((inv, i) => `
-            <tr style="transition:background .15s" onmouseover="this.style.background='#fafafe'" onmouseout="this.style.background=''">
-            <td style="padding:13px 18px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
-            <td style="padding:13px 18px">
-            <span style="font-weight:800;font-size:0.92rem;color:var(--primary)">${escHtml(inv.invoice_no)}</span>
-            </td>
-            <td style="padding:13px 18px;font-weight:600">${escHtml(inv.customer_name || '-')}</td>
-            <td style="padding:13px 18px;text-align:right;font-weight:700;color:#2563eb;font-size:0.9rem">
-            ${formatCurrency(inv.total, inv.currency)}
-            </td>
-            <td style="padding:13px 18px;font-size:0.82rem;color:var(--text-muted)">
-            ${inv.contract_count ? `<span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-weight:700">${inv.contract_count} contracts</span>` : '-'}
-            </td>
-            <td style="padding:13px 18px;font-size:0.82rem;color:var(--text-muted)">${formatDate(inv.created_at)}</td>
-            <td style="padding:13px 18px;text-align:center">${statusBadge(inv.status)}</td>
-            <td style="padding:13px 18px;text-align:center">
-            <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
-            <a href="/sales/invoices/print?id=${inv.id}" title="Print" target="_blank"
-            style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#f0fdf4;color:#16a34a;border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">
-            <i class="ti ti-printer" style="font-size:13px"></i>
-            </a>
-            <a href="/sales/invoices/edit?id=${inv.id}" title="Edit"
-            style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">
-            <i class="ti ti-edit" style="font-size:13px"></i>
-            </a>
-            <button onclick="openDeleteModal('${inv.id}', '${escAttr(inv.invoice_no)}')" title="Hapus"
-            style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">
-            <i class="ti ti-trash" style="font-size:13px"></i>
-            </button>
-            </div>
-            </td>
-            </tr>
-            `).join('');
-
-        document.getElementById('pagination-info').textContent =
-        `Menampilkan ${start + 1}–${Math.min(end, total)} dari ${total} data`;
-
-        renderPagination(totalPages);
-    }
-
-    function renderPagination(totalPages) {
-        const ctrl = document.getElementById('pagination-controls');
-        if (totalPages <= 1) { ctrl.innerHTML = ''; return; }
-
-        const btnStyle = (active) =>
-        `padding:6px 12px;border-radius:7px;border:1px solid ${active ? 'var(--primary)' : 'var(--border-color)'};
-        background:${active ? 'var(--primary)' : '#fff'};color:${active ? '#fff' : 'var(--text-muted)'};
-        font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s`;
-
-        let html = `<button style="${btnStyle(false)}" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>
-        <i class="ti ti-chevron-left"></i></button>`;
-
-        let pages = [];
-        for (let i = 1; i <= totalPages; i++) {
-            if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1))
-                pages.push(i);
-            else if (pages[pages.length - 1] !== '...')
-                pages.push('...');
+        function formatDate(str) {
+            if (!str) return '-';
+            const d = new Date(str);
+            if (isNaN(d.getTime())) return '-';
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            return dd + '/' + mm + '/' + d.getFullYear();
         }
-        pages.forEach(p => {
-            if (p === '...') html += `<span style="padding:6px 8px;color:var(--text-muted);font-size:0.8rem">…</span>`;
-            else html += `<button style="${btnStyle(p === currentPage)}" onclick="goPage(${p})">${p}</button>`;
-        });
 
-        html += `<button style="${btnStyle(false)}" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>
-        <i class="ti ti-chevron-right"></i></button>`;
+        function formatCurrency(val, cur) {
+            const n = parseFloat(val) || 0;
+            return cur === 'IDR'
+            ? 'Rp ' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+            : '$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        }
 
-        ctrl.innerHTML = html;
-    }
+        function escHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
 
-    function goPage(page) {
-        const totalPages = Math.ceil(filtered.length / PER_PAGE) || 1;
-        if (page < 1 || page > totalPages) return;
-        currentPage = page;
-        renderTable();
-    }
+        function setLoadingError(msg) {
+            const tbody = document.getElementById('invoice-tbody');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:#ef4444">' + escHtml(msg) + '</td></tr>';
+        }
 
-    function openDeleteModal(id, invNo) {
-        deleteId = id;
-        document.getElementById('delete-name').textContent = invNo;
-        document.getElementById('delete-modal').style.display = 'flex';
-    }
-    
-    function closeDeleteModal() {
-        deleteId = null;
-        document.getElementById('delete-modal').style.display = 'none';
-        const btn = document.querySelector('#delete-modal button:last-child');
-        if (btn) {
+        async function loadInvoices() {
+            try {
+                const res = await fetch('/api/invoices', { credentials: 'same-origin' });
+
+                if (!res.ok) {
+                    setLoadingError('Gagal memuat data (HTTP ' + res.status + ').');
+                    return;
+                }
+
+                const data = await res.json();
+
+                if (!Array.isArray(data)) {
+                    console.error('Response /api/invoices bukan array:', data);
+                    setLoadingError('Gagal memuat data: ' + (data && data.error ? data.error : 'format response tidak sesuai.'));
+                    return;
+                }
+
+                allInvoices = data;
+                applyFilter();
+            } catch (err) {
+                console.error('Gagal load invoices:', err);
+                setLoadingError('Terjadi kesalahan: ' + err.message);
+            }
+        }
+
+        function applyFilter() {
+            const q = document.getElementById('search-input').value.toLowerCase();
+            const statusVal = document.getElementById('filter-status').value;
+
+            filtered = allInvoices.filter(function (inv) {
+                const matchSearch = !q ||
+                (inv.invoice_no && inv.invoice_no.toLowerCase().includes(q)) ||
+                (inv.customer_name && inv.customer_name.toLowerCase().includes(q));
+                const matchStatus = !statusVal || inv.status === statusVal;
+                return matchSearch && matchStatus;
+            });
+            currentPage = 1;
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('invoice-tbody');
+            const total = filtered.length;
+            const totalPages = Math.ceil(total / PER_PAGE) || 1;
+            currentPage = Math.min(currentPage, totalPages);
+
+            const start = (currentPage - 1) * PER_PAGE;
+            const end = start + PER_PAGE;
+            const pageData = filtered.slice(start, end);
+
+            if (total === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data invoice.</td></tr>';
+                document.getElementById('pagination-info').textContent = '0 data';
+                document.getElementById('pagination-controls').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = pageData.map(function (inv, i) {
+                return '<tr style="transition:background .15s" onmouseover="this.style.background=\'#fafafe\'" onmouseout="this.style.background=\'\'">' +
+                '<td style="padding:13px 18px;color:var(--text-muted);font-size:0.82rem">' + (start + i + 1) + '</td>' +
+                '<td style="padding:13px 18px"><span style="font-weight:800;font-size:0.92rem;color:var(--primary)">' + escHtml(inv.invoice_no) + '</span></td>' +
+                '<td style="padding:13px 18px;font-weight:600">' + escHtml(inv.customer_name || '-') + '</td>' +
+                '<td style="padding:13px 18px;text-align:right;font-weight:700;color:#2563eb;font-size:0.9rem">' + formatCurrency(inv.total, inv.currency) + '</td>' +
+                '<td style="padding:13px 18px;font-size:0.82rem;color:var(--text-muted)">' +
+                (inv.contract_count ? '<span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-weight:700">' + inv.contract_count + ' contracts</span>' : '-') +
+                '</td>' +
+                '<td style="padding:13px 18px;font-size:0.82rem;color:var(--text-muted)">' + formatDate(inv.created_at) + '</td>' +
+                '<td style="padding:13px 18px;text-align:center">' + statusBadge(inv.status) + '</td>' +
+                '<td style="padding:13px 18px;text-align:center">' +
+                '<div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">' +
+                '<a href="/sales/invoices/print?id=' + inv.id + '" title="Print" target="_blank" ' +
+                'style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#f0fdf4;color:#16a34a;border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">' +
+                '<i class="ti ti-printer" style="font-size:13px"></i></a>' +
+                '<a href="/sales/invoices/edit?id=' + inv.id + '" title="Edit" ' +
+                'style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none;font-size:0.78rem;font-weight:600">' +
+                '<i class="ti ti-edit" style="font-size:13px"></i></a>' +
+                '<button class="btn-open-delete" data-id="' + inv.id + '" data-no="' + escHtml(inv.invoice_no) + '" title="Hapus" ' +
+                'style="display:inline-flex;align-items:center;gap:4px;padding:6px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit">' +
+                '<i class="ti ti-trash" style="font-size:13px"></i></button>' +
+                '</div>' +
+                '</td>' +
+                '</tr>';
+            }).join('');
+
+            document.getElementById('pagination-info').textContent =
+            'Menampilkan ' + (start + 1) + '–' + Math.min(end, total) + ' dari ' + total + ' data';
+
+            renderPagination(totalPages);
+
+            // Pasang event listener tombol hapus (tanpa inline onclick agar aman dari karakter khusus)
+            document.querySelectorAll('.btn-open-delete').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    openDeleteModal(btn.getAttribute('data-id'), btn.getAttribute('data-no'));
+                });
+            });
+        }
+
+        function renderPagination(totalPages) {
+            const ctrl = document.getElementById('pagination-controls');
+            if (totalPages <= 1) { ctrl.innerHTML = ''; return; }
+
+            function btnStyle(active) {
+                return 'padding:6px 12px;border-radius:7px;border:1px solid ' + (active ? 'var(--primary)' : 'var(--border-color)') + ';' +
+                'background:' + (active ? 'var(--primary)' : '#fff') + ';color:' + (active ? '#fff' : 'var(--text-muted)') + ';' +
+                'font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s';
+            }
+
+            let html = '<button style="' + btnStyle(false) + '" data-page="' + (currentPage - 1) + '" ' + (currentPage === 1 ? 'disabled' : '') + '>' +
+            '<i class="ti ti-chevron-left"></i></button>';
+
+            let pages = [];
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+                    pages.push(i);
+                } else if (pages[pages.length - 1] !== '...') {
+                    pages.push('...');
+                }
+            }
+
+            pages.forEach(function (p) {
+                if (p === '...') {
+                    html += '<span style="padding:6px 8px;color:var(--text-muted);font-size:0.8rem">…</span>';
+                } else {
+                    html += '<button style="' + btnStyle(p === currentPage) + '" data-page="' + p + '">' + p + '</button>';
+                }
+            });
+
+            html += '<button style="' + btnStyle(false) + '" data-page="' + (currentPage + 1) + '" ' + (currentPage === totalPages ? 'disabled' : '') + '>' +
+            '<i class="ti ti-chevron-right"></i></button>';
+
+            ctrl.innerHTML = html;
+
+            ctrl.querySelectorAll('button[data-page]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    goPage(parseInt(btn.getAttribute('data-page'), 10));
+                });
+            });
+        }
+
+        function goPage(page) {
+            const totalPages = Math.ceil(filtered.length / PER_PAGE) || 1;
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderTable();
+        }
+
+        function openDeleteModal(id, invNo) {
+            deleteId = id;
+            document.getElementById('delete-name').textContent = invNo;
+            document.getElementById('delete-modal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            deleteId = null;
+            document.getElementById('delete-modal').style.display = 'none';
+            const btn = document.getElementById('btn-confirm-delete');
             btn.disabled = false;
             btn.innerHTML = '<i class="ti ti-trash"></i> Ya, Hapus';
         }
-    }
 
-    function confirmDelete() {
-        const btn = document.querySelector('#delete-modal button:last-child');
-        btn.disabled = true;
-        btn.textContent = 'Menghapus...';
+        async function confirmDelete() {
+            if (!deleteId) return;
+            const btn = document.getElementById('btn-confirm-delete');
+            btn.disabled = true;
+            btn.textContent = 'Menghapus...';
 
-        fetch('/api/invoices/' + deleteId, { method: 'DELETE' })
-        .then(r => {
-            if (!r.ok) throw new Error('HTTP error! status: ' + r.status);
-            return r.text().then(text => text ? JSON.parse(text) : { success: true });
-        })
-        .then(data => {
-            if (data.success || data.status === 'success') {
-                closeDeleteModal();
-                loadInvoices();
-            } else {
-                alert('❌ Gagal menghapus: ' + (data.error || data.message || 'Unknown error'));
+            try {
+                const res = await fetch('/api/invoices/' + deleteId, { method: 'DELETE' });
+                const text = await res.text();
+                const data = text ? JSON.parse(text) : { success: true };
+
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+
+                if (data.success || data.status === 'success') {
+                    closeDeleteModal();
+                    loadInvoices();
+                } else {
+                    alert('❌ Gagal menghapus: ' + (data.error || data.message || 'Unknown error'));
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="ti ti-trash"></i> Ya, Hapus';
+                }
+            } catch (err) {
+                console.error('Delete error:', err);
+                alert('❌ Kesalahan jaringan: ' + err.message);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="ti ti-trash"></i> Ya, Hapus';
             }
-        })
-        .catch(err => {
-            console.error('Delete error:', err);
-            alert('❌ Kesalahan jaringan: ' + err.message);
-            btn.disabled = false;
-            btn.innerHTML = '<i class="ti ti-trash"></i> Ya, Hapus';
-        });
-    }
+        }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        loadInvoices();
-        document.getElementById('search-input').addEventListener('input', applyFilter);
-        document.getElementById('filter-status').addEventListener('change', applyFilter);
-    });
+        document.addEventListener('DOMContentLoaded', function () {
+            loadInvoices();
+            document.getElementById('search-input').addEventListener('input', applyFilter);
+            document.getElementById('filter-status').addEventListener('change', applyFilter);
+            document.getElementById('btn-cancel-delete').addEventListener('click', closeDeleteModal);
+            document.getElementById('btn-confirm-delete').addEventListener('click', confirmDelete);
+        });
+    })();
 </script>
 </body>
 </html>

@@ -42,6 +42,12 @@
 
             <!-- IDENTITAS -->
             <div class="section-title"><i class="ti ti-tag"></i> Identitas Fabric</div>
+
+            <div class="form-field" style="margin-bottom:14px">
+                <label class="field-label">Nama Product <span style="color:#ef4444">*</span></label>
+                <input type="text" id="f-nama" placeholder="Nama product" class="field-input">
+            </div>
+
             <div class="form-grid-3" style="margin-bottom:14px">
                 <div class="form-field">
                     <label class="field-label">Fabric No/Greige No/KKP <span style="color:#ef4444">*</span></label>
@@ -59,7 +65,8 @@
             <div class="form-grid-2" style="margin-bottom:14px">
                 <div class="form-field">
                     <label class="field-label">Customer</label>
-                    <input type="text" id="f-customer" placeholder="Nama customer" class="field-input">
+                    <input type="text" id="f-customer" list="customer-datalist" placeholder="Ketik atau pilih customer" class="field-input" autocomplete="off">
+                    <datalist id="customer-datalist"></datalist>
                 </div>
                 <div class="form-field">
                     <label class="field-label">Color</label>
@@ -163,11 +170,26 @@
 
     function getVal(id) { return document.getElementById(id).value.trim(); }
 
+    // Isi datalist customer dari /api/customers
+    async function loadCustomerOptions() {
+        try {
+            const data = await fetch('/api/customers').then(r => r.json());
+            const dl = document.getElementById('customer-datalist');
+            dl.innerHTML = data.map(c => `<option value="${String(c.name).replace(/"/g,'&quot;')}">`).join('');
+        } catch (e) {
+            console.error('Gagal load customers untuk autocomplete', e);
+        }
+    }
+    document.addEventListener('DOMContentLoaded', loadCustomerOptions);
+
     function submitForm() {
+        const nama = getVal('f-nama');
         const fabric_no = getVal('f-fabric_no');
+        if (!nama) { showAlert('❌ Nama product wajib diisi.', 'error'); return; }
         if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
 
         const body = new URLSearchParams({
+            nama,
             fabric_no,
             customer_fabric_no: getVal('f-customer_fabric_no'),
             fabric_name:        getVal('f-fabric_name'),
