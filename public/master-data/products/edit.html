@@ -65,8 +65,9 @@
             <div class="form-grid-2" style="margin-bottom:14px">
                 <div class="form-field">
                     <label class="field-label">Customer</label>
-                    <input type="text" id="f-customer" list="customer-datalist" placeholder="Ketik atau pilih customer" class="field-input" autocomplete="off">
-                    <datalist id="customer-datalist"></datalist>
+                    <select id="f-customer" class="field-input">
+                        <option value="">-- Pilih Customer --</option>
+                    </select>
                 </div>
                 <div class="form-field">
                     <label class="field-label">Color</label>
@@ -174,14 +175,18 @@
     function getVal(id) { return document.getElementById(id).value.trim(); }
     function setVal(id, val) { document.getElementById(id).value = (val === null || val === undefined) ? '' : val; }
 
-    // Isi datalist customer dari /api/customers
     async function loadCustomerOptions() {
         try {
             const data = await fetch('/api/customers').then(r => r.json());
-            const dl = document.getElementById('customer-datalist');
-            dl.innerHTML = data.map(c => `<option value="${String(c.name).replace(/"/g,'&quot;')}">`).join('');
+            const sel = document.getElementById('f-customer');
+            data.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c.id;
+                o.textContent = c.name;
+                sel.appendChild(o);
+            });
         } catch (e) {
-            console.error('Gagal load customers untuk autocomplete', e);
+            console.error('Gagal load customers untuk dropdown', e);
         }
     }
 
@@ -195,83 +200,84 @@
             setVal('f-fabric_no', p.fabric_no);
             setVal('f-customer_fabric_no', p.customer_fabric_no);
             setVal('f-fabric_name', p.fabric_name);
-            setVal('f-customer', p.customer);
-            setVal('f-color', p.color);
-            setVal('f-composition', p.composition);
-            setVal('f-price_greige', p.price_greige);
-            setVal('f-additional_fee', p.additional_fee);
-            setVal('f-dyeing_fee', p.dyeing_fee);
-            setVal('f-after_risk', p.after_risk);
-            setVal('f-sub_final', p.sub_final);
-            setVal('f-price_m', p.price_m);
-            setVal('f-price_y', p.price_y);
-            setVal('f-shrinkge_standard', p.shrinkge_standard);
-            setVal('f-shrinkge_actual', p.shrinkge_actual);
-            setVal('f-after_shrinkge', p.after_shrinkge);
-            setVal('f-special_condition', p.special_condition);
-            setVal('f-keterangan', p.keterangan);
-        } catch (e) {
-            showAlert('❌ Gagal memuat data product.', 'error');
-        }
+        document.getElementById('f-customer').value = p.customer || ''; // p.customer sekarang berisi id
+        setVal('f-color', p.color);
+        setVal('f-composition', p.composition);
+        setVal('f-price_greige', p.price_greige);
+        setVal('f-additional_fee', p.additional_fee);
+        setVal('f-dyeing_fee', p.dyeing_fee);
+        setVal('f-after_risk', p.after_risk);
+        setVal('f-sub_final', p.sub_final);
+        setVal('f-price_m', p.price_m);
+        setVal('f-price_y', p.price_y);
+        setVal('f-shrinkge_standard', p.shrinkge_standard);
+        setVal('f-shrinkge_actual', p.shrinkge_actual);
+        setVal('f-after_shrinkge', p.after_shrinkge);
+        setVal('f-special_condition', p.special_condition);
+        setVal('f-keterangan', p.keterangan);
+    } catch (e) {
+        showAlert('❌ Gagal memuat data product.', 'error');
     }
+}
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        await Promise.all([loadCustomerOptions(), loadProduct()]);
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadCustomerOptions(); // load dropdown dulu
+    await loadProduct();         // baru set value select-nya
+});
+
+function submitForm() {
+    const nama = getVal('f-nama');
+    const fabric_no = getVal('f-fabric_no');
+    if (!nama) { showAlert('❌ Nama product wajib diisi.', 'error'); return; }
+    if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
+
+    const body = new URLSearchParams({
+        nama,
+        fabric_no,
+        customer_fabric_no: getVal('f-customer_fabric_no'),
+        fabric_name:        getVal('f-fabric_name'),
+        customer:           document.getElementById('f-customer').value,
+        color:              getVal('f-color'),
+        composition:        getVal('f-composition'),
+        price_greige:       getVal('f-price_greige'),
+        additional_fee:     getVal('f-additional_fee'),
+        dyeing_fee:         getVal('f-dyeing_fee'),
+        after_risk:         getVal('f-after_risk'),
+        sub_final:          getVal('f-sub_final'),
+        price_m:            getVal('f-price_m'),
+        price_y:            getVal('f-price_y'),
+        shrinkge_standard:  getVal('f-shrinkge_standard'),
+        shrinkge_actual:    getVal('f-shrinkge_actual'),
+        after_shrinkge:     getVal('f-after_shrinkge'),
+        special_condition:  getVal('f-special_condition'),
+        keterangan:         getVal('f-keterangan'),
     });
 
-    function submitForm() {
-        const nama = getVal('f-nama');
-        const fabric_no = getVal('f-fabric_no');
-        if (!nama) { showAlert('❌ Nama product wajib diisi.', 'error'); return; }
-        if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
+    const btn = document.getElementById('btn-submit');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
 
-        const body = new URLSearchParams({
-            nama,
-            fabric_no,
-            customer_fabric_no: getVal('f-customer_fabric_no'),
-            fabric_name:        getVal('f-fabric_name'),
-            customer:           getVal('f-customer'),
-            color:              getVal('f-color'),
-            composition:        getVal('f-composition'),
-            price_greige:       getVal('f-price_greige'),
-            additional_fee:     getVal('f-additional_fee'),
-            dyeing_fee:         getVal('f-dyeing_fee'),
-            after_risk:         getVal('f-after_risk'),
-            sub_final:          getVal('f-sub_final'),
-            price_m:            getVal('f-price_m'),
-            price_y:            getVal('f-price_y'),
-            shrinkge_standard:  getVal('f-shrinkge_standard'),
-            shrinkge_actual:    getVal('f-shrinkge_actual'),
-            after_shrinkge:     getVal('f-after_shrinkge'),
-            special_condition:  getVal('f-special_condition'),
-            keterangan:         getVal('f-keterangan'),
-        });
-
-        const btn = document.getElementById('btn-submit');
-        btn.disabled = true;
-        btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
-
-        fetch('/api/products/' + productId, {
-            method: 'PUT', body,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                showAlert('✅ Product berhasil diperbarui!', 'success');
-                setTimeout(() => window.location.href = '/master-data/products', 1200);
-            } else {
-                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
-            }
-        })
-        .catch(() => {
-            showAlert('❌ Terjadi kesalahan server.', 'error');
+    fetch('/api/products/' + productId, {
+        method: 'PUT', body,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('✅ Product berhasil diperbarui!', 'success');
+            setTimeout(() => window.location.href = '/master-data/products', 1200);
+        } else {
+            showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
             btn.disabled = false;
             btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
-        });
-    }
+        }
+    })
+    .catch(() => {
+        showAlert('❌ Terjadi kesalahan server.', 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
+    });
+}
 </script>
 </body>
 </html>

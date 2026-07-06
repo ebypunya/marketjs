@@ -26,6 +26,7 @@
                 <thead>
                     <tr style="background:var(--bg-main)">
                         <th style="padding:14px 16px;width:44px">#</th>
+                        <th style="padding:14px 16px">NAMA PRODUCT</th>
                         <th style="padding:14px 16px">FABRIC NO</th>
                         <th style="padding:14px 16px">CUSTOMER</th>
                         <th style="padding:14px 16px">COLOR</th>
@@ -120,6 +121,7 @@
         tbody.innerHTML = pageData.map((p, i) => `
             <tr>
             <td style="padding:12px 16px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
+            <td style="padding:12px 16px;font-weight:700">${escHtml(p.nama || '-')}</td>
             <td style="padding:12px 16px;font-weight:700;color:var(--primary)">${escHtml(p.fabric_no || '-')}</td>
             <td style="padding:12px 16px;font-weight:600">${escHtml(p.customer || '-')}</td>
             <td style="padding:12px 16px">

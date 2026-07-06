@@ -65,8 +65,9 @@
             <div class="form-grid-2" style="margin-bottom:14px">
                 <div class="form-field">
                     <label class="field-label">Customer</label>
-                    <input type="text" id="f-customer" list="customer-datalist" placeholder="Ketik atau pilih customer" class="field-input" autocomplete="off">
-                    <datalist id="customer-datalist"></datalist>
+                    <select id="f-customer" class="field-input">
+                        <option value="">-- Pilih Customer --</option>
+                    </select>
                 </div>
                 <div class="form-field">
                     <label class="field-label">Color</label>
@@ -159,6 +160,7 @@
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
+
     function showAlert(msg, type) {
         const box = document.getElementById('alert-box');
         box.style.display = 'block';
@@ -170,61 +172,66 @@
 
     function getVal(id) { return document.getElementById(id).value.trim(); }
 
-    // Isi datalist customer dari /api/customers
-    async function loadCustomerOptions() {
-        try {
-            const data = await fetch('/api/customers').then(r => r.json());
-            const dl = document.getElementById('customer-datalist');
-            dl.innerHTML = data.map(c => `<option value="${String(c.name).replace(/"/g,'&quot;')}">`).join('');
-        } catch (e) {
-            console.error('Gagal load customers untuk autocomplete', e);
-        }
-    }
-    document.addEventListener('DOMContentLoaded', loadCustomerOptions);
-
-    function submitForm() {
-        const nama = getVal('f-nama');
-        const fabric_no = getVal('f-fabric_no');
-        if (!nama) { showAlert('❌ Nama product wajib diisi.', 'error'); return; }
-        if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
-
-        const body = new URLSearchParams({
-            nama,
-            fabric_no,
-            customer_fabric_no: getVal('f-customer_fabric_no'),
-            fabric_name:        getVal('f-fabric_name'),
-            customer:           getVal('f-customer'),
-            color:              getVal('f-color'),
-            composition:        getVal('f-composition'),
-            price_greige:       getVal('f-price_greige'),
-            additional_fee:     getVal('f-additional_fee'),
-            dyeing_fee:         getVal('f-dyeing_fee'),
-            after_risk:         getVal('f-after_risk'),
-            sub_final:          getVal('f-sub_final'),
-            price_m:            getVal('f-price_m'),
-            price_y:            getVal('f-price_y'),
-            shrinkge_standard:  getVal('f-shrinkge_standard'),
-            shrinkge_actual:    getVal('f-shrinkge_actual'),
-            after_shrinkge:     getVal('f-after_shrinkge'),
-            special_condition:  getVal('f-special_condition'),
-            keterangan:         getVal('f-keterangan'),
+// Isi dropdown customer dari /api/customers
+async function loadCustomerOptions() {
+    try {
+        const data = await fetch('/api/customers').then(r => r.json());
+        const sel = document.getElementById('f-customer');
+        data.forEach(c => {
+            const o = document.createElement('option');
+            o.value = c.id;
+            o.textContent = c.name;
+            sel.appendChild(o);
         });
-
-        fetch('/api/products', {
-            method: 'POST', body,
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                showAlert('✅ Product berhasil ditambahkan!', 'success');
-                setTimeout(() => window.location.href = '/master-data/products', 1200);
-            } else {
-                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
-            }
-        })
-        .catch(() => showAlert('❌ Terjadi kesalahan server.', 'error'));
+    } catch (e) {
+        console.error('Gagal load customers untuk dropdown', e);
     }
+}
+document.addEventListener('DOMContentLoaded', loadCustomerOptions);
+
+function submitForm() {
+    const nama = getVal('f-nama');
+    const fabric_no = getVal('f-fabric_no');
+    if (!nama) { showAlert('❌ Nama product wajib diisi.', 'error'); return; }
+    if (!fabric_no) { showAlert('❌ Fabric No wajib diisi.', 'error'); return; }
+
+    const body = new URLSearchParams({
+        nama,
+        fabric_no,
+        customer_fabric_no: getVal('f-customer_fabric_no'),
+        fabric_name:        getVal('f-fabric_name'),
+        customer:           document.getElementById('f-customer').value, // id customer
+        color:              getVal('f-color'),
+        composition:        getVal('f-composition'),
+        price_greige:       getVal('f-price_greige'),
+        additional_fee:     getVal('f-additional_fee'),
+        dyeing_fee:         getVal('f-dyeing_fee'),
+        after_risk:         getVal('f-after_risk'),
+        sub_final:          getVal('f-sub_final'),
+        price_m:            getVal('f-price_m'),
+        price_y:            getVal('f-price_y'),
+        shrinkge_standard:  getVal('f-shrinkge_standard'),
+        shrinkge_actual:    getVal('f-shrinkge_actual'),
+        after_shrinkge:     getVal('f-after_shrinkge'),
+        special_condition:  getVal('f-special_condition'),
+        keterangan:         getVal('f-keterangan'),
+    });
+
+    fetch('/api/products', {
+        method: 'POST', body,
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('✅ Product berhasil ditambahkan!', 'success');
+            setTimeout(() => window.location.href = '/master-data/products', 1200);
+        } else {
+            showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+        }
+    })
+    .catch(() => showAlert('❌ Terjadi kesalahan server.', 'error'));
+}
 </script>
 </body>
 </html>
