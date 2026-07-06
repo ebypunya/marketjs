@@ -24,127 +24,132 @@
         .fi:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
         .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-        .contract-select-wrap {
-            border: 1px solid var(--border-color); border-radius: 10px; 
-            max-height: 400px; overflow-y: auto; background: #f8fafc;
+        /* Autocomplete contract search */
+        .contract-search-wrap { position: relative; }
+        .contract-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+            background: #fff; border: 1px solid var(--border-color); border-top: none;
+            border-radius: 0 0 8px 8px; max-height: 260px; overflow-y: auto;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
         }
-        .contract-item {
-            padding: 14px 16px; border-bottom: 1px solid var(--border-color);
-            display: flex; align-items: flex-start; gap: 12px; cursor: pointer;
-            transition: background 0.15s;
+        .contract-dropdown-item {
+            padding: 10px 14px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid #f8fafc;
+            transition: background .1s;
         }
-        .contract-item:hover { background: #f1f5f9; }
-        .contract-item:last-child { border-bottom: none; }
-        .contract-item input[type="checkbox"] { margin-top: 2px; flex-shrink: 0; cursor: pointer; }
-        .contract-info { flex: 1; }
-        .contract-no { font-weight: 700; color: var(--primary); font-size: 0.9rem; }
-        .contract-detail { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
-        .contract-total { font-weight: 700; color: var(--text-main); font-size: 0.88rem; margin-top: 6px; }
+        .contract-dropdown-item:hover { background: var(--primary-light); }
+        .contract-dropdown-item:last-child { border-bottom: none; }
+        .contract-dropdown-item .cn { font-weight: 700; color: var(--primary); }
+        .contract-dropdown-item .cm { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .contract-dropdown-empty { padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.83rem; }
 
-        .summary-box {
-            background: linear-gradient(135deg, var(--primary) 0%, #6366f1 100%);
-            color: white; border-radius: 14px; padding: 20px 28px;
-            display: flex; justify-content: space-between; align-items: center;
+        /* Daftar contract yang sudah dipilih (urut sesuai penambahan) */
+        .selected-contract-list {
+            border: 1px solid var(--border-color); border-radius: 10px;
+            background: #f8fafc; min-height: 56px;
         }
+        .selected-contract-item {
+            padding: 12px 16px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .selected-contract-item:last-child { border-bottom: none; }
+        .sc-left { display: flex; align-items: center; gap: 10px; }
+        .sc-order { width: 26px; height: 26px; border-radius: 50%; background: var(--primary);
+            color: #fff; font-size: 0.72rem; font-weight: 800; display: flex; align-items: center;
+            justify-content: center; flex-shrink: 0; }
+            .sc-contract-no { font-weight: 700; color: var(--primary); font-size: 0.9rem; }
+            .sc-order-no { font-size: 0.78rem; color: var(--text-muted); }
+            .sc-order-no b { color: var(--text-main); }
+            .sc-remove {
+                border: none; background: #fef2f2; color: #ef4444; width: 28px; height: 28px;
+                border-radius: 7px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+            }
+            .sc-remove:hover { background: #ef4444; color: #fff; }
+            .selected-contract-empty { padding: 18px; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
 
-        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; font-weight: 600; }
-        .alert-success { background: #f0fdf4; color: #16a34a; }
-        .alert-error { background: #fef2f2; color: #dc2626; }
-    </style>
-</head>
-<body class="dashboard-page">
-    <div id="app-content">
-        <div class="bento-item" style="width:100%;box-sizing:border-box">
+            .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; font-weight: 600; }
+            .alert-success { background: #f0fdf4; color: #16a34a; }
+            .alert-error { background: #fef2f2; color: #dc2626; }
+        </style>
+    </head>
+    <body class="dashboard-page">
+        <div id="app-content">
+            <div class="bento-item" style="width:100%;box-sizing:border-box">
 
-            <div id="alert-box" class="alert" style="display:none"></div>
+                <div id="alert-box" class="alert" style="display:none"></div>
 
-            <!-- SECTION 1: BASIC INFO -->
-            <div class="section-title"><i class="ti ti-file-invoice"></i> Informasi Invoice</div>
+                <!-- SECTION 1: BASIC INFO -->
+                <div class="section-title"><i class="ti ti-file-invoice"></i> Informasi Invoice</div>
 
-            <div class="grid2" style="margin-bottom:14px">
-                <div class="fg">
-                    <label class="fl">Invoice No <span style="color:#ef4444">*</span></label>
-                    <input type="text" id="f-invoice_no" class="fi" placeholder="Akan auto-generate">
+                <div class="grid2" style="margin-bottom:14px">
+                    <div class="fg">
+                        <label class="fl">Invoice No <span style="color:#ef4444">*</span></label>
+                        <input type="text" id="f-invoice_no" class="fi" placeholder="Akan auto-generate">
+                    </div>
+                    <div class="fg">
+                        <label class="fl">Customer <span style="color:#ef4444">*</span></label>
+                        <select id="f-customer_id" class="fi" onchange="onCustomerChange()">
+                            <option value="">-- Pilih Customer --</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="fg">
-                    <label class="fl">Customer <span style="color:#ef4444">*</span></label>
-                    <select id="f-customer_id" class="fi" onchange="onCustomerChange()">
-                        <option value="">-- Pilih Customer --</option>
-                    </select>
-                </div>
-            </div>
 
-            <div class="grid2" style="margin-bottom:14px">
-                <div class="fg">
-                    <label class="fl">Mata Uang <span style="color:#ef4444">*</span></label>
-                    <select id="f-currency" class="fi">
-                        <option value="USD">USD (Dollar)</option>
-                        <option value="IDR">IDR (Rupiah)</option>
-                    </select>
+                <div class="grid2" style="margin-bottom:14px">
+                    <div class="fg">
+                        <label class="fl">Mata Uang <span style="color:#ef4444">*</span></label>
+                        <select id="f-currency" class="fi">
+                            <option value="USD">USD (Dollar)</option>
+                            <option value="IDR">IDR (Rupiah)</option>
+                        </select>
+                    </div>
+                    <div class="fg">
+                        <label class="fl">Invoice Date <span style="color:#ef4444">*</span></label>
+                        <input type="date" id="f-invoice_date" class="fi">
+                    </div>
                 </div>
-                <div class="fg">
-                    <label class="fl">Invoice Date <span style="color:#ef4444">*</span></label>
-                    <input type="date" id="f-invoice_date" class="fi">
+
+                <!-- SECTION 2: PILIH CONTRACTS -->
+                <div class="section-title"><i class="ti ti-shopping-cart"></i> Pilih Contracts</div>
+
+                <div class="fg" style="margin-bottom:10px">
+                    <label class="fl">Cari Contract (minimal 1) <span style="color:#ef4444">*</span></label>
+                    <div class="contract-search-wrap">
+                        <input type="text" id="f-contract-search" class="fi" placeholder="Ketik no. contract atau nama customer.."
+                        autocomplete="off" oninput="onContractSearch()" onfocus="onContractSearch()" onblur="hideDropdownDelayed()">
+                        <div class="contract-dropdown" id="contract-dropdown" style="display:none"></div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- SECTION 2: PILIH CONTRACTS -->
-            <div class="section-title"><i class="ti ti-shopping-cart"></i> Pilih Contracts</div>
+                <div class="fg" style="margin-bottom:14px">
+                    <label class="fl">Contract Terpilih</label>
+                    <div id="selected-contract-list" class="selected-contract-list">
+                        <div class="selected-contract-empty">Belum ada contract dipilih.</div>
+                    </div>
+                    <small style="color:var(--text-muted);font-size:0.75rem;margin-top:8px">
+                        💡 Urutan tampil sesuai urutan saat dipilih. No order setiap contract ikut ditampilkan.
+                    </small>
+                </div>
 
-            <div class="fg" style="margin-bottom:14px">
-                <label class="fl">Contracts (minimal 1) <span style="color:#ef4444">*</span></label>
-                <div style="margin-bottom:10px;display:flex;gap:10px">
-                    <button onclick="selectAllContracts()" 
-                    style="padding:8px 16px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;font-size:0.82rem;cursor:pointer;font-family:inherit">
-                    Select All
-                </button>
-                <button onclick="clearAllContracts()" 
-                style="padding:8px 16px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;font-size:0.82rem;cursor:pointer;font-family:inherit">
-                Clear All
+                <!-- BUTTONS -->
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                    <a href="/sales/invoices"
+                    style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+                    <i class="ti ti-arrow-left"></i> Batal
+                </a>
+                <button onclick="submitForm()" id="btn-submit"
+                style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+                <i class="ti ti-device-floppy"></i> Simpan & Lanjut ke Detail
             </button>
         </div>
-        <div id="contract-list" class="contract-select-wrap">
-            <div style="padding:20px;text-align:center;color:var(--text-muted)">Memuat contracts...</div>
-        </div>
-        <small style="color:var(--text-muted);font-size:0.75rem;margin-top:8px">
-            💡 Pilih contracts yang akan dimasukkan ke invoice ini. Total akan dihitung otomatis.
-        </small>
+
     </div>
-
-    <!-- SUMMARY -->
-    <div id="summary-box" style="display:none;margin-bottom:24px">
-        <div class="summary-box">
-            <div>
-                <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL INVOICE</div>
-                <div id="summary-total" style="font-size:2rem;font-weight:800;letter-spacing:-1px">—</div>
-            </div>
-            <div style="text-align:right">
-                <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">CONTRACTS</div>
-                <div id="summary-contracts" style="font-size:1.5rem;font-weight:800">0</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- BUTTONS -->
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <a href="/sales/invoices"
-        style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
-        <i class="ti ti-arrow-left"></i> Batal
-    </a>
-    <button onclick="submitForm()" id="btn-submit"
-    style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
-    <i class="ti ti-device-floppy"></i> Simpan & Lanjut ke Detail
-</button>
-</div>
-
-</div>
 </div>
 
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
-    let allContracts = [];
-    let selectedContractIds = new Set();
+    let allContracts = [];          // semua contract dari /api/contracts
+    let selectedContracts = [];     // array contract object, urut sesuai saat dipilih
+    let dropdownTimer = null;
 
     document.addEventListener('DOMContentLoaded', async () => {
         const now = new Date();
@@ -152,7 +157,7 @@
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const d = String(now.getDate()).padStart(2, '0');
         document.getElementById('f-invoice_date').value = `${y}-${m}-${d}`;
-        
+
         await Promise.all([loadCustomers(), loadContractsForSelection(), loadNextInvoiceNo()]);
     });
 
@@ -171,20 +176,16 @@
     async function loadContractsForSelection() {
         try {
             const data = await fetch('/api/contracts').then(r => r.json());
-            
-        // Filter status dihilangkan, langsung masukkan semua data contracts
-        allContracts = data; 
-        
-        renderContractList();
-    } catch(e) {
-        showAlert('Gagal memuat contracts', 'error');
-        console.error(e);
+            // Filter status dihilangkan, langsung masukkan semua data contracts
+            allContracts = data;
+        } catch(e) {
+            showAlert('Gagal memuat contracts', 'error');
+            console.error(e);
+        }
     }
-}
 
-async function loadNextInvoiceNo() {
-    try {
-            // Implement counter di backend nanti, untuk sekarang manual
+    async function loadNextInvoiceNo() {
+        try {
             const data = await fetch('/api/invoices/next-no').then(r => r.json()).catch(() => ({}));
             if (data.next_no) {
                 document.getElementById('f-invoice_no').value = data.next_no;
@@ -192,72 +193,85 @@ async function loadNextInvoiceNo() {
         } catch(e) { console.log('Invoice numbering: manual entry'); }
     }
 
-    function renderContractList() {
-        const list = document.getElementById('contract-list');
-        if (!allContracts.length) {
-            list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-muted)">Tidak ada contracts tersedia.</div>';
+    // ==================== AUTOCOMPLETE CONTRACT ====================
+    function onContractSearch() {
+        const q = document.getElementById('f-contract-search').value.toLowerCase().trim();
+        const dd = document.getElementById('contract-dropdown');
+
+        if (!q) { dd.style.display = 'none'; return; }
+
+        const selectedIds = new Set(selectedContracts.map(c => c.id));
+        const filtered = allContracts.filter(c =>
+            !selectedIds.has(c.id) && (
+                (c.contract_no && c.contract_no.toLowerCase().includes(q)) ||
+                (c.order_no && String(c.order_no).toLowerCase().includes(q)) ||
+                (c.customer_name && c.customer_name.toLowerCase().includes(q))
+                )
+            ).slice(0, 20);
+
+        if (!filtered.length) {
+            dd.innerHTML = '<div class="contract-dropdown-empty">Tidak ada contract ditemukan</div>';
+            dd.style.display = 'block';
             return;
         }
 
-        list.innerHTML = allContracts.map(c => `
-            <div class="contract-item" onclick="toggleContract(${c.id})">
-            <input type="checkbox" id="chk-${c.id}" ${selectedContractIds.has(c.id) ? 'checked' : ''}>
-            <div class="contract-info">
-            <div class="contract-no">${escHtml(c.contract_no)}</div>
-            <div class="contract-detail">
-            <i class="ti ti-user" style="font-size:12px;margin-right:4px"></i>
+        dd.innerHTML = filtered.map(c => `
+            <div class="contract-dropdown-item" onmousedown="addContract(${c.id})">
+            <div class="cn">${escHtml(c.contract_no)}</div>
+            <div class="cm">
+            ${c.order_no ? 'No Order: ' + escHtml(c.order_no) + ' &nbsp;|&nbsp; ' : ''}
             ${escHtml(c.customer_name || '—')}
-            &nbsp; | &nbsp;
-            <i class="ti ti-calendar" style="font-size:12px;margin-right:4px"></i>
-            ${c.created_at ? new Date(c.created_at).toLocaleDateString('id-ID') : '—'}
-            </div>
-            <div class="contract-total" style="color:${c.currency === 'IDR' ? '#16a34a' : '#2563eb'}">
-            Total: ${formatCurrency(c.total, c.currency)}
-            </div>
+            &nbsp;|&nbsp; ${formatCurrency(c.total, c.currency)}
             </div>
             </div>
             `).join('');
+        dd.style.display = 'block';
     }
 
-    function toggleContract(contractId) {
-        if (selectedContractIds.has(contractId)) {
-            selectedContractIds.delete(contractId);
-        } else {
-            selectedContractIds.add(contractId);
-        }
-        document.getElementById('chk-' + contractId).checked = selectedContractIds.has(contractId);
-        updateSummary();
+    function hideDropdownDelayed() {
+        dropdownTimer = setTimeout(() => {
+            document.getElementById('contract-dropdown').style.display = 'none';
+        }, 200);
     }
 
-    function selectAllContracts() {
-        allContracts.forEach(c => selectedContractIds.add(c.id));
-        renderContractList();
-        updateSummary();
+    function addContract(contractId) {
+        clearTimeout(dropdownTimer);
+        const c = allContracts.find(x => x.id === contractId);
+        if (!c) return;
+        if (selectedContracts.some(x => x.id === contractId)) return; // sudah ada, skip
+
+        selectedContracts.push(c); // ditambahkan di akhir array -> urutan tampil sesuai saat dipilih
+        document.getElementById('f-contract-search').value = '';
+        document.getElementById('contract-dropdown').style.display = 'none';
+        renderSelectedContracts();
     }
 
-    function clearAllContracts() {
-        selectedContractIds.clear();
-        renderContractList();
-        updateSummary();
+    function removeContract(contractId) {
+        selectedContracts = selectedContracts.filter(c => c.id !== contractId);
+        renderSelectedContracts();
     }
 
-    function updateSummary() {
-        const selected = allContracts.filter(c => selectedContractIds.has(c.id));
-        if (!selected.length) {
-            document.getElementById('summary-box').style.display = 'none';
+    function renderSelectedContracts() {
+        const wrap = document.getElementById('selected-contract-list');
+        if (!selectedContracts.length) {
+            wrap.innerHTML = '<div class="selected-contract-empty">Belum ada contract dipilih.</div>';
             return;
         }
 
-        const currency = document.getElementById('f-currency').value;
-        const total = selected.reduce((s, c) => s + (parseFloat(c.total) || 0), 0);
-        
-        document.getElementById('summary-box').style.display = 'block';
-        document.getElementById('summary-total').textContent = formatCurrency(total, currency);
-        document.getElementById('summary-contracts').textContent = selected.length;
-    }
-
-    function onCustomerChange() {
-        updateSummary();
+        wrap.innerHTML = selectedContracts.map((c, i) => `
+            <div class="selected-contract-item">
+            <div class="sc-left">
+            <div class="sc-order">${i + 1}</div>
+            <div>
+            <div class="sc-contract-no">${escHtml(c.contract_no)}</div>
+            <div class="sc-order-no">No Order: <b>${escHtml(c.order_no || '—')}</b></div>
+            </div>
+            </div>
+            <button class="sc-remove" onclick="removeContract(${c.id})" title="Hapus dari daftar">
+            <i class="ti ti-x" style="font-size:14px"></i>
+            </button>
+            </div>
+            `).join('');
     }
 
     function showAlert(msg, type) {
@@ -286,10 +300,7 @@ async function loadNextInvoiceNo() {
         if (!gv('f-customer_id'))  { showAlert('❌ Customer wajib dipilih.', 'error'); return; }
         if (!gv('f-currency'))     { showAlert('❌ Mata uang wajib dipilih.', 'error'); return; }
         if (!gv('f-invoice_date')) { showAlert('❌ Invoice date wajib diisi.', 'error'); return; }
-        if (!selectedContractIds.size) { showAlert('❌ Pilih minimal 1 contract.', 'error'); return; }
-
-        const selected = allContracts.filter(c => selectedContractIds.has(c.id));
-        const total = selected.reduce((s, c) => s + (parseFloat(c.total) || 0), 0);
+        if (!selectedContracts.length) { showAlert('❌ Pilih minimal 1 contract.', 'error'); return; }
 
         const payload = {
             invoice_no:  gv('f-invoice_no'),
@@ -297,8 +308,8 @@ async function loadNextInvoiceNo() {
             currency:    gv('f-currency'),
             invoice_date: gv('f-invoice_date'),
             status:      'draft',
-            total:       total,
-            contracts:   Array.from(selectedContractIds) // Array of contract IDs
+            total:       0, // total dihitung otomatis dari item produk di halaman detail
+            contracts:   selectedContracts.map(c => c.id) // urut sesuai saat dipilih
         };
 
         const btn = document.getElementById('btn-submit');
@@ -314,7 +325,7 @@ async function loadNextInvoiceNo() {
         .then(data => {
             if (data.success) {
                 showAlert('✅ Invoice berhasil dibuat! Mengalihkan...', 'success');
-                setTimeout(() => { window.location.href = '/sales/invoices'; }, 1200);
+                setTimeout(() => { window.location.href = '/sales/invoices/detail?id=' + data.id; }, 1200);
             } else {
                 showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
                 btn.disabled = false;

@@ -169,6 +169,10 @@ app.get('/sales/invoices/edit', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'edit.html'));
 });
 
+app.get('/sales/invoices/detail', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'detail.html'));
+});
+
 // =========================================================================
 // 5. PROSES OTENTIKASI & LOGOUT (POST/GET AUTH)
 // =========================================================================
@@ -1059,6 +1063,161 @@ app.delete('/api/invoices/:id/remove-contract/:contractId', requireLogin, (req, 
             }
             res.json({ success: true });
         });
+});
+
+// =========================================================================
+// BACKEND ENDPOINTS (REST API CHILD ITEMS / INVOICE DETAILS - PRODUCT)
+// =========================================================================
+// Tabel: invoice_details
+// CREATE TABLE invoice_details (
+//   id INT AUTO_INCREMENT PRIMARY KEY,
+//   invoice_id INT NOT NULL,
+//   product_id INT NOT NULL,
+//   color VARCHAR(100) DEFAULT NULL,
+//   unit ENUM('Meter','Yard') NOT NULL DEFAULT 'Meter',
+//   qty_meter DECIMAL(14,2) DEFAULT 0,
+//   qty_yard DECIMAL(14,2) DEFAULT 0,
+//   price_usd DECIMAL(14,4) DEFAULT 0,
+//   diskon DECIMAL(14,4) DEFAULT 0,
+//   stotal_usd DECIMAL(14,2) DEFAULT 0,
+//   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+//   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+//   FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+//   FOREIGN KEY (product_id) REFERENCES products(id)
+// );
+
+// Helper: rekalkulasi ulang total invoice berdasarkan SUM(stotal_usd) item produknya.
+function recalcInvoiceTotal(invoiceId, callback) {
+    const sql = `
+    UPDATE invoices i
+    SET i.total = (
+    SELECT COALESCE(SUM(idt.stotal_usd), 0)
+    FROM invoice_details idt
+    WHERE idt.invoice_id = i.id
+    ), i.updated_at = NOW()
+    WHERE i.id = ?`;
+    db.query(sql, [invoiceId], callback || (() => {}));
+}
+
+// API: Update Manual Total Nilai Nominal Invoice
+app.put('/api/invoices/:id/total', requireLogin, (req, res) => {
+    const { total } = req.body;
+    db.query(
+        'UPDATE invoices SET total=?, updated_at=NOW() WHERE id=?',
+        [total || 0, req.params.id],
+        (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        }
+        );
+});
+
+// API: Get Items Product berdasarkan Invoice ID
+app.get('/api/invoice-details/by-invoice/:invoiceId', requireLogin, (req, res) => {
+    const sql = `
+    SELECT idt.*,
+    p.fabric_no, p.fabric_name, p.color AS product_color,
+    p.price_m, p.price_y
+    FROM invoice_details idt
+    LEFT JOIN products p ON p.id = idt.product_id
+    WHERE idt.invoice_id = ?
+    ORDER BY idt.created_at ASC
+    `;
+    db.query(sql, [req.params.invoiceId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
+// API: Tambah Item Product ke dalam Invoice (Auto-recalculate Total Nilai Invoice)
+app.post('/api/invoice-details', requireLogin, (req, res) => {
+    const {
+        invoice_id, product_id, color, unit,
+        qty_meter, qty_yard, price_usd, diskon, stotal_usd
+    } = req.body;
+
+    if (!invoice_id || !product_id || (!qty_meter && !qty_yard)) {
+        return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
+    }
+    const sql = `
+    INSERT INTO invoice_details
+    (invoice_id, product_id, color, unit, qty_meter, qty_yard, price_usd, diskon, stotal_usd, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+    `;
+    db.query(sql, [
+        invoice_id, product_id, color || null, unit || 'Meter',
+        qty_meter || 0, qty_yard || 0, price_usd || 0, diskon || 0, stotal_usd || 0
+        ], (err, result) => {
+            if (err) return res.status(500).json({ error: err.message });
+
+            // Sinkronisasi otomatis kalkulasi total di master invoice record
+            recalcInvoiceTotal(invoice_id);
+            res.json({ success: true, id: result.insertId });
+        });
+});
+
+// API: Update Item Product Invoice (Auto-recalculate Total Nilai Invoice)
+app.put('/api/invoice-details/:id', requireLogin, (req, res) => {
+    const detailId = req.params.id;
+    const {
+        product_id, color, unit,
+        qty_meter, qty_yard, price_usd, diskon, stotal_usd
+    } = req.body;
+
+    db.query('SELECT invoice_id FROM invoice_details WHERE id = ?', [detailId], (err, rows) => {
+        if (err) return res.status(500).json({ success: false, error: err.message });
+        if (!rows.length) return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
+
+        const invoiceId = rows[0].invoice_id;
+        const sql = `
+        UPDATE invoice_details SET
+        product_id=?, color=?, unit=?, qty_meter=?, qty_yard=?, price_usd=?, diskon=?, stotal_usd=?, updated_at=NOW()
+        WHERE id=?`;
+
+        db.query(sql, [
+            product_id, color || null, unit || 'Meter',
+            qty_meter || 0, qty_yard || 0, price_usd || 0, diskon || 0, stotal_usd || 0,
+            detailId
+            ], (err2) => {
+                if (err2) return res.status(500).json({ success: false, error: err2.message });
+
+                recalcInvoiceTotal(invoiceId);
+                res.json({ success: true });
+            });
+    });
+});
+
+// API: Hapus Item Product Invoice berdasarkan ID (Auto-recalculate Total Nilai Invoice)
+app.delete('/api/invoice-details/:id', requireLogin, (req, res) => {
+    const detailId = req.params.id;
+
+    db.query('SELECT invoice_id FROM invoice_details WHERE id = ?', [detailId], (err, rows) => {
+        if (err) {
+            console.error('SELECT invoice_details error:', err);
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        if (!rows || rows.length === 0) {
+            return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
+        }
+
+        const invoiceId = rows[0].invoice_id;
+
+        db.query('DELETE FROM invoice_details WHERE id = ?', [detailId], (err2, result) => {
+            if (err2) {
+                console.error('DELETE invoice_details error:', err2);
+                return res.status(500).json({ success: false, error: 'Gagal menghapus item: ' + err2.message });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
+            }
+
+            recalcInvoiceTotal(invoiceId, (err3) => {
+                if (err3) console.error('UPDATE invoice total error:', err3);
+                console.log(`Invoice detail ${detailId} deleted successfully`);
+                res.json({ success: true });
+            });
+        });
+    });
 });
 
 // =========================================================================
