@@ -17,14 +17,9 @@ const db = mysql.createPool({
     database: 'marketjs',
     waitForConnections: true,
     connectionLimit: 10,
-    // PENTING: kembalikan kolom DATE/DATETIME sebagai string mentah apa adanya.
-    // Tanpa ini, mysql2 mengonversi ke objek Date JS berdasarkan timezone server,
-    // lalu saat di-JSON-kan dikonversi lagi ke UTC -> menyebabkan tanggal "mundur"
-    // satu hari ketika frontend mengambil tanggal dengan slice(0,10).
     dateStrings: true
 });
 
-// Cek koneksi database saat server pertama kali berjalan
 db.getConnection((err, conn) => {
     if (err) {
         console.error('Koneksi Database Gagal:', err.message);
@@ -37,29 +32,25 @@ db.getConnection((err, conn) => {
 // =========================================================================
 // 2. GLOBAL MIDDLEWARE
 // =========================================================================
-// Folder statis untuk aset publik
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/assets', express.static(path.join(__dirname, 'assets')));
 
-// Parser untuk incoming request body (Form-data & JSON)
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json()); 
 
-// Konfigurasi Session
 app.use(session({
-    secret: 'dev477-secret-key-ganti-ini', // Ubah dengan key yang lebih aman di produksi
+    secret: 'dev477-secret-key-ganti-ini',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false,              // Set true jika menggunakan HTTPS
-        maxAge: 1000 * 60 * 60 * 8  // Validitas session: 8 Jam
+        secure: false,
+        maxAge: 1000 * 60 * 60 * 8
     }
 }));
 
 // =========================================================================
 // 3. CUSTOM MIDDLEWARE (AUTHENTICATION & AUTHORIZATION)
 // =========================================================================
-// Proteksi rute umum: Wajib login
 function requireLogin(req, res, next) {
     if (!req.session.user) {
         return res.redirect('/?error=unauthorized');
@@ -67,7 +58,6 @@ function requireLogin(req, res, next) {
     next();
 }
 
-// Proteksi rute khusus: Wajib login dengan role 'superadmin'
 function requireSuperAdmin(req, res, next) {
     if (!req.session.user) {
         return res.redirect('/?error=unauthorized');
@@ -82,9 +72,7 @@ function requireSuperAdmin(req, res, next) {
 // 4. RUTE HALAMAN / WEB VIEW (ROUTE GET UNTUK SERVING HTML)
 // =========================================================================
 
-// --- Halaman Otentikasi & Landing ---
 app.get('/', (req, res) => {
-    // Jika sudah login, langsung dialihkan ke dashboard
     if (req.session.user) return res.redirect('/dashboard');
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
@@ -97,7 +85,6 @@ app.get('/lupa-password', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'lupa-password.html'));
 });
 
-// --- Halaman Utama & Admin ---
 app.get('/dashboard', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
 });
@@ -106,7 +93,6 @@ app.get('/admin/manage-users', requireSuperAdmin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin', 'manage-users.html'));
 });
 
-// --- Halaman Master Data (Customers) ---
 app.get('/master-data/customers', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'master-data', 'customers', 'index.html'));
 });
@@ -117,7 +103,6 @@ app.get('/master-data/customers/edit', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'master-data', 'customers', 'edit.html'));
 });
 
-// --- Halaman Master Data (Products) ---
 app.get('/master-data/products', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'master-data', 'products', 'index.html'));
 });
@@ -128,7 +113,6 @@ app.get('/master-data/products/edit', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'master-data', 'products', 'edit.html'));
 });
 
-// --- Halaman Master Data (Kurs / Rates) ---
 app.get('/master-data/kurs', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'master-data', 'kurs', 'index.html'));
 });
@@ -139,7 +123,6 @@ app.get('/master-data/kurs/edit', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'master-data', 'kurs', 'edit.html'));
 });
 
-// --- Halaman Transaksi (Sales Contract) ---
 app.get('/sales/sales-contract', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract.html'));
 });
@@ -156,7 +139,6 @@ app.get('/sales/sales-contract/print', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'print.html'));
 });
 
-//-- HALAMAN INVOICES----
 app.get('/sales/invoices', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'index.html'));
 });
@@ -173,11 +155,14 @@ app.get('/sales/invoices/detail', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'detail.html'));
 });
 
+app.get('/sales/invoices/print', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'print.html'));
+});
+
 // =========================================================================
 // 5. PROSES OTENTIKASI & LOGOUT (POST/GET AUTH)
 // =========================================================================
 
-// Proses Registrasi User Baru
 app.post('/register-proses', async (req, res) => {
     const { fullname, username, email, password } = req.body;
 
@@ -185,7 +170,6 @@ app.post('/register-proses', async (req, res) => {
         const saltRounds = 10;
         const password_hash = await bcrypt.hash(password, saltRounds);
 
-        // Catatan: Kolom 'password' menyimpan plain text untuk kebutuhan migrasi sistem/legacy, aman jika ingin dihilangkan nanti
         const sql = "INSERT INTO users (fullname, username, email, password, password_hash, status, role) VALUES (?, ?, ?, ?, ?, 'pending', 'user')";
         db.query(sql, [fullname, username, email, password, password_hash], (err) => {
             if (err) {
@@ -207,7 +191,6 @@ app.post('/register-proses', async (req, res) => {
     }
 });
 
-// Proses Login User
 app.post('/login-proses', (req, res) => {
     const { username, password } = req.body;
     const sql = "SELECT * FROM users WHERE username = ? OR email = ?";
@@ -219,7 +202,6 @@ app.post('/login-proses', (req, res) => {
         const user = results[0];
         let passwordMatch = false;
 
-        // Cek kecocokan password (mendukung hash bcrypt & plain text lama)
         if (user.password_hash) {
             passwordMatch = await bcrypt.compare(password, user.password_hash);
         } else {
@@ -228,11 +210,9 @@ app.post('/login-proses', (req, res) => {
 
         if (!passwordMatch) return res.redirect('/?error=invalid');
 
-        // Validasi status verifikasi akun
         if (user.status === 'pending') return res.redirect('/?error=pending');
         if (user.status === 'banned') return res.redirect('/?error=banned');
 
-        // Menyimpan data user ke session server
         req.session.user = {
             id: user.id,
             fullname: user.fullname,
@@ -244,7 +224,6 @@ app.post('/login-proses', (req, res) => {
     });
 });
 
-// Proses Logout
 app.get('/logout', (req, res) => {
     req.session.destroy(() => {
         res.redirect('/');
@@ -256,7 +235,6 @@ app.get('/logout', (req, res) => {
 // 6. BACKEND ENDPOINTS (REST API DATA SESSIONS & MANAGEMENT USERS)
 // =========================================================================
 
-// API: Get Info Session User yang sedang login
 app.get('/api/me', requireLogin, (req, res) => {
     res.json({
         fullname: req.session.user.fullname,
@@ -265,7 +243,6 @@ app.get('/api/me', requireLogin, (req, res) => {
     });
 });
 
-// API: Get Semua Data Users (Hanya Superadmin)
 app.get('/api/users', requireSuperAdmin, (req, res) => {
     const sql = "SELECT id, fullname, username, email, role, status, created_at FROM users ORDER BY created_at DESC";
     db.query(sql, (err, results) => {
@@ -274,7 +251,6 @@ app.get('/api/users', requireSuperAdmin, (req, res) => {
     });
 });
 
-// API: Update Status User (Aktivasi / Banned)
 app.post('/api/users/:id/status', requireSuperAdmin, (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
@@ -287,7 +263,6 @@ app.post('/api/users/:id/status', requireSuperAdmin, (req, res) => {
     });
 });
 
-// API: Update Tingkatan Akses / Role User
 app.post('/api/users/:id/role', requireSuperAdmin, (req, res) => {
     const { id } = req.params;
     const { role } = req.body;
@@ -367,29 +342,29 @@ app.post('/api/products', requireLogin, (req, res) => {
 
         const num = v => (v === '' || v === undefined || v === null) ? null : v;
 
-    console.log('POST /api/products body:', req.body); // debug sementara
+        console.log('POST /api/products body:', req.body);
 
-    const sql = `INSERT INTO products
-    (nama, fabric_no, customer_fabric_no, fabric_name, customer, color,
-    price_greige, shrinkge_standard, shrinkge_actual, after_shrinkge,
-    additional_fee, after_risk, dyeing_fee, sub_final, price_m, price_y,
-    special_condition, keterangan, composition)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const sql = `INSERT INTO products
+        (nama, fabric_no, customer_fabric_no, fabric_name, customer, color,
+        price_greige, shrinkge_standard, shrinkge_actual, after_shrinkge,
+        additional_fee, after_risk, dyeing_fee, sub_final, price_m, price_y,
+        special_condition, keterangan, composition)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    db.query(sql, [
-        nama, fabric_no, customer_fabric_no || null, fabric_name || null, num(customer), color || null,
-        num(price_greige), num(shrinkge_standard), num(shrinkge_actual), num(after_shrinkge),
-        num(additional_fee), num(after_risk), num(dyeing_fee), num(sub_final),
-        num(price_m), num(price_y),
-        special_condition || null, keterangan || null, composition || null
-        ], (err, result) => {
-            if (err) {
-                console.error('INSERT products error:', err);
-                return res.status(500).json({ error: err.message });
-            }
-            res.json({ success: true, id: result.insertId });
-        });
-});
+        db.query(sql, [
+            nama, fabric_no, customer_fabric_no || null, fabric_name || null, num(customer), color || null,
+            num(price_greige), num(shrinkge_standard), num(shrinkge_actual), num(after_shrinkge),
+            num(additional_fee), num(after_risk), num(dyeing_fee), num(sub_final),
+            num(price_m), num(price_y),
+            special_condition || null, keterangan || null, composition || null
+            ], (err, result) => {
+                if (err) {
+                    console.error('INSERT products error:', err);
+                    return res.status(500).json({ error: err.message });
+                }
+                res.json({ success: true, id: result.insertId });
+            });
+    });
 
 app.put('/api/products/:id', requireLogin, (req, res) => {
     const { nama, fabric_no, customer_fabric_no, fabric_name, customer, color,
@@ -399,33 +374,31 @@ app.put('/api/products/:id', requireLogin, (req, res) => {
 
         const num = v => (v === '' || v === undefined || v === null) ? null : v;
 
-    console.log('PUT /api/products/' + req.params.id + ' body:', req.body); // debug sementara
+        console.log('PUT /api/products/' + req.params.id + ' body:', req.body);
 
-    const sql = `UPDATE products SET
-    nama=?, fabric_no=?, customer_fabric_no=?, fabric_name=?, customer=?, color=?,
-    price_greige=?, shrinkge_standard=?, shrinkge_actual=?, after_shrinkge=?,
-    additional_fee=?, after_risk=?, dyeing_fee=?, sub_final=?, price_m=?, price_y=?,
-    special_condition=?, keterangan=?, composition=?, updated_at=NOW()
-    WHERE id=?`;
+        const sql = `UPDATE products SET
+        nama=?, fabric_no=?, customer_fabric_no=?, fabric_name=?, customer=?, color=?,
+        price_greige=?, shrinkge_standard=?, shrinkge_actual=?, after_shrinkge=?,
+        additional_fee=?, after_risk=?, dyeing_fee=?, sub_final=?, price_m=?, price_y=?,
+        special_condition=?, keterangan=?, composition=?, updated_at=NOW()
+        WHERE id=?`;
 
-    db.query(sql, [
-        nama, fabric_no, customer_fabric_no || null, fabric_name || null, num(customer), color || null,
-        num(price_greige), num(shrinkge_standard), num(shrinkge_actual), num(after_shrinkge),
-        num(additional_fee), num(after_risk), num(dyeing_fee), num(sub_final),
-        num(price_m), num(price_y),
-        special_condition || null, keterangan || null, composition || null,
-        req.params.id
-        ], (err) => {
-            if (err) {
-                console.error('UPDATE products error:', err);
-                return res.status(500).json({ error: err.message });
-            }
-            res.json({ success: true });
-        });
-});
+        db.query(sql, [
+            nama, fabric_no, customer_fabric_no || null, fabric_name || null, num(customer), color || null,
+            num(price_greige), num(shrinkge_standard), num(shrinkge_actual), num(after_shrinkge),
+            num(additional_fee), num(after_risk), num(dyeing_fee), num(sub_final),
+            num(price_m), num(price_y),
+            special_condition || null, keterangan || null, composition || null,
+            req.params.id
+            ], (err) => {
+                if (err) {
+                    console.error('UPDATE products error:', err);
+                    return res.status(500).json({ error: err.message });
+                }
+                res.json({ success: true });
+            });
+    });
 
-
-// GET semua products (JOIN customer -> customers.id)
 app.get('/api/products', requireLogin, (req, res) => {
     const sql = `
     SELECT p.*, c.name AS customer_name
@@ -439,7 +412,6 @@ app.get('/api/products', requireLogin, (req, res) => {
     });
 });
 
-// GET single product
 app.get('/api/products/:id', requireLogin, (req, res) => {
     const sql = `
     SELECT p.*, c.name AS customer_name
@@ -454,7 +426,6 @@ app.get('/api/products/:id', requireLogin, (req, res) => {
     });
 });
 
-// DELETE product
 app.delete('/api/products/:id', requireLogin, (req, res) => {
     const id = req.params.id;
     db.query("DELETE FROM products WHERE id = ?", [id], (err, result) => {
@@ -527,7 +498,6 @@ app.delete('/api/rates/:id', requireLogin, (req, res) => {
 // 10. BACKEND ENDPOINTS (REST API TRANSAKSI SALES CONTRACT)
 // =========================================================================
 
-// API: Generate Auto Number untuk Sales Contract berikutnya
 app.get('/api/contracts/next-no', requireLogin, (req, res) => {
     const sql = `SELECT contract_no FROM contracts ORDER BY contract_no DESC LIMIT 1`;
     db.query(sql, (err, results) => {
@@ -546,7 +516,6 @@ app.get('/api/contracts/next-no', requireLogin, (req, res) => {
     });
 });
 
-// API: Get Semua Data Contracts (Untuk List View Dashboard)
 app.get('/api/contracts', requireLogin, (req, res) => {
     const sql = `
     SELECT
@@ -554,11 +523,29 @@ app.get('/api/contracts', requireLogin, (req, res) => {
     cu.name AS customer_name,
     c.date_ship, c.status, c.currency, c.jenis,
     c.total, c.created_at, c.updated_at,
-    COUNT(cd.id) AS item_count
+    IFNULL(cdagg.item_count, 0) AS item_count,
+    IFNULL(cdagg.total_qty_meter, 0) AS total_qty_meter,
+    IFNULL(cdagg.total_qty_invoiced_meter, 0) AS total_qty_invoiced_meter,
+    invagg.invoice_numbers,
+    IFNULL(invagg.invoice_count, 0) AS invoice_count
     FROM contracts c
     LEFT JOIN customers cu ON cu.id = c.customer_id
-    LEFT JOIN contract_details cd ON cd.contract_id = c.id
-    GROUP BY c.id
+    LEFT JOIN (
+    SELECT contract_id,
+    COUNT(*) AS item_count,
+    SUM(qty_meter) AS total_qty_meter,
+    SUM(qty_invoiced_meter) AS total_qty_invoiced_meter
+    FROM contract_details
+    GROUP BY contract_id
+    ) cdagg ON cdagg.contract_id = c.id
+    LEFT JOIN (
+    SELECT ic.contract_id,
+    GROUP_CONCAT(DISTINCT CONCAT(i.id, '::', i.invoice_no) ORDER BY i.created_at SEPARATOR '||') AS invoice_numbers,
+    COUNT(DISTINCT i.id) AS invoice_count
+    FROM invoice_contracts ic
+    JOIN invoices i ON i.id = ic.invoice_id
+    GROUP BY ic.contract_id
+    ) invagg ON invagg.contract_id = c.id
     ORDER BY c.contract_no DESC
     `;
     db.query(sql, (err, results) => {
@@ -567,7 +554,6 @@ app.get('/api/contracts', requireLogin, (req, res) => {
     });
 });
 
-// API: Get Single Data Contract berdasarkan ID
 app.get('/api/contracts/:id', requireLogin, (req, res) => {
     const sql = `
     SELECT c.*, cu.name AS customer_name,
@@ -580,11 +566,24 @@ app.get('/api/contracts/:id', requireLogin, (req, res) => {
     db.query(sql, [req.params.id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!results.length) return res.status(404).json({ error: 'Not found' });
-        res.json(results[0]);
+
+        const contract = results[0];
+
+        const invSql = `
+        SELECT i.id, i.invoice_no, i.status
+        FROM invoice_contracts ic
+        JOIN invoices i ON i.id = ic.invoice_id
+        WHERE ic.contract_id = ?
+        ORDER BY i.created_at ASC
+        `;
+        db.query(invSql, [req.params.id], (err2, invoices) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            contract.invoices = invoices || [];
+            res.json(contract);
+        });
     });
 });
 
-// API: Create Contract Baru
 app.post('/api/contracts', requireLogin, (req, res) => {
     const {
         contract_no, customer_id, currency, rate_id, jenis,
@@ -597,7 +596,6 @@ app.post('/api/contracts', requireLogin, (req, res) => {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
 
-    // Hindari duplikasi nomor kontrak di database
     db.query('SELECT id FROM contracts WHERE contract_no = ?', [contract_no], (err, dup) => {
         if (err) return res.status(500).json({ error: err.message });
         if (dup.length > 0) return res.status(400).json({ error: `Contract No "${contract_no}" sudah digunakan.` });
@@ -634,7 +632,6 @@ app.post('/api/contracts', requireLogin, (req, res) => {
     });
 });
 
-// API: Update Data Contract (Full Edit)
 app.put('/api/contracts/:id', requireLogin, (req, res) => {
     const {
         contract_no, customer_id, currency, rate_id, jenis,
@@ -647,7 +644,6 @@ app.put('/api/contracts/:id', requireLogin, (req, res) => {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
 
-    // Cek duplikasi nomor kontrak (abaikan jika nomor milik entitas ini sendiri)
     db.query('SELECT id FROM contracts WHERE contract_no = ? AND id != ?', [contract_no, req.params.id], (err, dup) => {
         if (err) return res.status(500).json({ error: err.message });
         if (dup.length > 0) return res.status(400).json({ error: `Contract No "${contract_no}" sudah digunakan.` });
@@ -674,7 +670,6 @@ app.put('/api/contracts/:id', requireLogin, (req, res) => {
     });
 });
 
-// API: Update Manual Total Nilai Nominal Contract
 app.put('/api/contracts/:id/total', requireLogin, (req, res) => {
     const { total } = req.body;
     db.query(
@@ -687,18 +682,15 @@ app.put('/api/contracts/:id/total', requireLogin, (req, res) => {
         );
 });
 
-// API: Delete Contract (Beserta cascades item detail di dalamnya)
 app.delete('/api/contracts/:id', requireLogin, (req, res) => {
     const id = req.params.id;
     
-    // Tahap 1: Bersihkan semua sub-item terkait di tabel contract_details terlebih dahulu
     db.query('DELETE FROM contract_details WHERE contract_id = ?', [id], (err) => {
         if (err) {
             console.error('DELETE contract_details error:', err);
             return res.status(500).json({ success: false, error: 'Gagal menghapus detail: ' + err.message });
         }
         
-        // Tahap 2: Hapus data master contract utama
         db.query('DELETE FROM contracts WHERE id = ?', [id], (err2, result) => {
             if (err2) {
                 console.error('DELETE contract error:', err2);
@@ -718,9 +710,6 @@ app.delete('/api/contracts/:id', requireLogin, (req, res) => {
 // 11. BACKEND ENDPOINTS (REST API CHILD ITEMS / CONTRACT DETAILS)
 // =========================================================================
 
-// Helper: rekalkulasi ulang total contract berdasarkan currency-nya.
-// Total mengambil SUM(stotal_usd) jika currency USD, atau SUM(stotal_idr) jika IDR.
-// (Kolom lama "stotal" sudah tidak dipakai/akan dihapus dari tabel contract_details)
 function recalcContractTotal(contractId, callback) {
     const sql = `
     UPDATE contracts c
@@ -733,7 +722,16 @@ function recalcContractTotal(contractId, callback) {
     db.query(sql, [contractId], callback || (() => {}));
 }
 
-// API: Get Items Detail berdasarkan Contract ID (Cara 1)
+function adjustContractDetailInvoiced(contractDetailId, deltaMeter, deltaYard, callback) {
+    if (!contractDetailId) return (callback || (() => {}))();
+    const sql = `
+    UPDATE contract_details
+    SET qty_invoiced_meter = GREATEST(0, qty_invoiced_meter + ?),
+    qty_invoiced_yard  = GREATEST(0, qty_invoiced_yard + ?)
+    WHERE id = ?`;
+    db.query(sql, [deltaMeter || 0, deltaYard || 0, contractDetailId], callback || (() => {}));
+}
+
 app.get('/api/contract-details/:contractId', requireLogin, (req, res) => {
     const sql = `
     SELECT cd.*, 
@@ -750,7 +748,6 @@ app.get('/api/contract-details/:contractId', requireLogin, (req, res) => {
     });
 });
 
-// API: Get Items Detail berdasarkan Contract ID (Cara 2 - Alias Rute Efisiensi Frontend)
 app.get('/api/contract-details/by-contract/:contractId', requireLogin, (req, res) => {
     const sql = `
     SELECT cd.*,
@@ -767,8 +764,23 @@ app.get('/api/contract-details/by-contract/:contractId', requireLogin, (req, res
     });
 });
 
-// API: Tambah Item Detail ke dalam Contract (Auto-recalculate Total Nilai Kontrak)
-// CATATAN: kolom price, qty, stotal, yard SUDAH TIDAK di-insert lagi (akan dihapus dari tabel).
+app.get('/api/contract-details/remaining/:contractId', requireLogin, (req, res) => {
+    const sql = `
+    SELECT cd.*,
+    (cd.qty_meter - cd.qty_invoiced_meter) AS remaining_meter,
+    (cd.qty_yard  - cd.qty_invoiced_yard)  AS remaining_yard,
+    p.fabric_no, p.fabric_name, p.color AS product_color
+    FROM contract_details cd
+    LEFT JOIN products p ON p.id = cd.product_id
+    WHERE cd.contract_id = ?
+    ORDER BY cd.created_at ASC
+    `;
+    db.query(sql, [req.params.contractId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
+});
+
 app.post('/api/contract-details', requireLogin, (req, res) => {
     const {
         contract_id, product_id, color, unit, diskon,
@@ -793,14 +805,11 @@ app.post('/api/contract-details', requireLogin, (req, res) => {
         ], (err, result) => {
             if (err) return res.status(500).json({ error: err.message });
 
-            // Sinkronisasi otomatis kalkulasi total di master contract record
             recalcContractTotal(contract_id);
             res.json({ success: true, id: result.insertId });
         });
 });
 
-// API: Update Item Detail (Auto-recalculate Total Nilai Kontrak)
-// CATATAN: kolom price, qty, stotal, yard SUDAH TIDAK di-update lagi (akan dihapus dari tabel).
 app.put('/api/contract-details/:id', requireLogin, (req, res) => {
     const detailId = req.params.id;
     const {
@@ -809,11 +818,19 @@ app.put('/api/contract-details/:id', requireLogin, (req, res) => {
         kurs, greige_no, dyeing_no
     } = req.body;
 
-    db.query('SELECT contract_id FROM contract_details WHERE id = ?', [detailId], (err, rows) => {
+    db.query('SELECT contract_id, qty_invoiced_meter, qty_invoiced_yard FROM contract_details WHERE id = ?', [detailId], (err, rows) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
         if (!rows.length) return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
 
-        const contractId = rows[0].contract_id;
+        const row = rows[0];
+        if (parseFloat(qty_meter||0) < parseFloat(row.qty_invoiced_meter) || parseFloat(qty_yard||0) < parseFloat(row.qty_invoiced_yard)) {
+            return res.status(400).json({
+                success: false,
+                error: `Qty tidak boleh kurang dari yang sudah diinvoice (${row.qty_invoiced_meter} m / ${row.qty_invoiced_yard} Y).`
+            });
+        }
+
+        const contractId = row.contract_id;
         const sql = `
         UPDATE contract_details SET
         product_id=?, color=?, unit=?, diskon=?,
@@ -829,19 +846,16 @@ app.put('/api/contract-details/:id', requireLogin, (req, res) => {
             ], (err2) => {
                 if (err2) return res.status(500).json({ success: false, error: err2.message });
 
-                // Rekalkulasi total master kontrak
                 recalcContractTotal(contractId);
                 res.json({ success: true });
             });
     });
 });
 
-// API: Hapus Single Item Detail berdasarkan Item ID (Auto-recalculate Total Nilai Kontrak)
 app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
     const detailId = req.params.id;
-    
-    // Dapatkan contract_id terlebih dahulu untuk memicu recalculate total pasca hapus
-    db.query('SELECT contract_id FROM contract_details WHERE id = ?', [detailId], (err, rows) => {
+
+    db.query('SELECT contract_id, qty_invoiced_meter, qty_invoiced_yard FROM contract_details WHERE id = ?', [detailId], (err, rows) => {
         if (err) {
             console.error('SELECT contract_details error:', err);
             return res.status(500).json({ success: false, error: err.message });
@@ -849,9 +863,17 @@ app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
         if (!rows || rows.length === 0) {
             return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
         }
-        
-        const contractId = rows[0].contract_id;
-        
+
+        const row = rows[0];
+        if (parseFloat(row.qty_invoiced_meter) > 0 || parseFloat(row.qty_invoiced_yard) > 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Item ini sudah terpakai di invoice, tidak bisa dihapus. Hapus dulu item terkait di invoice-nya.'
+            });
+        }
+
+        const contractId = row.contract_id;
+
         db.query('DELETE FROM contract_details WHERE id = ?', [detailId], (err2, result) => {
             if (err2) {
                 console.error('DELETE contract_details error:', err2);
@@ -861,7 +883,6 @@ app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
                 return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
             }
             
-            // Trigger Rekalkulasi total kontrak sesudah penghapusan item berhasil
             recalcContractTotal(contractId, (err3) => {
                 if (err3) console.error('UPDATE contract total error:', err3);
                 console.log(`Contract detail ${detailId} deleted successfully`);
@@ -875,7 +896,6 @@ app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
 // BACKEND ENDPOINTS (REST API TRANSAKSI INVOICES)
 // =========================================================================
 
-// API: Generate Auto Number untuk Invoice berikutnya
 app.get('/api/invoices/next-no', requireLogin, (req, res) => {
     const sql = `SELECT invoice_no FROM invoices ORDER BY invoice_no DESC LIMIT 1`;
     db.query(sql, (err, results) => {
@@ -891,7 +911,6 @@ app.get('/api/invoices/next-no', requireLogin, (req, res) => {
     });
 });
 
-// API: Get Semua Data Invoices (Untuk List View)
 app.get('/api/invoices', requireLogin, (req, res) => {
     const sql = `
     SELECT
@@ -911,11 +930,10 @@ app.get('/api/invoices', requireLogin, (req, res) => {
     });
 });
 
-// API: Get Single Invoice dengan contracts-nya
 app.get('/api/invoices/:id', requireLogin, (req, res) => {
     const invoiceId = req.params.id;
     const sql = `
-    SELECT i.*, c.name AS customer_name
+    SELECT i.*, c.name AS customer_name, c.address AS customer_address
     FROM invoices i
     LEFT JOIN customers c ON c.id = i.customer_id
     WHERE i.id = ?
@@ -927,7 +945,6 @@ app.get('/api/invoices/:id', requireLogin, (req, res) => {
 
         const invoice = results[0];
 
-        // Get associated contracts
         const contractSql = `
         SELECT ct.*, ic.added_at
         FROM invoice_contracts ic
@@ -944,23 +961,20 @@ app.get('/api/invoices/:id', requireLogin, (req, res) => {
     });
 });
 
-// API: Create Invoice Baru (dengan multiple contracts)
 app.post('/api/invoices', requireLogin, (req, res) => {
     const {
         invoice_no, customer_id, currency, invoice_date, 
-        status, total, contracts // contracts = array of contract IDs
+        status, total, contracts
     } = req.body;
 
     if (!invoice_no || !customer_id || !contracts || !Array.isArray(contracts) || !contracts.length) {
         return res.status(400).json({ error: 'Required fields missing or invalid' });
     }
 
-    // Check invoice no uniqueness
     db.query('SELECT id FROM invoices WHERE invoice_no = ?', [invoice_no], (err, dup) => {
         if (err) return res.status(500).json({ error: err.message });
         if (dup.length > 0) return res.status(400).json({ error: `Invoice No "${invoice_no}" already used` });
 
-        // Insert invoice header
         const insertSql = `
         INSERT INTO invoices 
         (invoice_no, customer_id, currency, total, status, created_at, updated_at)
@@ -974,7 +988,6 @@ app.post('/api/invoices', requireLogin, (req, res) => {
 
                 const invoiceId = result.insertId;
 
-                // Insert invoice_contracts relationships
                 const linkSql = 'INSERT INTO invoice_contracts (invoice_id, contract_id, added_at) VALUES (?, ?, NOW())';
                 let completed = 0;
                 let hasError = false;
@@ -996,7 +1009,6 @@ app.post('/api/invoices', requireLogin, (req, res) => {
     });
 });
 
-// API: Update Invoice (header only, contracts updated separately)
 app.put('/api/invoices/:id', requireLogin, (req, res) => {
     const {
         invoice_no, customer_id, currency, total, status
@@ -1006,7 +1018,6 @@ app.put('/api/invoices/:id', requireLogin, (req, res) => {
         return res.status(400).json({ error: 'Required fields missing' });
     }
 
-    // Check uniqueness (excluding current invoice)
     db.query('SELECT id FROM invoices WHERE invoice_no = ? AND id != ?', [invoice_no, req.params.id], (err, dup) => {
         if (err) return res.status(500).json({ error: err.message });
         if (dup.length > 0) return res.status(400).json({ error: `Invoice No "${invoice_no}" already used` });
@@ -1025,33 +1036,82 @@ app.put('/api/invoices/:id', requireLogin, (req, res) => {
     });
 });
 
-// API: Delete Invoice (cascade delete invoice_contracts)
+// API BARU: Update field dokumen pengiriman/ekspor invoice (terpisah dari full-edit di atas,
+// supaya bisa dipakai dari halaman detail/print tanpa perlu kirim ulang invoice_no & customer_id).
+app.put('/api/invoices/:id/shipping-info', requireLogin, (req, res) => {
+    const {
+        lc_no, vessel, case_mark, from_location, to_location,
+        delivery_note_no, ppn_percent
+    } = req.body;
+
+    const sql = `
+    UPDATE invoices SET
+    lc_no=?, vessel=?, case_mark=?, from_location=?, to_location=?,
+    delivery_note_no=?, ppn_percent=?, updated_at=NOW()
+    WHERE id=?`;
+
+    db.query(sql, [
+        lc_no || null, vessel || null, case_mark || null,
+        from_location || null, to_location || null,
+        delivery_note_no || null,
+        (ppn_percent === '' || ppn_percent === undefined || ppn_percent === null) ? 11 : ppn_percent,
+        req.params.id
+        ], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true });
+        });
+});
+
 app.delete('/api/invoices/:id', requireLogin, (req, res) => {
     const invoiceId = req.params.id;
 
-    // Delete invoice_contracts first
-    db.query('DELETE FROM invoice_contracts WHERE invoice_id = ?', [invoiceId], (err) => {
-        if (err) {
-            console.error('DELETE invoice_contracts error:', err);
-            return res.status(500).json({ success: false, error: 'Failed to delete invoice relationships: ' + err.message });
+    db.query('SELECT id, contract_detail_id, qty_meter, qty_yard FROM invoice_details WHERE invoice_id = ?', [invoiceId], (errSel, items) => {
+        if (errSel) {
+            console.error('SELECT invoice_details (pre-delete) error:', errSel);
+            return res.status(500).json({ success: false, error: errSel.message });
         }
 
-        // Delete invoice
-        db.query('DELETE FROM invoices WHERE id = ?', [invoiceId], (err2, result) => {
-            if (err2) {
-                console.error('DELETE invoice error:', err2);
-                return res.status(500).json({ success: false, error: 'Failed to delete invoice: ' + err2.message });
-            }
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ success: false, error: 'Invoice not found' });
-            }
-            console.log(`Invoice ${invoiceId} and its relationships deleted successfully`);
-            res.json({ success: true });
+        const releaseAll = (cb) => {
+            if (!items || !items.length) return cb();
+            let done = 0;
+            items.forEach(it => {
+                adjustContractDetailInvoiced(it.contract_detail_id, -(parseFloat(it.qty_meter)||0), -(parseFloat(it.qty_yard)||0), () => {
+                    done++;
+                    if (done === items.length) cb();
+                });
+            });
+        };
+
+        releaseAll(() => {
+            db.query('DELETE FROM invoice_contracts WHERE invoice_id = ?', [invoiceId], (err) => {
+                if (err) {
+                    console.error('DELETE invoice_contracts error:', err);
+                    return res.status(500).json({ success: false, error: 'Failed to delete invoice relationships: ' + err.message });
+                }
+
+                db.query('DELETE FROM invoice_details WHERE invoice_id = ?', [invoiceId], (errDet) => {
+                    if (errDet) {
+                        console.error('DELETE invoice_details error:', errDet);
+                        return res.status(500).json({ success: false, error: 'Failed to delete invoice items: ' + errDet.message });
+                    }
+
+                    db.query('DELETE FROM invoices WHERE id = ?', [invoiceId], (err2, result) => {
+                        if (err2) {
+                            console.error('DELETE invoice error:', err2);
+                            return res.status(500).json({ success: false, error: 'Failed to delete invoice: ' + err2.message });
+                        }
+                        if (result.affectedRows === 0) {
+                            return res.status(404).json({ success: false, error: 'Invoice not found' });
+                        }
+                        console.log(`Invoice ${invoiceId} and its relationships deleted successfully`);
+                        res.json({ success: true });
+                    });
+                });
+            });
         });
     });
 });
 
-// API: Add/Remove contracts from invoice (untuk edit nanti)
 app.post('/api/invoices/:id/add-contract', requireLogin, (req, res) => {
     const { contract_id } = req.body;
     const invoiceId = req.params.id;
@@ -1086,25 +1146,7 @@ app.delete('/api/invoices/:id/remove-contract/:contractId', requireLogin, (req, 
 // =========================================================================
 // BACKEND ENDPOINTS (REST API CHILD ITEMS / INVOICE DETAILS - PRODUCT)
 // =========================================================================
-// Tabel: invoice_details
-// CREATE TABLE invoice_details (
-//   id INT AUTO_INCREMENT PRIMARY KEY,
-//   invoice_id INT NOT NULL,
-//   product_id INT NOT NULL,
-//   color VARCHAR(100) DEFAULT NULL,
-//   unit ENUM('Meter','Yard') NOT NULL DEFAULT 'Meter',
-//   qty_meter DECIMAL(14,2) DEFAULT 0,
-//   qty_yard DECIMAL(14,2) DEFAULT 0,
-//   price_usd DECIMAL(14,4) DEFAULT 0,
-//   diskon DECIMAL(14,4) DEFAULT 0,
-//   stotal_usd DECIMAL(14,2) DEFAULT 0,
-//   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-//   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-//   FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
-//   FOREIGN KEY (product_id) REFERENCES products(id)
-// );
 
-// Helper: rekalkulasi ulang total invoice berdasarkan SUM(stotal_usd) item produknya.
 function recalcInvoiceTotal(invoiceId, callback) {
     const sql = `
     UPDATE invoices i
@@ -1117,7 +1159,6 @@ function recalcInvoiceTotal(invoiceId, callback) {
     db.query(sql, [invoiceId], callback || (() => {}));
 }
 
-// API: Update Manual Total Nilai Nominal Invoice
 app.put('/api/invoices/:id/total', requireLogin, (req, res) => {
     const { total } = req.body;
     db.query(
@@ -1130,14 +1171,19 @@ app.put('/api/invoices/:id/total', requireLogin, (req, res) => {
         );
 });
 
-// API: Get Items Product berdasarkan Invoice ID
+// DIPERBARUI: sertakan contract_no, order_no, composition produk, dan kurs dari contract_details asal
+// (dibutuhkan untuk halaman print invoice).
 app.get('/api/invoice-details/by-invoice/:invoiceId', requireLogin, (req, res) => {
     const sql = `
     SELECT idt.*,
-    p.fabric_no, p.fabric_name, p.color AS product_color,
-    p.price_m, p.price_y
+    p.fabric_no, p.fabric_name, p.color AS product_color, p.composition,
+    p.price_m, p.price_y,
+    ct.contract_no, ct.order_no,
+    cd.kurs AS item_kurs
     FROM invoice_details idt
     LEFT JOIN products p ON p.id = idt.product_id
+    LEFT JOIN contracts ct ON ct.id = idt.contract_id
+    LEFT JOIN contract_details cd ON cd.id = idt.contract_detail_id
     WHERE idt.invoice_id = ?
     ORDER BY idt.created_at ASC
     `;
@@ -1147,69 +1193,107 @@ app.get('/api/invoice-details/by-invoice/:invoiceId', requireLogin, (req, res) =
     });
 });
 
-// API: Tambah Item Product ke dalam Invoice (Auto-recalculate Total Nilai Invoice)
 app.post('/api/invoice-details', requireLogin, (req, res) => {
     const {
-        invoice_id, product_id, color, unit,
-        qty_meter, qty_yard, price_usd, diskon, stotal_usd
+        invoice_id, product_id, contract_detail_id, contract_id, color, unit,
+        qty_meter, qty_yard, price_usd, diskon, stotal_usd, packages
     } = req.body;
 
     if (!invoice_id || !product_id || (!qty_meter && !qty_yard)) {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
-    const sql = `
-    INSERT INTO invoice_details
-    (invoice_id, product_id, color, unit, qty_meter, qty_yard, price_usd, diskon, stotal_usd, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
-    `;
-    db.query(sql, [
-        invoice_id, product_id, color || null, unit || 'Meter',
-        qty_meter || 0, qty_yard || 0, price_usd || 0, diskon || 0, stotal_usd || 0
-        ], (err, result) => {
-            if (err) return res.status(500).json({ error: err.message });
 
-            // Sinkronisasi otomatis kalkulasi total di master invoice record
-            recalcInvoiceTotal(invoice_id);
-            res.json({ success: true, id: result.insertId });
-        });
+    function doInsert() {
+        const sql = `
+        INSERT INTO invoice_details
+        (invoice_id, product_id, contract_detail_id, contract_id, color, unit, qty_meter, qty_yard, price_usd, diskon, stotal_usd, packages, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+        db.query(sql, [
+            invoice_id, product_id, contract_detail_id || null, contract_id || null,
+            color || null, unit || 'Meter',
+            qty_meter || 0, qty_yard || 0, price_usd || 0, diskon || 0, stotal_usd || 0,
+            packages || null
+            ], (err, result) => {
+                if (err) return res.status(500).json({ error: err.message });
+
+                recalcInvoiceTotal(invoice_id);
+
+                if (contract_detail_id) {
+                    adjustContractDetailInvoiced(contract_detail_id, qty_meter || 0, qty_yard || 0, () => {
+                        res.json({ success: true, id: result.insertId });
+                    });
+                } else {
+                    res.json({ success: true, id: result.insertId });
+                }
+            });
+    }
+
+    if (contract_detail_id) {
+        db.query('SELECT qty_meter, qty_yard, qty_invoiced_meter, qty_invoiced_yard FROM contract_details WHERE id = ?',
+            [contract_detail_id], (err, rows) => {
+                if (err) return res.status(500).json({ error: err.message });
+                if (!rows.length) return res.status(404).json({ error: 'Item contract tidak ditemukan.' });
+
+                const row = rows[0];
+                const remMeter = parseFloat(row.qty_meter) - parseFloat(row.qty_invoiced_meter);
+                const remYard  = parseFloat(row.qty_yard)  - parseFloat(row.qty_invoiced_yard);
+                const reqMeter = parseFloat(qty_meter) || 0;
+                const reqYard  = parseFloat(qty_yard)  || 0;
+
+                if (reqMeter - remMeter > 0.01 || reqYard - remYard > 0.01) {
+                    return res.status(400).json({
+                        error: `Qty melebihi sisa kontrak. Sisa: ${remMeter.toFixed(2)} m / ${remYard.toFixed(2)} Y.`
+                    });
+                }
+                doInsert();
+            });
+    } else {
+        doInsert();
+    }
 });
 
-// API: Update Item Product Invoice (Auto-recalculate Total Nilai Invoice)
 app.put('/api/invoice-details/:id', requireLogin, (req, res) => {
     const detailId = req.params.id;
     const {
-        product_id, color, unit,
-        qty_meter, qty_yard, price_usd, diskon, stotal_usd
+        product_id, contract_detail_id, contract_id, color, unit,
+        qty_meter, qty_yard, price_usd, diskon, stotal_usd, packages
     } = req.body;
 
-    db.query('SELECT invoice_id FROM invoice_details WHERE id = ?', [detailId], (err, rows) => {
+    db.query('SELECT invoice_id, contract_detail_id, qty_meter, qty_yard FROM invoice_details WHERE id = ?', [detailId], (err, rows) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
         if (!rows.length) return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
 
-        const invoiceId = rows[0].invoice_id;
+        const old = rows[0];
+        const invoiceId = old.invoice_id;
+
         const sql = `
         UPDATE invoice_details SET
-        product_id=?, color=?, unit=?, qty_meter=?, qty_yard=?, price_usd=?, diskon=?, stotal_usd=?, updated_at=NOW()
+        product_id=?, contract_detail_id=?, contract_id=?, color=?, unit=?, qty_meter=?, qty_yard=?, price_usd=?, diskon=?, stotal_usd=?, packages=?, updated_at=NOW()
         WHERE id=?`;
 
         db.query(sql, [
-            product_id, color || null, unit || 'Meter',
+            product_id, contract_detail_id || null, contract_id || null, color || null, unit || 'Meter',
             qty_meter || 0, qty_yard || 0, price_usd || 0, diskon || 0, stotal_usd || 0,
+            packages || null,
             detailId
             ], (err2) => {
                 if (err2) return res.status(500).json({ success: false, error: err2.message });
 
-                recalcInvoiceTotal(invoiceId);
-                res.json({ success: true });
+                adjustContractDetailInvoiced(old.contract_detail_id, -(parseFloat(old.qty_meter)||0), -(parseFloat(old.qty_yard)||0), () => {
+                    adjustContractDetailInvoiced(contract_detail_id, parseFloat(qty_meter)||0, parseFloat(qty_yard)||0, () => {
+                        recalcInvoiceTotal(invoiceId);
+                        res.json({ success: true });
+                    });
+                });
             });
     });
 });
 
-// API: Hapus Item Product Invoice berdasarkan ID (Auto-recalculate Total Nilai Invoice)
 app.delete('/api/invoice-details/:id', requireLogin, (req, res) => {
     const detailId = req.params.id;
 
-    db.query('SELECT invoice_id FROM invoice_details WHERE id = ?', [detailId], (err, rows) => {
+    db.query('SELECT invoice_id, contract_detail_id, qty_meter, qty_yard FROM invoice_details WHERE id = ?', [detailId], (err, rows) => {
         if (err) {
             console.error('SELECT invoice_details error:', err);
             return res.status(500).json({ success: false, error: err.message });
@@ -1218,7 +1302,7 @@ app.delete('/api/invoice-details/:id', requireLogin, (req, res) => {
             return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
         }
 
-        const invoiceId = rows[0].invoice_id;
+        const { invoice_id, contract_detail_id, qty_meter, qty_yard } = rows[0];
 
         db.query('DELETE FROM invoice_details WHERE id = ?', [detailId], (err2, result) => {
             if (err2) {
@@ -1229,10 +1313,12 @@ app.delete('/api/invoice-details/:id', requireLogin, (req, res) => {
                 return res.status(404).json({ success: false, error: 'Item tidak ditemukan' });
             }
 
-            recalcInvoiceTotal(invoiceId, (err3) => {
-                if (err3) console.error('UPDATE invoice total error:', err3);
-                console.log(`Invoice detail ${detailId} deleted successfully`);
-                res.json({ success: true });
+            adjustContractDetailInvoiced(contract_detail_id, -(parseFloat(qty_meter)||0), -(parseFloat(qty_yard)||0), () => {
+                recalcInvoiceTotal(invoice_id, (err3) => {
+                    if (err3) console.error('UPDATE invoice total error:', err3);
+                    console.log(`Invoice detail ${detailId} deleted successfully`);
+                    res.json({ success: true });
+                });
             });
         });
     });

@@ -59,6 +59,7 @@
             display: flex; align-items: center; gap: 6px; justify-content: center; white-space: nowrap;
         }
         .btn-add:hover { background: #4338ca; }
+        .btn-add:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-del {
             padding: 5px 10px; background: #fef2f2; color: #ef4444; border: none;
             border-radius: 6px; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family: inherit;
@@ -72,28 +73,16 @@
         }
         .diskon-toggle button.active { background: var(--primary); color: #fff; }
 
-        .product-search-wrap { position: relative; }
-        .product-dropdown {
-            position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
-            background: #fff; border: 1px solid var(--border-color); border-top: none;
-            border-radius: 0 0 8px 8px; max-height: 220px; overflow-y: auto;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        }
-        .product-dropdown-item {
-            padding: 9px 12px; cursor: pointer; font-size: 0.85rem; border-bottom: 1px solid #f8fafc;
-            transition: background .1s;
-        }
-        .product-dropdown-item:hover { background: var(--primary-light); color: var(--primary); }
-        .product-dropdown-item:last-child { border-bottom: none; }
-        .product-dropdown-item .fn { font-weight: 700; color: var(--primary); }
-        .product-dropdown-item .fm { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-        .product-dropdown-empty { padding: 12px; text-align: center; color: var(--text-muted); font-size: 0.83rem; }
+        .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; font-size: 0.88rem; font-weight: 600; }
+        .alert-success { background: #f0fdf4; color: #16a34a; }
+        .alert-error { background: #fef2f2; color: #dc2626; }
+        .alert-warn { background: #fff7ed; color: #92400e; }
 
-        .modal-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45);
-            align-items: center; justify-content: center; z-index: 999;
+        .btn-save-ship {
+            padding: 9px 20px; background: #0f172a; color: #fff; border: none;
+            border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit;
         }
-        .modal-box { background: #fff; border-radius: 14px; padding: 24px; max-width: 380px; width: 90%; }
+        .btn-save-ship:hover { background: #1e293b; }
     </style>
 </head>
 <body class="dashboard-page">
@@ -114,31 +103,87 @@
             </div>
         </div>
 
+        <!-- INFO PENGIRIMAN & DOKUMEN (untuk kebutuhan print) -->
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-ship"></i> Info Pengiriman & Dokumen (untuk Print Invoice)</div>
+            <div id="alert-ship" style="display:none" class="alert"></div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+                <div class="fg">
+                    <label class="fl">L/C No</label>
+                    <input type="text" id="sh-lc_no" class="fi" placeholder="(opsional)">
+                </div>
+                <div class="fg">
+                    <label class="fl">Vessel</label>
+                    <input type="text" id="sh-vessel" class="fi" placeholder="(opsional)">
+                </div>
+                <div class="fg">
+                    <label class="fl">With Case Mark</label>
+                    <input type="text" id="sh-case_mark" class="fi" placeholder="(opsional)">
+                </div>
+                <div class="fg">
+                    <label class="fl">Delivery Note No</label>
+                    <input type="text" id="sh-delivery_note_no" class="fi" placeholder="(opsional)">
+                </div>
+                <div class="fg">
+                    <label class="fl">From</label>
+                    <input type="text" id="sh-from_location" class="fi" placeholder="Contoh: PURWAKARTA">
+                </div>
+                <div class="fg">
+                    <label class="fl">To</label>
+                    <input type="text" id="sh-to_location" class="fi" placeholder="Contoh: JAKARTA">
+                </div>
+                <div class="fg">
+                    <label class="fl">PPN (%)</label>
+                    <input type="number" id="sh-ppn_percent" class="fi" step="0.01" min="0" placeholder="11">
+                </div>
+                <div class="fg" style="justify-content:flex-end">
+                    <button class="btn-save-ship" onclick="saveShippingInfo()">
+                        <i class="ti ti-device-floppy"></i> Simpan Info Pengiriman
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <!-- FORM TAMBAH PRODUCT -->
         <div class="bento-item" style="margin-bottom:20px">
-            <div class="section-title"><i class="ti ti-plus"></i> Tambah Product ke Invoice</div>
-            <div id="alert-form" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;font-weight:600"></div>
+            <div class="section-title"><i class="ti ti-plus"></i> Tambah Product dari Contract</div>
+            <div id="alert-form" style="display:none" class="alert"></div>
+            <div id="no-contract-warn" style="display:none" class="alert alert-warn">
+                Tidak ada contract dengan mata uang <b id="ncw-cur"></b> yang terhubung ke invoice ini.
+                Tambahkan contract lain lewat halaman Edit Invoice, atau ubah mata uang invoice.
+            </div>
 
-            <div style="display:grid;grid-template-columns:3fr 1.5fr 1fr;gap:12px;margin-bottom:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
                 <div class="fg">
-                    <label class="fl">Produk <span style="color:#ef4444">*</span></label>
-                    <div class="product-search-wrap">
-                        <input type="text" id="f-product-search" class="fi" placeholder="Ketik nama / fabric no produk.."
-                        autocomplete="off" oninput="onProductSearch()" onfocus="onProductSearch()" onblur="hideDropdownDelayed()">
-                        <input type="hidden" id="f-product_id">
-                        <div class="product-dropdown" id="product-dropdown" style="display:none"></div>
-                    </div>
+                    <label class="fl">Contract <span style="color:#ef4444">*</span></label>
+                    <select id="f-contract" class="fi" onchange="onContractPick()">
+                        <option value="">-- Pilih Contract --</option>
+                    </select>
                 </div>
+                <div class="fg">
+                    <label class="fl">Item / Produk <span style="color:#ef4444">*</span></label>
+                    <select id="f-item" class="fi" onchange="onItemPick()" disabled>
+                        <option value="">-- Pilih Contract dahulu --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">
                 <div class="fg">
                     <label class="fl">Warna / Color</label>
-                    <input type="text" id="f-color" class="fi" placeholder="Warna (opsional)">
+                    <input type="text" id="f-color" class="fi" disabled placeholder="—">
                 </div>
                 <div class="fg">
-                    <label class="fl">Unit <span style="color:#ef4444">*</span></label>
-                    <select id="f-unit" class="fi" onchange="onUnitChange()">
-                        <option value="Meter">Meter</option>
-                        <option value="Yard">Yard</option>
-                    </select>
+                    <label class="fl">Unit</label>
+                    <input type="text" id="f-unit-display" class="fi" disabled placeholder="—">
+                </div>
+                <div class="fg">
+                    <label class="fl">Sisa Qty Tersedia</label>
+                    <input type="text" id="f-remaining-display" class="fi" disabled placeholder="—">
+                </div>
+                <div class="fg">
+                    <label class="fl">Packages</label>
+                    <input type="text" id="f-packages" class="fi" placeholder="Contoh: 20 CARTONS">
                 </div>
             </div>
 
@@ -154,21 +199,19 @@
                 <div class="fg">
                     <div class="diskon-toggle">
                         <button id="btn-diskon-pct" class="active" onclick="setDiskonMode('pct')">% Persen</button>
-                        <button id="btn-diskon-nom" onclick="setDiskonMode('nom')">Nominal USD</button>
+                        <button id="btn-diskon-nom" onclick="setDiskonMode('nom')">Nominal</button>
                     </div>
                     <input type="number" id="f-diskon" class="fi" placeholder="0" step="0.01" min="0" oninput="calcSubtotal()">
-                    <small id="lbl-diskon-hint" style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">% dari harga dasar USD</small>
+                    <small id="lbl-diskon-hint" style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">% dari harga dasar</small>
                 </div>
                 <div class="fg">
                     <label class="fl" id="lbl-subtotal">Subtotal</label>
                     <input type="text" id="f-stotal" class="fi" disabled placeholder="—">
                 </div>
-                <button class="btn-add" onclick="addItem()">
+                <button class="btn-add" id="btn-submit-item" onclick="addItem()">
                     <i class="ti ti-plus"></i> Tambah
                 </button>
             </div>
-
-            <div id="price-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#1e40af;margin-top:4px"></div>
         </div>
 
         <!-- TABEL ITEM PRODUCT -->
@@ -179,8 +222,10 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>PACKAGES</th>
                             <th>NAMA PRODUK</th>
                             <th>FABRIC NO</th>
+                            <th>CONTRACT</th>
                             <th>COLOR</th>
                             <th>UNIT</th>
                             <th style="text-align:right">QTY</th>
@@ -191,7 +236,7 @@
                         </tr>
                     </thead>
                     <tbody id="detail-tbody">
-                        <tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item.</td></tr>
+                        <tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -215,14 +260,18 @@
             style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
             <i class="ti ti-arrow-left"></i> Kembali ke Daftar Invoice
         </a>
-    </div>
+        <a id="btn-print" href="#" target="_blank"
+        style="padding:11px 24px;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;text-decoration:none;color:#fff;background:#16a34a;font-family:inherit;display:inline-flex;align-items:center;gap:6px">
+        <i class="ti ti-printer"></i> Print Invoice
+    </a>
+</div>
 </div>
 
 <!-- MODAL HAPUS -->
-<div id="del-modal" class="modal-overlay">
-    <div class="modal-box">
+<div id="del-modal" class="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:999">
+    <div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:90%">
         <h3 style="margin:0 0 8px;font-size:1rem">Hapus Item?</h3>
-        <p style="margin:0 0 20px;color:var(--text-muted);font-size:0.88rem">Item produk ini akan dihapus dari invoice dan total akan dihitung ulang.</p>
+        <p style="margin:0 0 20px;color:var(--text-muted);font-size:0.88rem">Item produk ini akan dihapus dari invoice, sisa qty akan dikembalikan ke contract, dan total invoice dihitung ulang.</p>
         <div style="display:flex;gap:10px;justify-content:flex-end">
             <button onclick="closeDelModal()" style="padding:9px 18px;border:1px solid var(--border-color);background:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
             <button onclick="confirmDel()" style="padding:9px 20px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
@@ -235,23 +284,22 @@
     const invoiceId = new URLSearchParams(window.location.search).get('id');
     if (!invoiceId) window.location.href = '/sales/invoices';
 
-    let invoice    = null;
-    let products   = [];
-    let details    = [];
-    let delId      = null;
-    let diskonMode = 'pct';
-    let selectedProduct = null;
+    let invoice          = null;
+    let contractItems    = [];
+    let selectedContract = null;
+    let selectedItem     = null;
+    let details          = [];
+    let delId            = null;
+    let diskonMode       = 'pct';
 
     const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
-    function ceil2(n) {
-        return Math.ceil((parseFloat(n) || 0) * 100) / 100;
-    }
-
     document.addEventListener('DOMContentLoaded', async () => {
-        await Promise.all([loadInvoice(), loadProducts()]);
+        document.getElementById('btn-print').href = '/sales/invoices/print?id=' + invoiceId;
+        await loadInvoice();
+        populateContractDropdown();
+        fillShippingForm();
         await loadDetails();
-        updateFormLabels();
     });
 
     async function loadInvoice() {
@@ -259,20 +307,6 @@
             invoice = await fetch('/api/invoices/' + invoiceId).then(r => r.json());
             renderInvoiceInfo();
         } catch(e) { showAlert('Gagal memuat data invoice.', 'error'); }
-    }
-
-    async function loadProducts() {
-        try {
-            products = await fetch('/api/products').then(r => r.json());
-        } catch(e) { console.error('Gagal load products', e); }
-    }
-
-    async function loadDetails() {
-        try {
-            details = await fetch('/api/invoice-details/by-invoice/' + invoiceId).then(r => r.json());
-            renderDetails();
-            updateTotal();
-        } catch(e) { console.error('Gagal load details', e); }
     }
 
     function renderInvoiceInfo() {
@@ -290,84 +324,175 @@
             wrap.innerHTML = i.contracts.map((c) => `
                 <span class="contract-chip">
                 ${esc(c.contract_no)}
-                <small>${c.order_no ? ('No Order: ' + esc(c.order_no)) : ''}</small>
+                <small>${c.order_no ? ('No Order: ' + esc(c.order_no)) : ''} · ${esc(c.currency)}</small>
                 </span>
                 `).join('');
         }
     }
 
-    let dropdownTimer = null;
+    // ==================== INFO PENGIRIMAN ====================
+    function fillShippingForm() {
+        document.getElementById('sh-lc_no').value            = invoice.lc_no || '';
+        document.getElementById('sh-vessel').value           = invoice.vessel || '';
+        document.getElementById('sh-case_mark').value        = invoice.case_mark || '';
+        document.getElementById('sh-delivery_note_no').value = invoice.delivery_note_no || '';
+        document.getElementById('sh-from_location').value    = invoice.from_location || '';
+        document.getElementById('sh-to_location').value      = invoice.to_location || '';
+        document.getElementById('sh-ppn_percent').value      = (invoice.ppn_percent !== null && invoice.ppn_percent !== undefined) ? invoice.ppn_percent : 11;
+    }
 
-    function onProductSearch() {
-        const q = document.getElementById('f-product-search').value.toLowerCase().trim();
-        const dd = document.getElementById('product-dropdown');
+    function showShipAlert(msg, type) {
+        const box = document.getElementById('alert-ship');
+        box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
+        box.textContent = msg;
+        box.style.display = 'block';
+        if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
+    }
 
-        selectedProduct = null;
-        document.getElementById('f-product_id').value = '';
-        document.getElementById('f-base-price').value = '';
-        document.getElementById('f-stotal').value = '';
+    async function saveShippingInfo() {
+        const payload = {
+            lc_no:            document.getElementById('sh-lc_no').value.trim() || null,
+            vessel:           document.getElementById('sh-vessel').value.trim() || null,
+            case_mark:        document.getElementById('sh-case_mark').value.trim() || null,
+            delivery_note_no: document.getElementById('sh-delivery_note_no').value.trim() || null,
+            from_location:    document.getElementById('sh-from_location').value.trim() || null,
+            to_location:      document.getElementById('sh-to_location').value.trim() || null,
+            ppn_percent:      document.getElementById('sh-ppn_percent').value || 11,
+        };
+        try {
+            const data = await fetch('/api/invoices/' + invoiceId + '/shipping-info', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(r => r.json());
+            if (data.success) {
+                showShipAlert('✅ Info pengiriman berhasil disimpan.', 'success');
+                Object.assign(invoice, payload);
+            } else {
+                showShipAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
+            }
+        } catch(e) {
+            showShipAlert('❌ Kesalahan server: ' + e.message, 'error');
+        }
+    }
 
-        if (!q) { dd.style.display = 'none'; return; }
+    // ==================== PILIH CONTRACT & ITEM ====================
+    function populateContractDropdown() {
+        const sel = document.getElementById('f-contract');
+        const warnBox = document.getElementById('no-contract-warn');
+        const matching = (invoice.contracts || []).filter(c => c.currency === invoice.currency);
 
-        const filtered = products.filter(p =>
-            (p.fabric_no && p.fabric_no.toLowerCase().includes(q)) ||
-            (p.fabric_name && p.fabric_name.toLowerCase().includes(q)) ||
-            (p.customer && p.customer.toLowerCase().includes(q)) ||
-            (p.color && p.color.toLowerCase().includes(q))
-            ).slice(0, 20);
+        sel.innerHTML = '<option value="">-- Pilih Contract --</option>' +
+        matching.map(c => `<option value="${c.id}">${esc(c.contract_no)}${c.order_no ? ' (No Order: '+esc(c.order_no)+')' : ''}</option>`).join('');
 
-        if (!filtered.length) {
-            dd.innerHTML = '<div class="product-dropdown-empty">Tidak ada produk ditemukan</div>';
-            dd.style.display = 'block';
+        if (!matching.length) {
+            document.getElementById('ncw-cur').textContent = invoice.currency;
+            warnBox.style.display = 'block';
+            sel.disabled = true;
+        } else {
+            warnBox.style.display = 'none';
+            sel.disabled = false;
+        }
+    }
+
+    async function onContractPick() {
+        const contractId = document.getElementById('f-contract').value;
+        resetItemSelection();
+
+        const itemSel = document.getElementById('f-item');
+        selectedContract = (invoice.contracts || []).find(c => String(c.id) === String(contractId)) || null;
+
+        if (!contractId) {
+            itemSel.innerHTML = '<option value="">-- Pilih Contract dahulu --</option>';
+            itemSel.disabled = true;
             return;
         }
 
-        dd.innerHTML = filtered.map(p => `
-            <div class="product-dropdown-item" onmousedown="selectProduct(${p.id})">
-            <div class="fn">${esc(p.fabric_name || p.fabric_no || '—')}</div>
-            <div class="fm">
-            ${p.fabric_no ? 'Fabric No: ' + esc(p.fabric_no) + ' · ' : ''}
-            ${p.customer ? esc(p.customer) + ' · ' : ''}
-            ${p.color ? esc(p.color) : ''}
-            &nbsp;|&nbsp; USD/M: ${p.price_m ? '$ '+parseFloat(p.price_m).toFixed(4) : '-'}
-            &nbsp; USD/Y: ${p.price_y ? '$ '+parseFloat(p.price_y).toFixed(4) : '-'}
-            </div>
-            </div>
-            `).join('');
-        dd.style.display = 'block';
-    }
+        itemSel.innerHTML = '<option value="">Memuat item...</option>';
+        itemSel.disabled = true;
 
-    function hideDropdownDelayed() {
-        dropdownTimer = setTimeout(() => {
-            document.getElementById('product-dropdown').style.display = 'none';
-        }, 200);
-    }
-
-    function selectProduct(productId) {
-        clearTimeout(dropdownTimer);
-        const p = products.find(x => x.id === productId);
-        if (!p) return;
-
-        selectedProduct = p;
-        document.getElementById('f-product_id').value = p.id;
-        document.getElementById('f-product-search').value =
-        [p.fabric_name, p.fabric_no ? '('+p.fabric_no+')' : '', p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' ');
-        document.getElementById('product-dropdown').style.display = 'none';
-
-        if (!document.getElementById('f-color').value) {
-            document.getElementById('f-color').value = p.color || '';
+        try {
+            contractItems = await fetch('/api/contract-details/remaining/' + contractId).then(r => r.json());
+        } catch(e) {
+            showAlert('Gagal memuat item contract.', 'error');
+            return;
         }
 
+        const usable = contractItems.filter(it => {
+            const rem = it.unit === 'Yard' ? parseFloat(it.remaining_yard) : parseFloat(it.remaining_meter);
+            return rem > 0.009;
+        });
+
+        if (!usable.length) {
+            itemSel.innerHTML = '<option value="">-- Semua item contract ini sudah full terinvoice --</option>';
+            itemSel.disabled = true;
+            return;
+        }
+
+        itemSel.innerHTML = '<option value="">-- Pilih Item --</option>' +
+        usable.map(it => {
+            const rem = it.unit === 'Yard' ? it.remaining_yard : it.remaining_meter;
+            const label = [it.fabric_name || it.fabric_no || 'Produk', it.color || it.product_color || null]
+            .filter(Boolean).join(' - ');
+            return `<option value="${it.id}">${esc(label)} (Sisa: ${fmtNum4(rem)} ${it.unit === 'Yard' ? 'Y' : 'm'})</option>`;
+        }).join('');
+        itemSel.disabled = false;
+    }
+
+    function onItemPick() {
+        const itemId = document.getElementById('f-item').value;
+        selectedItem = contractItems.find(it => String(it.id) === String(itemId)) || null;
+
+        if (!selectedItem) {
+            resetItemDetailFields();
+            return;
+        }
+
+        document.getElementById('f-color').value = selectedItem.color || selectedItem.product_color || '—';
+        document.getElementById('f-unit-display').value = selectedItem.unit;
+
+        const rem = selectedItem.unit === 'Yard' ? selectedItem.remaining_yard : selectedItem.remaining_meter;
+        document.getElementById('f-remaining-display').value = fmtNum4(rem) + ' ' + (selectedItem.unit === 'Yard' ? 'Yard' : 'Meter');
+        document.getElementById('f-qty').max = rem;
+        document.getElementById('f-qty').value = '';
+        document.getElementById('f-diskon').value = '';
+
         calcSubtotal();
-        updateFormLabels();
+    }
+
+    function resetItemSelection() {
+        selectedContract = null;
+        selectedItem = null;
+        contractItems = [];
+        resetItemDetailFields();
+    }
+
+    function resetItemDetailFields() {
+        document.getElementById('f-color').value = '';
+        document.getElementById('f-unit-display').value = '';
+        document.getElementById('f-remaining-display').value = '';
+        document.getElementById('f-qty').value = '';
+        document.getElementById('f-diskon').value = '';
+        document.getElementById('f-base-price').value = '';
+        document.getElementById('f-stotal').value = '';
+        document.getElementById('f-packages').value = '';
+    }
+
+    // ==================== HITUNG SUBTOTAL ====================
+    function getBasePrice() {
+        if (!selectedItem || !invoice) return 0;
+        return invoice.currency === 'IDR'
+        ? (parseFloat(selectedItem.price_idr) || 0)
+        : (parseFloat(selectedItem.price_usd) || 0);
     }
 
     function updateFormLabels() {
         if (!invoice) return;
-        const cur  = invoice.currency || 'USD';
-        const unit = document.getElementById('f-unit').value;
-        document.getElementById('lbl-base-price').textContent = `Harga Dasar (USD/${unit})`;
+        const cur = invoice.currency || 'USD';
+        document.getElementById('lbl-base-price').textContent = `Harga Dasar (${cur})`;
         document.getElementById('lbl-subtotal').textContent   = `Subtotal (${cur})`;
+        document.getElementById('th-price').textContent   = `PRICE (${cur})`;
+        document.getElementById('th-stotal').textContent  = `SUBTOTAL (${cur})`;
     }
 
     function setDiskonMode(mode) {
@@ -375,100 +500,86 @@
         document.getElementById('btn-diskon-pct').className = mode==='pct' ? 'active' : '';
         document.getElementById('btn-diskon-nom').className = mode==='nom' ? 'active' : '';
         document.getElementById('lbl-diskon-hint').textContent =
-        mode === 'pct' ? '% dari harga dasar USD' : 'Nominal dalam USD';
+        mode === 'pct' ? '% dari harga dasar' : 'Nominal dalam ' + (invoice ? invoice.currency : '');
         document.getElementById('f-diskon').value = '';
         calcSubtotal();
     }
 
-    function onUnitChange() {
-        calcSubtotal();
-        updateFormLabels();
-    }
-
-    function getBasePriceUSD() {
-        if (!selectedProduct) return 0;
-        return document.getElementById('f-unit').value === 'Yard'
-        ? parseFloat(selectedProduct.price_y) || 0
-        : parseFloat(selectedProduct.price_m) || 0;
-    }
-
     function calcSubtotal() {
         if (!invoice) return;
-        const cur       = invoice.currency || 'USD';
-        const basePriceUSD = getBasePriceUSD();
+        const cur = invoice.currency || 'USD';
+        const basePrice = getBasePrice();
         const qty       = parseFloat(document.getElementById('f-qty').value) || 0;
         const diskonRaw = parseFloat(document.getElementById('f-diskon').value) || 0;
 
-        let diskonUSD = diskonMode === 'pct' ? basePriceUSD * (diskonRaw / 100) : diskonRaw;
-        const subtotal = Math.max(0, (basePriceUSD - diskonUSD) * qty);
+        let diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
+        const subtotal = Math.max(0, (basePrice - diskonVal) * qty);
 
         document.getElementById('f-base-price').value =
-        basePriceUSD > 0 ? '$ ' + basePriceUSD.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}) : '—';
+        basePrice > 0 ? formatCur(basePrice, cur) : '—';
         document.getElementById('f-stotal').value =
-        subtotal > 0 || qty > 0 ? formatCur(subtotal, cur) : '—';
-
-        const info = document.getElementById('price-info');
-        if (basePriceUSD > 0 && diskonRaw > 0) {
-            info.style.display = '';
-            info.innerHTML =
-            `<i class="ti ti-info-circle" style="margin-right:4px"></i>
-            Diskon: ${diskonMode==='pct' ? diskonRaw+'% = ' : ''}
-            <b>${formatCur(diskonUSD,'USD')}</b> per unit
-            &rarr; total diskon <b>${formatCur(diskonUSD*qty,'USD')}</b>`;
-        } else {
-            info.style.display = 'none';
-        }
+        (subtotal > 0 || qty > 0) ? formatCur(subtotal, cur) : '—';
 
         updateFormLabels();
     }
 
+    // ==================== ALERT ====================
     function showAlert(msg, type) {
         const box = document.getElementById('alert-form');
-        box.style.display    = 'block';
-        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
-        box.style.color      = type === 'success' ? '#16a34a' : '#dc2626';
+        box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
         box.textContent = msg;
-        if (type === 'success') setTimeout(() => box.style.display='none', 3000);
+        box.style.display = 'block';
+        if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
     }
 
     function gv(id) { return document.getElementById(id).value.trim(); }
 
+    // ==================== ADD ITEM ====================
     async function addItem() {
-        const productId = gv('f-product_id');
-        if (!productId || !selectedProduct) { showAlert('❌ Pilih produk terlebih dahulu.', 'error'); return; }
-        if (!gv('f-qty') || parseFloat(gv('f-qty')) <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
+        if (!selectedContract) { showAlert('❌ Pilih contract terlebih dahulu.', 'error'); return; }
+        if (!selectedItem)     { showAlert('❌ Pilih item produk terlebih dahulu.', 'error'); return; }
 
-        const basePriceUSD = getBasePriceUSD();
-        const qty          = parseFloat(gv('f-qty'));
-        const diskonRaw    = parseFloat(gv('f-diskon')) || 0;
-        const unit         = gv('f-unit');
+        const qty = parseFloat(gv('f-qty'));
+        if (!qty || qty <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
 
-        let diskonUSD = diskonMode === 'pct' ? basePriceUSD * (diskonRaw/100) : diskonRaw;
-
-        const price_usd = ceil2(basePriceUSD);
-
-        let qty_meter, qty_yard;
-        if (unit === 'Yard') {
-            qty_yard  = ceil2(qty);
-            qty_meter = ceil2(qty * 0.9144);
-        } else {
-            qty_meter = ceil2(qty);
-            qty_yard  = ceil2(qty / 0.9144);
+        const remaining = selectedItem.unit === 'Yard' ? parseFloat(selectedItem.remaining_yard) : parseFloat(selectedItem.remaining_meter);
+        if (qty - remaining > 0.01) {
+            showAlert(`❌ Qty melebihi sisa kontrak (sisa: ${fmtNum4(remaining)} ${selectedItem.unit === 'Yard' ? 'Y' : 'm'}).`, 'error');
+            return;
         }
 
-        const stotal_usd = Math.max(0, (basePriceUSD - diskonUSD) * qty);
+        const cur = invoice.currency || 'USD';
+        const basePrice = getBasePrice();
+        const diskonRaw = parseFloat(gv('f-diskon')) || 0;
+        const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
+        const stotal = Math.max(0, (basePrice - diskonVal) * qty);
+
+        let qty_meter, qty_yard;
+        if (selectedItem.unit === 'Yard') {
+            qty_yard  = qty;
+            qty_meter = qty * 0.9144;
+        } else {
+            qty_meter = qty;
+            qty_yard  = qty / 0.9144;
+        }
 
         const payload = {
-            invoice_id:  parseInt(invoiceId),
-            product_id:  parseInt(productId),
-            color:       gv('f-color') || null,
-            unit,
+            invoice_id:         parseInt(invoiceId),
+            product_id:         selectedItem.product_id,
+            contract_detail_id: selectedItem.id,
+            contract_id:        selectedContract.id,
+            color:              selectedItem.color || selectedItem.product_color || null,
+            unit:               selectedItem.unit,
             qty_meter,
             qty_yard,
-            price_usd,
-            diskon:      diskonUSD * qty,
-            stotal_usd,
+            price_usd:          basePrice,
+            diskon:             diskonVal * qty,
+            stotal_usd:         stotal,
+            packages:           gv('f-packages') || null,
         };
+
+        const btn = document.getElementById('btn-submit-item');
+        btn.disabled = true;
 
         try {
             const data = await fetch('/api/invoice-details', {
@@ -477,35 +588,39 @@
                 body: JSON.stringify(payload)
             }).then(r => r.json());
 
-            if (data.success || data.status === 'success') {
+            if (data.success) {
                 showAlert('✅ Product berhasil ditambahkan.', 'success');
-                document.getElementById('f-product-search').value = '';
-                document.getElementById('f-product_id').value     = '';
-                document.getElementById('f-color').value          = '';
-                document.getElementById('f-qty').value             = '';
-                document.getElementById('f-diskon').value          = '';
-                document.getElementById('f-base-price').value      = '';
-                document.getElementById('f-stotal').value          = '';
-                document.getElementById('price-info').style.display = 'none';
-                selectedProduct = null;
+                document.getElementById('f-contract').value = '';
+                resetItemSelection();
+                document.getElementById('f-item').innerHTML = '<option value="">-- Pilih Contract dahulu --</option>';
+                document.getElementById('f-item').disabled = true;
                 await loadDetails();
             } else {
                 showAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
             }
         } catch(e) {
             showAlert('❌ Kesalahan server: ' + e.message, 'error');
+        } finally {
+            btn.disabled = false;
         }
+    }
+
+    // ==================== LOAD & RENDER DETAILS ====================
+    async function loadDetails() {
+        try {
+            details = await fetch('/api/invoice-details/by-invoice/' + invoiceId).then(r => r.json());
+            renderDetails();
+            updateTotal();
+        } catch(e) { console.error('Gagal load details', e); }
     }
 
     function renderDetails() {
         const tbody = document.getElementById('detail-tbody');
         const cur   = invoice?.currency || 'USD';
-
-        document.getElementById('th-price').textContent   = `PRICE (${cur})`;
-        document.getElementById('th-stotal').textContent  = `SUBTOTAL (${cur})`;
+        updateFormLabels();
 
         if (!details.length) {
-            tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
             return;
         }
 
@@ -519,8 +634,10 @@
             return `
             <tr>
             <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
+            <td style="font-size:0.82rem">${esc(d.packages || '—')}</td>
             <td style="font-weight:700">${esc(d.fabric_name || '—')}</td>
             <td style="font-size:0.85rem;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
+            <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.contract_no || '—')}</td>
             <td>${esc(d.color || '—')}</td>
             <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
             <td style="text-align:right;font-weight:600">${fmtNum4(qty)} ${unitLbl}</td>
@@ -551,6 +668,7 @@
         }).catch(()=>{});
     }
 
+    // ==================== DELETE ====================
     function openDelModal(id) {
         delId = id;
         document.getElementById('del-modal').style.display = 'flex';
@@ -573,6 +691,9 @@
             const data = await res.json();
             if (data.success || data.status === 'success') {
                 closeDelModal();
+                if (document.getElementById('f-contract').value) {
+                    await onContractPick();
+                }
                 await loadDetails();
             } else {
                 alert('Gagal hapus: ' + (data.error || 'Unknown error'));
@@ -586,6 +707,7 @@
         }
     }
 
+    // ==================== HELPERS ====================
     function fmtDate(str) {
         if (!str) return '—';
         const s = str.slice(0,10).split('-');
