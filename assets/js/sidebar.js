@@ -13,6 +13,13 @@ function getPageMeta() {
         '/master-data/kurs/tambah':        { title: 'Tambah Kurs',         sub: 'Input kurs baru.' },
         '/master-data/kurs/edit':          { title: 'Edit Kurs',           sub: 'Ubah data kurs.' },
         '/sales/sales-contract': { title: 'Sales Contract', sub: 'Daftar seluruh sales contract.' },
+
+        // ===== GUDANG (BARU) =====
+        '/gudang/sparepart': { title: 'Gudang Sparepart', sub: 'Stok dan data sparepart mesin/kendaraan.' },
+        '/gudang/greige':    { title: 'Gudang Greige',    sub: 'Stok kain greige (bahan mentah).' },
+        '/gudang/obat':      { title: 'Gudang Obat',      sub: 'Stok obat/kimia untuk proses dyeing.' },
+        '/gudang/finish':    { title: 'Gudang Finish',    sub: 'Stok kain jadi (finish goods).' },
+        '/gudang/stocklot':  { title: 'Gudang Stocklot',  sub: 'Stok kain stocklot / sisa produksi.' },
     };
     return map[path] || { title: 'MarketJS', sub: '' };
 }
@@ -69,6 +76,18 @@ function renderLayout() {
     <div class="nav-submenu">
     <a href="/finance/invoice-sample" class="nav-sub-link">Invoice Sample</a>
     <a href="/finance/debit-note" class="nav-sub-link">Debit Note</a>
+    </div>
+
+    <div class="nav-parent" onclick="toggleMenu(this)">
+    <i class="ti ti-building-warehouse"></i><span>Gudang</span>
+    <i class="ti ti-chevron-down arrow"></i>
+    </div>
+    <div class="nav-submenu">
+    <a href="/gudang/sparepart" class="nav-sub-link">Gudang Sparepart</a>
+    <a href="/gudang/greige" class="nav-sub-link">Gudang Greige</a>
+    <a href="/gudang/obat" class="nav-sub-link">Gudang Obat</a>
+    <a href="/gudang/finish" class="nav-sub-link">Gudang Finish</a>
+    <a href="/gudang/stocklot" class="nav-sub-link">Gudang Stocklot</a>
     </div>
 
     <div class="nav-parent" onclick="toggleMenu(this)">
