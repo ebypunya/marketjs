@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gudang Sparepart - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <input type="text" id="search-input" placeholder="🔍  Cari kode atau nama barang..."
+                style="padding:10px 16px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;width:280px;outline:none;font-family:inherit">
+
+                <select id="filter-grup"
+                style="padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;font-family:inherit;outline:none;color:var(--text-main);background:#fff;cursor:pointer;min-width:200px">
+                <option value="">Semua Grup</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="bento-item" style="padding:0;overflow:hidden">
+        <div style="overflow-x:auto">
+            <table class="data-table" style="margin:0;min-width:700px">
+                <thead>
+                    <tr style="background:var(--bg-main)">
+                        <th style="padding:14px 18px;width:44px">#</th>
+                        <th style="padding:14px 18px">KODE BARANG</th>
+                        <th style="padding:14px 18px">NAMA BARANG</th>
+                        <th style="padding:14px 18px">GRUP</th>
+                        <th style="padding:14px 18px;text-align:right">QUANTITY</th>
+                    </tr>
+                </thead>
+                <tbody id="item-tbody">
+                    <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Memuat data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--border-color);background:var(--bg-main)">
+            <span id="pagination-info" style="font-size:0.8rem;color:var(--text-muted)">-</span>
+            <div id="pagination-controls" style="display:flex;gap:6px"></div>
+        </div>
+    </div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    const PER_PAGE = 15;
+    let currentPage = 1;
+    let totalPages  = 1;
+    let searchTimer = null;
+
+    function escHtml(str) {
+        return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function formatNum(v) {
+        if (v === null || v === undefined || v === '') return '-';
+        return Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+    }
+
+    async function loadGrupOptions() {
+        try {
+            const data = await fetch('/api/gudang-sparepart/grup').then(r => r.json());
+            const sel = document.getElementById('filter-grup');
+            data.forEach(g => {
+                const o = document.createElement('option');
+                o.value = g.kode_grup;
+                o.textContent = g.grup;
+                sel.appendChild(o);
+            });
+        } catch (e) {
+            console.error('Gagal load daftar grup', e);
+        }
+    }
+
+    function buildQuery(page) {
+        const params = new URLSearchParams();
+        params.set('page', page);
+        const search = document.getElementById('search-input').value.trim();
+        const grup   = document.getElementById('filter-grup').value;
+        if (search) params.set('search', search);
+        if (grup)   params.set('grup', grup);
+        return params.toString();
+    }
+
+    function loadItems(page = 1) {
+        const tbody = document.getElementById('item-tbody');
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Memuat data...</td></tr>';
+
+        fetch('/api/gudang-sparepart?' + buildQuery(page))
+        .then(r => r.json())
+        .then(res => {
+            if (res.error) throw new Error(res.error);
+            currentPage = res.page;
+            totalPages  = res.totalPages;
+            renderTable(res.data, res.total);
+            renderPagination();
+        })
+        .catch(err => {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#ef4444">Gagal memuat data: ' + escHtml(err.message) + '</td></tr>';
+            document.getElementById('pagination-info').textContent = '-';
+            document.getElementById('pagination-controls').innerHTML = '';
+        });
+    }
+
+    function renderTable(data, total) {
+        const tbody = document.getElementById('item-tbody');
+
+        if (!data.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data ditemukan.</td></tr>';
+            document.getElementById('pagination-info').textContent = '0 data';
+            return;
+        }
+
+        const start = (currentPage - 1) * PER_PAGE;
+
+        tbody.innerHTML = data.map((it, i) => `
+            <tr>
+            <td style="padding:13px 18px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
+            <td style="padding:13px 18px;font-weight:700;color:var(--primary)">${escHtml(it.kode_barang || '-')}</td>
+            <td style="padding:13px 18px;font-weight:600">${escHtml(it.nama_barang || '-')}</td>
+            <td style="padding:13px 18px">
+            ${it.grup ? `<span style="background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700">${escHtml(it.grup)}</span>` : '<span style="color:var(--text-muted)">-</span>'}
+            </td>
+            <td style="padding:13px 18px;text-align:right;font-weight:700">${formatNum(it.quantity)}</td>
+            </tr>
+            `).join('');
+
+        document.getElementById('pagination-info').textContent =
+        `Menampilkan ${start + 1}–${Math.min(start + data.length, total)} dari ${total} data`;
+    }
+
+    function renderPagination() {
+        const ctrl = document.getElementById('pagination-controls');
+        if (totalPages <= 1) { ctrl.innerHTML = ''; return; }
+
+        const btnStyle = (active) =>
+        `padding:6px 12px;border-radius:7px;border:1px solid ${active ? 'var(--primary)' : 'var(--border-color)'};
+        background:${active ? 'var(--primary)' : '#fff'};color:${active ? '#fff' : 'var(--text-muted)'};
+        font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s`;
+
+        let html = `<button style="${btnStyle(false)}" onclick="goPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}><i class="ti ti-chevron-left"></i></button>`;
+
+        let pages = [];
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) pages.push(i);
+            else if (pages[pages.length - 1] !== '...') pages.push('...');
+        }
+        pages.forEach(p => {
+            html += p === '...'
+            ? `<span style="padding:6px 8px;color:var(--text-muted);font-size:0.8rem">…</span>`
+            : `<button style="${btnStyle(p === currentPage)}" onclick="goPage(${p})">${p}</button>`;
+        });
+
+        html += `<button style="${btnStyle(false)}" onclick="goPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}><i class="ti ti-chevron-right"></i></button>`;
+        ctrl.innerHTML = html;
+    }
+
+    function goPage(page) {
+        if (page < 1 || page > totalPages) return;
+        loadItems(page);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadGrupOptions();
+        loadItems(1);
+
+        document.getElementById('search-input').addEventListener('input', () => {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => loadItems(1), 350);
+        });
+
+        document.getElementById('filter-grup').addEventListener('change', () => loadItems(1));
+    });
+</script>
+</body>
+</html>

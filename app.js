@@ -50,66 +50,6 @@ dbGudang.getConnection((err, conn) => {
 });
 
 
-// =========================================================================
-// API GUDANG SPAREPART (dari database "gudang": gudangengineering + part_grup)
-// =========================================================================
-
-app.get('/api/gudang-sparepart', requireLogin, (req, res) => {
-    const page   = Math.max(parseInt(req.query.page) || 1, 1);
-    const limit  = 20;
-    const offset = (page - 1) * limit;
-
-    const search = (req.query.search || '').trim();
-    const grup   = (req.query.grup || '').trim();
-
-    let where = [];
-    let params = [];
-
-    if (search) {
-        where.push('(ge.nama_barang LIKE ? OR ge.kode_barang LIKE ?)');
-        params.push(`%${search}%`, `%${search}%`);
-    }
-    if (grup) {
-        where.push('ge.grup = ?');
-        params.push(grup);
-    }
-    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
-
-    const countSql = `SELECT COUNT(*) AS total FROM gudangengineering ge ${whereSql}`;
-
-    dbGudang.query(countSql, params, (err, countResult) => {
-        if (err) return res.status(500).json({ error: err.message });
-        const total = countResult[0].total;
-
-        const dataSql = `
-        SELECT ge.kode_barang, ge.nama_barang, ge.quantity, pg.grup AS grup
-        FROM gudangengineering ge
-        LEFT JOIN part_grup pg ON pg.kode_grup = ge.grup
-        ${whereSql}
-        ORDER BY ge.nama_barang ASC
-        LIMIT ? OFFSET ?
-        `;
-
-        dbGudang.query(dataSql, [...params, limit, offset], (err2, rows) => {
-            if (err2) return res.status(500).json({ error: err2.message });
-            res.json({
-                data: rows,
-                total,
-                page,
-                totalPages: Math.ceil(total / limit) || 1
-            });
-        });
-    });
-});
-
-// Daftar grup untuk dropdown filter (khusus gudang sparepart)
-app.get('/api/gudang-sparepart/grup', requireLogin, (req, res) => {
-    const sql = "SELECT kode_grup, grup FROM part_grup WHERE gudang = 'sparepart' ORDER BY grup ASC";
-    dbGudang.query(sql, (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
-});
 
 // =========================================================================
 // 2. GLOBAL MIDDLEWARE
@@ -239,6 +179,68 @@ app.get('/sales/invoices/detail', requireLogin, (req, res) => {
 
 app.get('/sales/invoices/print', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'invoices', 'print.html'));
+});
+
+
+// =========================================================================
+// API GUDANG SPAREPART (dari database "gudang": gudangengineering + part_grup)
+// =========================================================================
+
+app.get('/api/gudang-sparepart', requireLogin, (req, res) => {
+    const page   = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit  = 15;                       // <-- diubah dari 20 jadi 15
+    const offset = (page - 1) * limit;
+
+    const search = (req.query.search || '').trim();
+    const grup   = (req.query.grup || '').trim();
+
+    let where = [];
+    let params = [];
+
+    if (search) {
+        where.push('(ge.nama_barang LIKE ? OR ge.kode_barang LIKE ?)');
+        params.push(`%${search}%`, `%${search}%`);
+    }
+    if (grup) {
+        where.push('ge.grup = ?');
+        params.push(grup);
+    }
+    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+
+    const countSql = `SELECT COUNT(*) AS total FROM gudangengineering ge ${whereSql}`;
+
+    dbGudang.query(countSql, params, (err, countResult) => {
+        if (err) return res.status(500).json({ error: err.message });
+        const total = countResult[0].total;
+
+        const dataSql = `
+        SELECT ge.kode_barang, ge.nama_barang, ge.quantity, pg.grup AS grup
+        FROM gudangengineering ge
+        LEFT JOIN part_grup pg ON pg.kode_grup = ge.grup
+        ${whereSql}
+        ORDER BY ge.nama_barang ASC
+        LIMIT ? OFFSET ?
+        `;
+
+        dbGudang.query(dataSql, [...params, limit, offset], (err2, rows) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            res.json({
+                data: rows,
+                total,
+                page,
+                totalPages: Math.ceil(total / limit) || 1
+            });
+        });
+    });
+});
+
+// Daftar grup untuk dropdown filter — ambil semua grup dari part_grup (tanpa filter kolom gudang)
+app.get('/api/gudang-sparepart/grup', requireLogin, (req, res) => {
+    const sql = "SELECT DISTINCT kode_grup, grup FROM part_grup ORDER BY grup ASC";
+    dbGudang.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(results);
+    });
 });
 
 // =========================================================================
