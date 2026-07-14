@@ -106,7 +106,23 @@
                         <input type="date" id="f-invoice_date" class="fi">
                     </div>
                 </div>
-
+                <div class="section-title"><i class="ti ti-ship"></i> Info Pengiriman & Dokumen</div>
+                <div class="grid2" style="margin-bottom:14px">
+                    <div class="fg"><label class="fl">L/C No</label><input type="text" id="f-lc_no" class="fi" placeholder="(opsional)"></div>
+                    <div class="fg"><label class="fl">Vessel</label><input type="text" id="f-vessel" class="fi" placeholder="(opsional)"></div>
+                </div>
+                <div class="grid2" style="margin-bottom:14px">
+                    <div class="fg"><label class="fl">With Case Mark</label><input type="text" id="f-case_mark" class="fi" placeholder="(opsional)"></div>
+                    <div class="fg"><label class="fl">Delivery Note No</label><input type="text" id="f-delivery_note_no" class="fi" placeholder="(opsional)"></div>
+                </div>
+                <div class="grid2" style="margin-bottom:14px">
+                    <div class="fg"><label class="fl">From</label><input type="text" id="f-from_location" class="fi" placeholder="Contoh: PURWAKARTA"></div>
+                    <div class="fg"><label class="fl">To</label><input type="text" id="f-to_location" class="fi" placeholder="Contoh: JAKARTA"></div>
+                </div>
+                <div class="fg" style="margin-bottom:14px;max-width:200px">
+                    <label class="fl">PPN (%)</label>
+                    <input type="number" id="f-ppn_percent" class="fi" step="0.01" min="0" value="11">
+                </div>
                 <!-- SECTION 2: PILIH CONTRACTS -->
                 <div class="section-title"><i class="ti ti-shopping-cart"></i> Pilih Contracts</div>
 
@@ -128,6 +144,7 @@
                         💡 Urutan tampil sesuai urutan saat dipilih. No order setiap contract ikut ditampilkan.
                     </small>
                 </div>
+                
 
                 <!-- BUTTONS -->
                 <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -308,8 +325,15 @@
             currency:    gv('f-currency'),
             invoice_date: gv('f-invoice_date'),
             status:      'draft',
-            total:       0, // total dihitung otomatis dari item produk di halaman detail
-            contracts:   selectedContracts.map(c => c.id) // urut sesuai saat dipilih
+            total:       0,
+            contracts:   selectedContracts.map(c => c.id),
+            lc_no:            gv('f-lc_no') || null,
+            vessel:           gv('f-vessel') || null,
+            case_mark:        gv('f-case_mark') || null,
+            delivery_note_no: gv('f-delivery_note_no') || null,
+            from_location:    gv('f-from_location') || null,
+            to_location:      gv('f-to_location') || null,
+            ppn_percent:      gv('f-ppn_percent') || 11,
         };
 
         const btn = document.getElementById('btn-submit');

@@ -77,12 +77,6 @@
         .alert-success { background: #f0fdf4; color: #16a34a; }
         .alert-error { background: #fef2f2; color: #dc2626; }
         .alert-warn { background: #fff7ed; color: #92400e; }
-
-        .btn-save-ship {
-            padding: 9px 20px; background: #0f172a; color: #fff; border: none;
-            border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; font-family: inherit;
-        }
-        .btn-save-ship:hover { background: #1e293b; }
     </style>
 </head>
 <body class="dashboard-page">
@@ -100,47 +94,6 @@
             <div class="fg">
                 <label class="fl">Contracts Terkait</label>
                 <div class="contract-chip-list" id="ic-contracts">—</div>
-            </div>
-        </div>
-
-        <!-- INFO PENGIRIMAN & DOKUMEN (untuk kebutuhan print) -->
-        <div class="bento-item" style="margin-bottom:20px">
-            <div class="section-title"><i class="ti ti-ship"></i> Info Pengiriman & Dokumen (untuk Print Invoice)</div>
-            <div id="alert-ship" style="display:none" class="alert"></div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
-                <div class="fg">
-                    <label class="fl">L/C No</label>
-                    <input type="text" id="sh-lc_no" class="fi" placeholder="(opsional)">
-                </div>
-                <div class="fg">
-                    <label class="fl">Vessel</label>
-                    <input type="text" id="sh-vessel" class="fi" placeholder="(opsional)">
-                </div>
-                <div class="fg">
-                    <label class="fl">With Case Mark</label>
-                    <input type="text" id="sh-case_mark" class="fi" placeholder="(opsional)">
-                </div>
-                <div class="fg">
-                    <label class="fl">Delivery Note No</label>
-                    <input type="text" id="sh-delivery_note_no" class="fi" placeholder="(opsional)">
-                </div>
-                <div class="fg">
-                    <label class="fl">From</label>
-                    <input type="text" id="sh-from_location" class="fi" placeholder="Contoh: PURWAKARTA">
-                </div>
-                <div class="fg">
-                    <label class="fl">To</label>
-                    <input type="text" id="sh-to_location" class="fi" placeholder="Contoh: JAKARTA">
-                </div>
-                <div class="fg">
-                    <label class="fl">PPN (%)</label>
-                    <input type="number" id="sh-ppn_percent" class="fi" step="0.01" min="0" placeholder="11">
-                </div>
-                <div class="fg" style="justify-content:flex-end">
-                    <button class="btn-save-ship" onclick="saveShippingInfo()">
-                        <i class="ti ti-device-floppy"></i> Simpan Info Pengiriman
-                    </button>
-                </div>
             </div>
         </div>
 
@@ -182,8 +135,14 @@
                     <input type="text" id="f-remaining-display" class="fi" disabled placeholder="—">
                 </div>
                 <div class="fg">
-                    <label class="fl">Packages</label>
-                    <input type="text" id="f-packages" class="fi" placeholder="Contoh: 20 CARTONS">
+                    <label class="fl">Packages / Roll</label>
+                    <div style="display:flex;gap:6px">
+                        <input type="number" id="f-packages" class="fi" placeholder="Jumlah" style="flex:1">
+                        <select id="f-package_unit" class="fi" style="flex:0 0 120px">
+                            <option value="PACKAGES">Packages</option>
+                            <option value="ROLL">Roll</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -203,6 +162,14 @@
                     </div>
                     <input type="number" id="f-diskon" class="fi" placeholder="0" step="0.01" min="0" oninput="calcSubtotal()">
                     <small id="lbl-diskon-hint" style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">% dari harga dasar</small>
+                </div>
+                <div class="fg">
+                    <label class="fl">Status Pengiriman</label>
+                    <div class="diskon-toggle">
+                        <button type="button" id="btn-status-full" class="active" onclick="setDeliveryStatus('full')">Full</button>
+                        <button type="button" id="btn-status-partial" onclick="setDeliveryStatus('partial')">Partial</button>
+                    </div>
+                    <small style="font-size:0.72rem;color:var(--text-muted);margin-top:3px">Full = dianggap selesai walau qty terkirim kurang (misal karena shrinkage)</small>
                 </div>
                 <div class="fg">
                     <label class="fl" id="lbl-subtotal">Subtotal</label>
@@ -232,11 +199,12 @@
                             <th style="text-align:right" id="th-price">PRICE</th>
                             <th style="text-align:right" id="th-diskon">DISKON</th>
                             <th style="text-align:right" id="th-stotal">SUBTOTAL</th>
+                            <th>STATUS</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody id="detail-tbody">
-                        <tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item.</td></tr>
+                        <tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -291,6 +259,7 @@
     let details          = [];
     let delId            = null;
     let diskonMode       = 'pct';
+    let deliveryStatus   = 'full';
 
     const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
@@ -298,9 +267,14 @@
         document.getElementById('btn-print').href = '/sales/invoices/print?id=' + invoiceId;
         await loadInvoice();
         populateContractDropdown();
-        fillShippingForm();
         await loadDetails();
     });
+
+    function setDeliveryStatus(s) {
+        deliveryStatus = s;
+        document.getElementById('btn-status-full').className = s === 'full' ? 'active' : '';
+        document.getElementById('btn-status-partial').className = s === 'partial' ? 'active' : '';
+    }
 
     async function loadInvoice() {
         try {
@@ -327,52 +301,6 @@
                 <small>${c.order_no ? ('No Order: ' + esc(c.order_no)) : ''} · ${esc(c.currency)}</small>
                 </span>
                 `).join('');
-        }
-    }
-
-    // ==================== INFO PENGIRIMAN ====================
-    function fillShippingForm() {
-        document.getElementById('sh-lc_no').value            = invoice.lc_no || '';
-        document.getElementById('sh-vessel').value           = invoice.vessel || '';
-        document.getElementById('sh-case_mark').value        = invoice.case_mark || '';
-        document.getElementById('sh-delivery_note_no').value = invoice.delivery_note_no || '';
-        document.getElementById('sh-from_location').value    = invoice.from_location || '';
-        document.getElementById('sh-to_location').value      = invoice.to_location || '';
-        document.getElementById('sh-ppn_percent').value      = (invoice.ppn_percent !== null && invoice.ppn_percent !== undefined) ? invoice.ppn_percent : 11;
-    }
-
-    function showShipAlert(msg, type) {
-        const box = document.getElementById('alert-ship');
-        box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
-        box.textContent = msg;
-        box.style.display = 'block';
-        if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
-    }
-
-    async function saveShippingInfo() {
-        const payload = {
-            lc_no:            document.getElementById('sh-lc_no').value.trim() || null,
-            vessel:           document.getElementById('sh-vessel').value.trim() || null,
-            case_mark:        document.getElementById('sh-case_mark').value.trim() || null,
-            delivery_note_no: document.getElementById('sh-delivery_note_no').value.trim() || null,
-            from_location:    document.getElementById('sh-from_location').value.trim() || null,
-            to_location:      document.getElementById('sh-to_location').value.trim() || null,
-            ppn_percent:      document.getElementById('sh-ppn_percent').value || 11,
-        };
-        try {
-            const data = await fetch('/api/invoices/' + invoiceId + '/shipping-info', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(r => r.json());
-            if (data.success) {
-                showShipAlert('✅ Info pengiriman berhasil disimpan.', 'success');
-                Object.assign(invoice, payload);
-            } else {
-                showShipAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
-            }
-        } catch(e) {
-            showShipAlert('❌ Kesalahan server: ' + e.message, 'error');
         }
     }
 
@@ -476,6 +404,8 @@
         document.getElementById('f-base-price').value = '';
         document.getElementById('f-stotal').value = '';
         document.getElementById('f-packages').value = '';
+        document.getElementById('f-package_unit').value = 'PACKAGES';
+        setDeliveryStatus('full');
     }
 
     // ==================== HITUNG SUBTOTAL ====================
@@ -570,12 +500,13 @@
             contract_id:        selectedContract.id,
             color:              selectedItem.color || selectedItem.product_color || null,
             unit:               selectedItem.unit,
-            qty_meter,
-            qty_yard,
+            qty_meter, qty_yard,
             price_usd:          basePrice,
             diskon:             diskonVal * qty,
             stotal_usd:         stotal,
             packages:           gv('f-packages') || null,
+            package_unit:       document.getElementById('f-package_unit').value,
+            delivery_status:    deliveryStatus,
         };
 
         const btn = document.getElementById('btn-submit-item');
@@ -620,7 +551,7 @@
         updateFormLabels();
 
         if (!details.length) {
-            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
             return;
         }
 
@@ -630,11 +561,12 @@
             const diskon = parseFloat(d.diskon || 0);
             const qty    = parseFloat(d.unit === 'Yard' ? d.qty_yard : d.qty_meter) || 0;
             const unitLbl = d.unit === 'Yard' ? 'Y' : 'm';
+            const pkgUnitLbl = d.package_unit === 'ROLL' ? 'Roll' : 'Pack';
 
             return `
             <tr>
             <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
-            <td style="font-size:0.82rem">${esc(d.packages || '—')}</td>
+            <td style="font-size:0.82rem">${d.packages ? esc(d.packages) + ' ' + pkgUnitLbl : '—'}</td>
             <td style="font-weight:700">${esc(d.fabric_name || '—')}</td>
             <td style="font-size:0.85rem;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
             <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.contract_no || '—')}</td>
@@ -644,6 +576,9 @@
             <td style="text-align:right;font-weight:600">${formatCur(price, cur)}</td>
             <td style="text-align:right;color:#64748b;font-size:0.8rem">${formatCur(diskon, cur)}</td>
             <td style="text-align:right;font-weight:700;color:#2563eb">${formatCur(stotal, cur)}</td>
+            <td>${d.delivery_status === 'partial'
+            ? '<span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">PARTIAL</span>'
+            : '<span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">FULL</span>'}</td>
             <td>
             <button class="btn-del" onclick="openDelModal(${d.id})">
             <i class="ti ti-trash" style="font-size:12px"></i>
