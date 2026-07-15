@@ -817,25 +817,25 @@ function adjustContractDetailInvoiced(contractDetailId, deltaMeter, deltaYard, c
 }
 
 app.get('/api/contract-details/:contractId', requireLogin, (req, res) => {
-    const sql = `
-    SELECT cd.*, 
-    p.fabric_no, p.fabric_name, p.color AS product_color,
-    p.price_m, p.price_y
-    FROM contract_details cd
-    LEFT JOIN products p ON p.id = cd.product_id
-    WHERE cd.contract_id = ?
-    ORDER BY cd.created_at ASC
-    `;
-    db.query(sql, [req.params.contractId], (err, results) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(results);
-    });
+   const sql = `
+   SELECT cd.*, 
+   p.nama, p.fabric_no, p.fabric_name, p.color AS product_color,
+   p.price_m, p.price_y
+   FROM contract_details cd
+   LEFT JOIN products p ON p.id = cd.product_id
+   WHERE cd.contract_id = ?
+   ORDER BY cd.created_at ASC
+   `;
+   db.query(sql, [req.params.contractId], (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
+    res.json(results);
+});
 });
 
 app.get('/api/contract-details/by-contract/:contractId', requireLogin, (req, res) => {
     const sql = `
     SELECT cd.*,
-    p.fabric_no, p.fabric_name, p.color AS product_color,
+    p.nama, p.fabric_no, p.fabric_name, p.color AS product_color,
     p.price_m, p.price_y
     FROM contract_details cd
     LEFT JOIN products p ON p.id = cd.product_id
@@ -992,6 +992,96 @@ app.get('/api/invoices/next-no', requireLogin, (req, res) => {
             next_no = 'INV' + String(num + 1).padStart(prev_no.length - 3, '0');
         }
         res.json({ next_no });
+    });
+});
+
+app.post('/api/invoices', requireLogin, (req, res) => {
+    const {
+        invoice_no, customer_id, currency, invoice_date, rate_id,
+        status, total, contracts,
+        lc_no, vessel, case_mark, from_location, to_location,
+        delivery_note_no, ppn_percent
+    } = req.body;
+
+    if (!invoice_no || !customer_id || !contracts || !Array.isArray(contracts) || !contracts.length) {
+        return res.status(400).json({ error: 'Required fields missing or invalid' });
+    }
+    if (!rate_id) {
+        return res.status(400).json({ error: 'Kurs wajib dipilih.' });
+    }
+
+    db.query('SELECT id FROM invoices WHERE invoice_no = ?', [invoice_no], (err, dup) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (dup.length > 0) return res.status(400).json({ error: `Invoice No "${invoice_no}" already used` });
+
+        const insertSql = `
+        INSERT INTO invoices 
+        (invoice_no, customer_id, currency, rate_id, total, status,
+        lc_no, vessel, case_mark, from_location, to_location, delivery_note_no, ppn_percent,
+        created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        `;
+
+        db.query(insertSql, [
+            invoice_no, customer_id, currency || 'USD', rate_id, total || 0, status || 'draft',
+            lc_no || null, vessel || null, case_mark || null,
+            from_location || null, to_location || null, delivery_note_no || null,
+            (ppn_percent === '' || ppn_percent === undefined || ppn_percent === null) ? 11 : ppn_percent
+            ], (err2, result) => {
+                if (err2) return res.status(500).json({ error: err2.message });
+                const invoiceId = result.insertId;
+                const linkSql = 'INSERT INTO invoice_contracts (invoice_id, contract_id, added_at) VALUES (?, ?, NOW())';
+                let completed = 0, hasError = false;
+                contracts.forEach(contractId => {
+                    db.query(linkSql, [invoiceId, contractId], (err3) => {
+                        completed++;
+                        if (err3 && !hasError) { hasError = true; return res.status(500).json({ error: 'Failed to link contracts: ' + err3.message }); }
+                        if (completed === contracts.length && !hasError) res.json({ success: true, id: invoiceId });
+                    });
+                });
+            });
+    });
+});
+
+app.get('/api/invoices/:id', requireLogin, (req, res) => {
+    const invoiceId = req.params.id;
+    const sql = `
+    SELECT i.*, c.name AS customer_name, c.address AS customer_address,
+    r.sell_rate, r.buy_rate, r.created_at AS rate_date
+    FROM invoices i
+    LEFT JOIN customers c ON c.id = i.customer_id
+    LEFT JOIN rates r ON r.id = i.rate_id
+    WHERE i.id = ?
+    `;
+    
+    db.query(sql, [invoiceId], (err, results) => {
+        if (err) return res.status(500).json({ error: err.message });
+        if (!results.length) return res.status(404).json({ error: 'Invoice not found' });
+
+        const invoice = results[0];
+
+        const contractSql = `
+        SELECT ct.*, ic.added_at
+        FROM invoice_contracts ic
+        JOIN contracts ct ON ct.id = ic.contract_id
+        WHERE ic.invoice_id = ?
+        ORDER BY ic.added_at ASC
+        `;
+        
+        db.query(contractSql, [invoiceId], (err2, contracts) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+            invoice.contracts = contracts || [];
+            res.json(invoice);
+        });
+    });
+});
+
+app.put('/api/invoices/:id/rate', requireLogin, (req, res) => {
+    const { rate_id } = req.body;
+    if (!rate_id) return res.status(400).json({ error: 'rate_id wajib diisi.' });
+    db.query('UPDATE invoices SET rate_id=?, updated_at=NOW() WHERE id=?', [rate_id, req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
     });
 });
 

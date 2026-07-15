@@ -90,6 +90,7 @@
                 <div class="info-card"><div class="lbl">Customer</div><div class="val" id="ic-customer">—</div></div>
                 <div class="info-card"><div class="lbl">Mata Uang</div><div class="val" id="ic-currency">—</div></div>
                 <div class="info-card"><div class="lbl">Invoice Date</div><div class="val" id="ic-date">—</div></div>
+                <div class="info-card"><div class="lbl">Kurs Invoice</div><div class="val" id="ic-kurs">—</div></div>
             </div>
             <div class="fg">
                 <label class="fl">Contracts Terkait</label>
@@ -101,25 +102,24 @@
         <div class="bento-item" style="margin-bottom:20px">
             <div class="section-title"><i class="ti ti-plus"></i> Tambah Product dari Contract</div>
             <div id="alert-form" style="display:none" class="alert"></div>
-            <div id="no-contract-warn" style="display:none" class="alert alert-warn">
-                Tidak ada contract dengan mata uang <b id="ncw-cur"></b> yang terhubung ke invoice ini.
+            <div id="no-product-warn" style="display:none" class="alert alert-warn">
+                Tidak ada produk tersisa dari contract dengan mata uang <b id="ncw-cur"></b> yang terhubung ke invoice ini.
                 Tambahkan contract lain lewat halaman Edit Invoice, atau ubah mata uang invoice.
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div style="margin-bottom:12px">
                 <div class="fg">
-                    <label class="fl">Contract <span style="color:#ef4444">*</span></label>
-                    <select id="f-contract" class="fi" onchange="onContractPick()">
-                        <option value="">-- Pilih Contract --</option>
+                    <label class="fl">Produk <span style="color:#ef4444">*</span></label>
+                    <select id="f-product" class="fi" onchange="onProductPick()">
+                        <option value="">-- Pilih Produk --</option>
                     </select>
-                </div>
-                <div class="fg">
-                    <label class="fl">Item / Produk <span style="color:#ef4444">*</span></label>
-                    <select id="f-item" class="fi" onchange="onItemPick()" disabled>
-                        <option value="">-- Pilih Contract dahulu --</option>
-                    </select>
+                    <small style="font-size:0.75rem;color:var(--text-muted);margin-top:5px">
+                        💡 Jika produk yang sama ada di lebih dari satu contract, sisanya otomatis digabungkan di sini.
+                    </small>
                 </div>
             </div>
+
+            <div id="product-source-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#1e40af;margin-bottom:12px"></div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">
                 <div class="fg">
@@ -249,414 +249,475 @@
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
-    const invoiceId = new URLSearchParams(window.location.search).get('id');
-    if (!invoiceId) window.location.href = '/sales/invoices';
+   const invoiceId = new URLSearchParams(window.location.search).get('id');
+   if (!invoiceId) window.location.href = '/sales/invoices';
 
-    let invoice          = null;
-    let contractItems    = [];
-    let selectedContract = null;
-    let selectedItem     = null;
-    let details          = [];
-    let delId            = null;
-    let diskonMode       = 'pct';
-    let deliveryStatus   = 'full';
+   let invoice        = null;
+let mergedProducts = [];   // hasil gabungan sisa item lintas contract
+let selectedGroup  = null; // grup produk yang sedang dipilih
+let details        = [];
+let delId          = null;
+let diskonMode     = 'pct';
+let deliveryStatus = 'full';
 
-    const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
-    document.addEventListener('DOMContentLoaded', async () => {
-        document.getElementById('btn-print').href = '/sales/invoices/print?id=' + invoiceId;
-        await loadInvoice();
-        populateContractDropdown();
-        await loadDetails();
-    });
+document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('btn-print').href = '/sales/invoices/print?id=' + invoiceId;
+    await loadInvoice();
+    await loadMergedProducts();
+    await loadDetails();
+});
 
-    function setDeliveryStatus(s) {
-        deliveryStatus = s;
-        document.getElementById('btn-status-full').className = s === 'full' ? 'active' : '';
-        document.getElementById('btn-status-partial').className = s === 'partial' ? 'active' : '';
+function setDeliveryStatus(s) {
+    deliveryStatus = s;
+    document.getElementById('btn-status-full').className = s === 'full' ? 'active' : '';
+    document.getElementById('btn-status-partial').className = s === 'partial' ? 'active' : '';
+}
+
+async function loadInvoice() {
+    try {
+        invoice = await fetch('/api/invoices/' + invoiceId).then(r => r.json());
+        renderInvoiceInfo();
+    } catch(e) { showAlert('Gagal memuat data invoice.', 'error'); }
+}
+
+function renderInvoiceInfo() {
+    const i = invoice;
+    document.getElementById('ic-kurs').textContent = i.sell_rate ? 'Rp ' + Number(i.sell_rate).toLocaleString('id-ID') : '—';
+    document.getElementById('ic-no').textContent       = i.invoice_no   || '—';
+    document.getElementById('ic-customer').textContent = i.customer_name || '—';
+    document.getElementById('ic-currency').innerHTML   =
+    `<span class="badge-status ${i.currency==='USD'?'badge-usd':'badge-idr'}">${i.currency}</span>`;
+    document.getElementById('ic-date').textContent     = i.invoice_date ? fmtDate(i.invoice_date) : (i.created_at ? fmtDate(i.created_at) : '—');
+
+    const wrap = document.getElementById('ic-contracts');
+    if (!i.contracts || !i.contracts.length) {
+        wrap.innerHTML = '<span style="color:var(--text-muted);font-size:0.85rem">—</span>';
+    } else {
+        wrap.innerHTML = i.contracts.map((c) => `
+            <span class="contract-chip">
+            ${esc(c.contract_no)}
+            <small>${c.order_no ? ('No Order: ' + esc(c.order_no)) : ''} · ${esc(c.currency)}</small>
+            </span>
+            `).join('');
+    }
+}
+
+// ==================== GABUNGKAN SISA ITEM LINTAS CONTRACT ====================
+async function loadMergedProducts() {
+    const matching = (invoice.contracts || []).filter(c => c.currency === invoice.currency);
+    const warnBox = document.getElementById('no-product-warn');
+
+    if (!matching.length) {
+        document.getElementById('ncw-cur').textContent = invoice.currency;
+        warnBox.style.display = 'block';
+        mergedProducts = [];
+        populateProductDropdown();
+        return;
     }
 
-    async function loadInvoice() {
-        try {
-            invoice = await fetch('/api/invoices/' + invoiceId).then(r => r.json());
-            renderInvoiceInfo();
-        } catch(e) { showAlert('Gagal memuat data invoice.', 'error'); }
-    }
+    try {
+        // Urutan 'matching' sudah FIFO (added_at ASC dari backend), jadi urutan portions ikut FIFO
+        const results = await Promise.all(
+            matching.map(c => fetch('/api/contract-details/remaining/' + c.id).then(r => r.json()).then(items => ({ contract: c, items })))
+            );
 
-    function renderInvoiceInfo() {
-        const i = invoice;
-        document.getElementById('ic-no').textContent       = i.invoice_no   || '—';
-        document.getElementById('ic-customer').textContent = i.customer_name || '—';
-        document.getElementById('ic-currency').innerHTML   =
-        `<span class="badge-status ${i.currency==='USD'?'badge-usd':'badge-idr'}">${i.currency}</span>`;
-        document.getElementById('ic-date').textContent     = i.invoice_date ? fmtDate(i.invoice_date) : (i.created_at ? fmtDate(i.created_at) : '—');
+        const map = new Map();
+        results.forEach(({ contract, items }) => {
+            (items || []).forEach(it => {
+                const remaining = it.unit === 'Yard' ? parseFloat(it.remaining_yard) : parseFloat(it.remaining_meter);
+                if (!(remaining > 0.009)) return;
 
-        const wrap = document.getElementById('ic-contracts');
-        if (!i.contracts || !i.contracts.length) {
-            wrap.innerHTML = '<span style="color:var(--text-muted);font-size:0.85rem">—</span>';
-        } else {
-            wrap.innerHTML = i.contracts.map((c) => `
-                <span class="contract-chip">
-                ${esc(c.contract_no)}
-                <small>${c.order_no ? ('No Order: ' + esc(c.order_no)) : ''} · ${esc(c.currency)}</small>
-                </span>
-                `).join('');
-        }
-    }
-
-    // ==================== PILIH CONTRACT & ITEM ====================
-    function populateContractDropdown() {
-        const sel = document.getElementById('f-contract');
-        const warnBox = document.getElementById('no-contract-warn');
-        const matching = (invoice.contracts || []).filter(c => c.currency === invoice.currency);
-
-        sel.innerHTML = '<option value="">-- Pilih Contract --</option>' +
-        matching.map(c => `<option value="${c.id}">${esc(c.contract_no)}${c.order_no ? ' (No Order: '+esc(c.order_no)+')' : ''}</option>`).join('');
-
-        if (!matching.length) {
-            document.getElementById('ncw-cur').textContent = invoice.currency;
-            warnBox.style.display = 'block';
-            sel.disabled = true;
-        } else {
-            warnBox.style.display = 'none';
-            sel.disabled = false;
-        }
-    }
-
-    async function onContractPick() {
-        const contractId = document.getElementById('f-contract').value;
-        resetItemSelection();
-
-        const itemSel = document.getElementById('f-item');
-        selectedContract = (invoice.contracts || []).find(c => String(c.id) === String(contractId)) || null;
-
-        if (!contractId) {
-            itemSel.innerHTML = '<option value="">-- Pilih Contract dahulu --</option>';
-            itemSel.disabled = true;
-            return;
-        }
-
-        itemSel.innerHTML = '<option value="">Memuat item...</option>';
-        itemSel.disabled = true;
-
-        try {
-            contractItems = await fetch('/api/contract-details/remaining/' + contractId).then(r => r.json());
-        } catch(e) {
-            showAlert('Gagal memuat item contract.', 'error');
-            return;
-        }
-
-        const usable = contractItems.filter(it => {
-            const rem = it.unit === 'Yard' ? parseFloat(it.remaining_yard) : parseFloat(it.remaining_meter);
-            return rem > 0.009;
+                const key = [it.product_id, it.color || it.product_color || '', it.unit].join('|');
+                if (!map.has(key)) {
+                    map.set(key, {
+                        key,
+                        product_id: it.product_id,
+                        color: it.color || it.product_color || '',
+                        unit: it.unit,
+                        fabric_no: it.fabric_no,
+                        fabric_name: it.fabric_name,
+                        totalRemaining: 0,
+                        portions: []
+                    });
+                }
+                const grp = map.get(key);
+                grp.totalRemaining += remaining;
+                grp.portions.push({
+                    contract_id: contract.id,
+                    contract_no: contract.contract_no,
+                    contract_detail_id: it.id,
+                    remaining,
+                    price_usd: parseFloat(it.price_usd) || 0,
+                    price_idr: parseFloat(it.price_idr) || 0,
+                });
+            });
         });
 
-        if (!usable.length) {
-            itemSel.innerHTML = '<option value="">-- Semua item contract ini sudah full terinvoice --</option>';
-            itemSel.disabled = true;
-            return;
-        }
+        mergedProducts = Array.from(map.values());
 
-        itemSel.innerHTML = '<option value="">-- Pilih Item --</option>' +
-        usable.map(it => {
-            const rem = it.unit === 'Yard' ? it.remaining_yard : it.remaining_meter;
-            const label = [it.fabric_name || it.fabric_no || 'Produk', it.color || it.product_color || null]
-            .filter(Boolean).join(' - ');
-            return `<option value="${it.id}">${esc(label)} (Sisa: ${fmtNum4(rem)} ${it.unit === 'Yard' ? 'Y' : 'm'})</option>`;
-        }).join('');
-        itemSel.disabled = false;
-    }
-
-    function onItemPick() {
-        const itemId = document.getElementById('f-item').value;
-        selectedItem = contractItems.find(it => String(it.id) === String(itemId)) || null;
-
-        if (!selectedItem) {
-            resetItemDetailFields();
-            return;
-        }
-
-        document.getElementById('f-color').value = selectedItem.color || selectedItem.product_color || '—';
-        document.getElementById('f-unit-display').value = selectedItem.unit;
-
-        const rem = selectedItem.unit === 'Yard' ? selectedItem.remaining_yard : selectedItem.remaining_meter;
-        document.getElementById('f-remaining-display').value = fmtNum4(rem) + ' ' + (selectedItem.unit === 'Yard' ? 'Yard' : 'Meter');
-        document.getElementById('f-qty').max = rem;
-        document.getElementById('f-qty').value = '';
-        document.getElementById('f-diskon').value = '';
-
-        calcSubtotal();
-    }
-
-    function resetItemSelection() {
-        selectedContract = null;
-        selectedItem = null;
-        contractItems = [];
-        resetItemDetailFields();
-    }
-
-    function resetItemDetailFields() {
-        document.getElementById('f-color').value = '';
-        document.getElementById('f-unit-display').value = '';
-        document.getElementById('f-remaining-display').value = '';
-        document.getElementById('f-qty').value = '';
-        document.getElementById('f-diskon').value = '';
-        document.getElementById('f-base-price').value = '';
-        document.getElementById('f-stotal').value = '';
-        document.getElementById('f-packages').value = '';
-        document.getElementById('f-package_unit').value = 'PACKAGES';
-        setDeliveryStatus('full');
-    }
-
-    // ==================== HITUNG SUBTOTAL ====================
-    function getBasePrice() {
-        if (!selectedItem || !invoice) return 0;
-        return invoice.currency === 'IDR'
-        ? (parseFloat(selectedItem.price_idr) || 0)
-        : (parseFloat(selectedItem.price_usd) || 0);
-    }
-
-    function updateFormLabels() {
-        if (!invoice) return;
-        const cur = invoice.currency || 'USD';
-        document.getElementById('lbl-base-price').textContent = `Harga Dasar (${cur})`;
-        document.getElementById('lbl-subtotal').textContent   = `Subtotal (${cur})`;
-        document.getElementById('th-price').textContent   = `PRICE (${cur})`;
-        document.getElementById('th-stotal').textContent  = `SUBTOTAL (${cur})`;
-    }
-
-    function setDiskonMode(mode) {
-        diskonMode = mode;
-        document.getElementById('btn-diskon-pct').className = mode==='pct' ? 'active' : '';
-        document.getElementById('btn-diskon-nom').className = mode==='nom' ? 'active' : '';
-        document.getElementById('lbl-diskon-hint').textContent =
-        mode === 'pct' ? '% dari harga dasar' : 'Nominal dalam ' + (invoice ? invoice.currency : '');
-        document.getElementById('f-diskon').value = '';
-        calcSubtotal();
-    }
-
-    function calcSubtotal() {
-        if (!invoice) return;
-        const cur = invoice.currency || 'USD';
-        const basePrice = getBasePrice();
-        const qty       = parseFloat(document.getElementById('f-qty').value) || 0;
-        const diskonRaw = parseFloat(document.getElementById('f-diskon').value) || 0;
-
-        let diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
-        const subtotal = Math.max(0, (basePrice - diskonVal) * qty);
-
-        document.getElementById('f-base-price').value =
-        basePrice > 0 ? formatCur(basePrice, cur) : '—';
-        document.getElementById('f-stotal').value =
-        (subtotal > 0 || qty > 0) ? formatCur(subtotal, cur) : '—';
-
-        updateFormLabels();
-    }
-
-    // ==================== ALERT ====================
-    function showAlert(msg, type) {
-        const box = document.getElementById('alert-form');
-        box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
-        box.textContent = msg;
-        box.style.display = 'block';
-        if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
-    }
-
-    function gv(id) { return document.getElementById(id).value.trim(); }
-
-    // ==================== ADD ITEM ====================
-    async function addItem() {
-        if (!selectedContract) { showAlert('❌ Pilih contract terlebih dahulu.', 'error'); return; }
-        if (!selectedItem)     { showAlert('❌ Pilih item produk terlebih dahulu.', 'error'); return; }
-
-        const qty = parseFloat(gv('f-qty'));
-        if (!qty || qty <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
-
-        const remaining = selectedItem.unit === 'Yard' ? parseFloat(selectedItem.remaining_yard) : parseFloat(selectedItem.remaining_meter);
-        if (qty - remaining > 0.01) {
-            showAlert(`❌ Qty melebihi sisa kontrak (sisa: ${fmtNum4(remaining)} ${selectedItem.unit === 'Yard' ? 'Y' : 'm'}).`, 'error');
-            return;
-        }
-
-        const cur = invoice.currency || 'USD';
-        const basePrice = getBasePrice();
-        const diskonRaw = parseFloat(gv('f-diskon')) || 0;
-        const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
-        const stotal = Math.max(0, (basePrice - diskonVal) * qty);
-
-        let qty_meter, qty_yard;
-        if (selectedItem.unit === 'Yard') {
-            qty_yard  = qty;
-            qty_meter = qty * 0.9144;
+        if (!mergedProducts.length) {
+            document.getElementById('ncw-cur').textContent = invoice.currency;
+            warnBox.style.display = 'block';
         } else {
-            qty_meter = qty;
-            qty_yard  = qty / 0.9144;
+            warnBox.style.display = 'none';
         }
 
-        const payload = {
-            invoice_id:         parseInt(invoiceId),
-            product_id:         selectedItem.product_id,
-            contract_detail_id: selectedItem.id,
-            contract_id:        selectedContract.id,
-            color:              selectedItem.color || selectedItem.product_color || null,
-            unit:               selectedItem.unit,
-            qty_meter, qty_yard,
-            price_usd:          basePrice,
-            diskon:             diskonVal * qty,
-            stotal_usd:         stotal,
-            packages:           gv('f-packages') || null,
-            package_unit:       document.getElementById('f-package_unit').value,
-            delivery_status:    deliveryStatus,
-        };
+        populateProductDropdown();
+    } catch(e) {
+        showAlert('Gagal memuat produk dari contract.', 'error');
+        console.error(e);
+    }
+}
 
-        const btn = document.getElementById('btn-submit-item');
-        btn.disabled = true;
+function populateProductDropdown() {
+    const sel = document.getElementById('f-product');
+    sel.innerHTML = '<option value="">-- Pilih Produk --</option>' +
+    mergedProducts.map(g => {
+        const label = [g.fabric_name || g.fabric_no || 'Produk', g.color || null].filter(Boolean).join(' - ');
+        const contractCount = new Set(g.portions.map(p => p.contract_id)).size;
+        const remLbl = fmtNum4(g.totalRemaining) + ' ' + (g.unit === 'Yard' ? 'Y' : 'm');
+        const src = contractCount > 1 ? ` (gabungan ${contractCount} contract)` : '';
+        return `<option value="${g.key}">${esc(label)} — Sisa: ${remLbl}${src}</option>`;
+    }).join('');
+    sel.disabled = !mergedProducts.length;
+}
 
-        try {
+function onProductPick() {
+    const key = document.getElementById('f-product').value;
+    selectedGroup = mergedProducts.find(g => g.key === key) || null;
+
+    if (!selectedGroup) {
+        resetProductSelection();
+        return;
+    }
+
+    document.getElementById('f-color').value = selectedGroup.color || '—';
+    document.getElementById('f-unit-display').value = selectedGroup.unit;
+    document.getElementById('f-remaining-display').value =
+    fmtNum4(selectedGroup.totalRemaining) + ' ' + (selectedGroup.unit === 'Yard' ? 'Yard' : 'Meter');
+    document.getElementById('f-qty').max = selectedGroup.totalRemaining;
+    document.getElementById('f-qty').value = '';
+    document.getElementById('f-diskon').value = '';
+
+    const cur = invoice.currency || 'USD';
+    const prices = [...new Set(selectedGroup.portions.map(p => cur === 'IDR' ? p.price_idr : p.price_usd))];
+    const priceWarn = prices.length > 1
+    ? `<br><span style="color:#c2410c;font-weight:700">⚠️ Harga berbeda antar contract — subtotal dihitung otomatis per contract sumber, bisa terpecah jadi beberapa baris saat disimpan.</span>`
+    : '';
+
+    const info = document.getElementById('product-source-info');
+    info.innerHTML = '<i class="ti ti-info-circle" style="margin-right:4px"></i>Sumber: ' +
+    selectedGroup.portions.map(p => `${esc(p.contract_no)} (sisa ${fmtNum4(p.remaining)} ${selectedGroup.unit === 'Yard' ? 'Y' : 'm'})`).join(', ') +
+    priceWarn;
+    info.style.display = 'block';
+
+    calcSubtotal();
+}
+
+function resetProductSelection() {
+    selectedGroup = null;
+    resetItemDetailFields();
+    document.getElementById('product-source-info').style.display = 'none';
+}
+
+function resetItemDetailFields() {
+    document.getElementById('f-color').value = '';
+    document.getElementById('f-unit-display').value = '';
+    document.getElementById('f-remaining-display').value = '';
+    document.getElementById('f-qty').value = '';
+    document.getElementById('f-diskon').value = '';
+    document.getElementById('f-base-price').value = '';
+    document.getElementById('f-stotal').value = '';
+    document.getElementById('f-packages').value = '';
+    document.getElementById('f-package_unit').value = 'PACKAGES';
+    setDeliveryStatus('full');
+}
+
+// Alokasikan qty yang diminta ke portions (FIFO sesuai urutan contract ditambahkan)
+function allocatePortions(qty) {
+    let remainingQty = qty;
+    const allocation = [];
+    for (const p of selectedGroup.portions) {
+        if (remainingQty <= 0.0001) break;
+        const use = Math.min(p.remaining, remainingQty);
+        if (use > 0.0001) {
+            allocation.push({ portion: p, qty: use });
+            remainingQty -= use;
+        }
+    }
+    return { allocation, unallocated: remainingQty };
+}
+
+function updateFormLabels() {
+    if (!invoice) return;
+    const cur = invoice.currency || 'USD';
+    document.getElementById('lbl-base-price').textContent = `Harga Dasar (${cur})`;
+    document.getElementById('lbl-subtotal').textContent   = `Subtotal (${cur})`;
+    document.getElementById('th-price').textContent   = `PRICE (${cur})`;
+    document.getElementById('th-stotal').textContent  = `SUBTOTAL (${cur})`;
+}
+
+function setDiskonMode(mode) {
+    diskonMode = mode;
+    document.getElementById('btn-diskon-pct').className = mode==='pct' ? 'active' : '';
+    document.getElementById('btn-diskon-nom').className = mode==='nom' ? 'active' : '';
+    document.getElementById('lbl-diskon-hint').textContent =
+    mode === 'pct' ? '% dari harga dasar' : 'Nominal dalam ' + (invoice ? invoice.currency : '');
+    document.getElementById('f-diskon').value = '';
+    calcSubtotal();
+}
+
+function calcSubtotal() {
+    if (!invoice || !selectedGroup) {
+        document.getElementById('f-base-price').value = '—';
+        document.getElementById('f-stotal').value = '—';
+        return;
+    }
+    const cur = invoice.currency || 'USD';
+    const qty = parseFloat(document.getElementById('f-qty').value) || 0;
+    const diskonRaw = parseFloat(document.getElementById('f-diskon').value) || 0;
+
+    const { allocation } = allocatePortions(qty);
+
+    let subtotal = 0;
+    let weightedPriceSum = 0;
+    allocation.forEach(({ portion, qty: qtyUsed }) => {
+        cconst sellRate = parseFloat(invoice.sell_rate) || 0;
+        const basePrice = cur === 'IDR' ? (portion.price_usd * sellRate) : portion.price_usd;
+        const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
+        subtotal += Math.max(0, (basePrice - diskonVal) * qtyUsed);
+        weightedPriceSum += basePrice * qtyUsed;
+    });
+
+    const firstPrice = selectedGroup.portions[0]
+    ? (cur === 'IDR' ? selectedGroup.portions[0].price_idr : selectedGroup.portions[0].price_usd)
+    : 0;
+    const avgPrice = qty > 0 ? weightedPriceSum / qty : firstPrice;
+
+    document.getElementById('f-base-price').value =
+    avgPrice > 0 ? formatCur(avgPrice, cur) + (allocation.length > 1 ? ' (avg)' : '') : '—';
+    document.getElementById('f-stotal').value =
+    (subtotal > 0 || qty > 0) ? formatCur(subtotal, cur) : '—';
+
+    updateFormLabels();
+}
+
+// ==================== ALERT ====================
+function showAlert(msg, type) {
+    const box = document.getElementById('alert-form');
+    box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
+    box.textContent = msg;
+    box.style.display = 'block';
+    if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
+}
+
+function gv(id) { return document.getElementById(id).value.trim(); }
+
+// ==================== ADD ITEM (otomatis dipecah jika lintas contract) ====================
+async function addItem() {
+    if (!selectedGroup) { showAlert('❌ Pilih produk terlebih dahulu.', 'error'); return; }
+
+    const qty = parseFloat(gv('f-qty'));
+    if (!qty || qty <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
+
+    if (qty - selectedGroup.totalRemaining > 0.01) {
+        showAlert(`❌ Qty melebihi total sisa gabungan (sisa: ${fmtNum4(selectedGroup.totalRemaining)} ${selectedGroup.unit === 'Yard' ? 'Y' : 'm'}).`, 'error');
+        return;
+    }
+
+    const { allocation, unallocated } = allocatePortions(qty);
+    if (unallocated > 0.01) {
+        showAlert('❌ Sisa qty tidak dapat dialokasikan ke contract manapun.', 'error');
+        return;
+    }
+
+    const cur = invoice.currency || 'USD';
+    const diskonRaw = parseFloat(gv('f-diskon')) || 0;
+    const packages = gv('f-packages') || null;
+    const packageUnit = document.getElementById('f-package_unit').value;
+
+    const btn = document.getElementById('btn-submit-item');
+    btn.disabled = true;
+
+    try {
+        for (let i = 0; i < allocation.length; i++) {
+            const { portion, qty: qtyUsed } = allocation[i];
+            const basePrice = cur === 'IDR' ? portion.price_idr : portion.price_usd;
+            const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
+            const stotalPortion = Math.max(0, (basePrice - diskonVal) * qtyUsed);
+
+            let qty_meter, qty_yard;
+            if (selectedGroup.unit === 'Yard') {
+                qty_yard  = qtyUsed;
+                qty_meter = qtyUsed * 0.9144;
+            } else {
+                qty_meter = qtyUsed;
+                qty_yard  = qtyUsed / 0.9144;
+            }
+
+            const payload = {
+                invoice_id:         parseInt(invoiceId),
+                product_id:         selectedGroup.product_id,
+                contract_detail_id: portion.contract_detail_id,
+                contract_id:        portion.contract_id,
+                color:              selectedGroup.color || null,
+                unit:               selectedGroup.unit,
+                qty_meter, qty_yard,
+                price_usd:          basePrice,
+                diskon:             diskonVal * qtyUsed,
+                stotal_usd:         stotalPortion,
+                packages:           i === 0 ? packages : null, // packages dicatat sekali saja di baris pertama
+                package_unit:       packageUnit,
+                delivery_status:    deliveryStatus,
+            };
+
             const data = await fetch('/api/invoice-details', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             }).then(r => r.json());
 
-            if (data.success) {
-                showAlert('✅ Product berhasil ditambahkan.', 'success');
-                document.getElementById('f-contract').value = '';
-                resetItemSelection();
-                document.getElementById('f-item').innerHTML = '<option value="">-- Pilih Contract dahulu --</option>';
-                document.getElementById('f-item').disabled = true;
+            if (!data.success) {
+                showAlert('❌ ' + (data.error || 'Gagal menyimpan salah satu bagian item.'), 'error');
+                await loadMergedProducts();
                 await loadDetails();
-            } else {
-                showAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
+                return;
             }
-        } catch(e) {
-            showAlert('❌ Kesalahan server: ' + e.message, 'error');
-        } finally {
-            btn.disabled = false;
-        }
-    }
-
-    // ==================== LOAD & RENDER DETAILS ====================
-    async function loadDetails() {
-        try {
-            details = await fetch('/api/invoice-details/by-invoice/' + invoiceId).then(r => r.json());
-            renderDetails();
-            updateTotal();
-        } catch(e) { console.error('Gagal load details', e); }
-    }
-
-    function renderDetails() {
-        const tbody = document.getElementById('detail-tbody');
-        const cur   = invoice?.currency || 'USD';
-        updateFormLabels();
-
-        if (!details.length) {
-            tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
-            return;
         }
 
-        tbody.innerHTML = details.map((d, i) => {
-            const price  = parseFloat(d.price_usd || 0);
-            const stotal = parseFloat(d.stotal_usd || 0);
-            const diskon = parseFloat(d.diskon || 0);
-            const qty    = parseFloat(d.unit === 'Yard' ? d.qty_yard : d.qty_meter) || 0;
-            const unitLbl = d.unit === 'Yard' ? 'Y' : 'm';
-            const pkgUnitLbl = d.package_unit === 'ROLL' ? 'Roll' : 'Pack';
+        showAlert('✅ Product berhasil ditambahkan' + (allocation.length > 1 ? ` (otomatis dipecah dari ${allocation.length} contract).` : '.'), 'success');
+        document.getElementById('f-product').value = '';
+        resetProductSelection();
+        await loadMergedProducts();
+        await loadDetails();
+    } catch(e) {
+        showAlert('❌ Kesalahan server: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+    }
+}
 
-            return `
-            <tr>
-            <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
-            <td style="font-size:0.82rem">${d.packages ? esc(d.packages) + ' ' + pkgUnitLbl : '—'}</td>
-            <td style="font-weight:700">${esc(d.fabric_name || '—')}</td>
-            <td style="font-size:0.85rem;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
-            <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.contract_no || '—')}</td>
-            <td>${esc(d.color || '—')}</td>
-            <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
-            <td style="text-align:right;font-weight:600">${fmtNum4(qty)} ${unitLbl}</td>
-            <td style="text-align:right;font-weight:600">${formatCur(price, cur)}</td>
-            <td style="text-align:right;color:#64748b;font-size:0.8rem">${formatCur(diskon, cur)}</td>
-            <td style="text-align:right;font-weight:700;color:#2563eb">${formatCur(stotal, cur)}</td>
-            <td>${d.delivery_status === 'partial'
-            ? '<span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">PARTIAL</span>'
-            : '<span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">FULL</span>'}</td>
-            <td>
-            <button class="btn-del" onclick="openDelModal(${d.id})">
-            <i class="ti ti-trash" style="font-size:12px"></i>
-            </button>
-            </td>
-            </tr>`;
-        }).join('');
+// ==================== LOAD & RENDER DETAILS ====================
+async function loadDetails() {
+    try {
+        details = await fetch('/api/invoice-details/by-invoice/' + invoiceId).then(r => r.json());
+        renderDetails();
+        updateTotal();
+    } catch(e) { console.error('Gagal load details', e); }
+}
+
+function renderDetails() {
+    const tbody = document.getElementById('detail-tbody');
+    const cur   = invoice?.currency || 'USD';
+    updateFormLabels();
+
+    if (!details.length) {
+        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
+        return;
     }
 
-    function updateTotal() {
-        if (!invoice) return;
-        const cur   = invoice.currency || 'USD';
-        const total = details.reduce((s, d) => s + (parseFloat(d.stotal_usd) || 0), 0);
+    tbody.innerHTML = details.map((d, i) => {
+        const price  = parseFloat(d.price_usd || 0);
+        const stotal = parseFloat(d.stotal_usd || 0);
+        const diskon = parseFloat(d.diskon || 0);
+        const qty    = parseFloat(d.unit === 'Yard' ? d.qty_yard : d.qty_meter) || 0;
+        const unitLbl = d.unit === 'Yard' ? 'Y' : 'm';
+        const pkgUnitLbl = d.package_unit === 'ROLL' ? 'Roll' : 'Pack';
 
-        document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
-        document.getElementById('total-items').textContent   = details.length + ' item';
+        return `
+        <tr>
+        <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
+        <td style="font-size:0.82rem">${d.packages ? esc(d.packages) + ' ' + pkgUnitLbl : '—'}</td>
+        <td style="font-weight:700">${esc(d.fabric_name || '—')}</td>
+        <td style="font-size:0.85rem;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
+        <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.contract_no || '—')}</td>
+        <td>${esc(d.color || '—')}</td>
+        <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
+        <td style="text-align:right;font-weight:600">${fmtNum4(qty)} ${unitLbl}</td>
+        <td style="text-align:right;font-weight:600">${formatCur(price, cur)}</td>
+        <td style="text-align:right;color:#64748b;font-size:0.8rem">${formatCur(diskon, cur)}</td>
+        <td style="text-align:right;font-weight:700;color:#2563eb">${formatCur(stotal, cur)}</td>
+        <td>${d.delivery_status === 'partial'
+        ? '<span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">PARTIAL</span>'
+        : '<span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">FULL</span>'}</td>
+        <td>
+        <button class="btn-del" onclick="openDelModal(${d.id})">
+        <i class="ti ti-trash" style="font-size:12px"></i>
+        </button>
+        </td>
+        </tr>`;
+    }).join('');
+}
 
-        fetch('/api/invoices/' + invoiceId + '/total', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ total })
-        }).catch(()=>{});
-    }
+function updateTotal() {
+    if (!invoice) return;
+    const cur   = invoice.currency || 'USD';
+    const total = details.reduce((s, d) => s + (parseFloat(d.stotal_usd) || 0), 0);
 
-    // ==================== DELETE ====================
-    function openDelModal(id) {
-        delId = id;
-        document.getElementById('del-modal').style.display = 'flex';
-    }
+    document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
+    document.getElementById('total-items').textContent   = details.length + ' item';
 
-    function closeDelModal() {
-        delId = null;
-        document.getElementById('del-modal').style.display = 'none';
-        const btn = document.querySelector('#del-modal button:last-child');
-        if (btn) { btn.disabled = false; btn.textContent = 'Hapus'; }
-    }
+    fetch('/api/invoices/' + invoiceId + '/total', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ total })
+    }).catch(()=>{});
+}
 
-    async function confirmDel() {
-        if (!delId) { alert('ID tidak ditemukan.'); return; }
-        const btn = document.querySelector('#del-modal button:last-child');
-        btn.disabled = true;
-        btn.textContent = 'Menghapus...';
-        try {
-            const res  = await fetch('/api/invoice-details/' + delId, { method: 'DELETE' });
-            const data = await res.json();
-            if (data.success || data.status === 'success') {
-                closeDelModal();
-                if (document.getElementById('f-contract').value) {
-                    await onContractPick();
-                }
-                await loadDetails();
-            } else {
-                alert('Gagal hapus: ' + (data.error || 'Unknown error'));
-                btn.disabled = false;
-                btn.textContent = 'Hapus';
-            }
-        } catch(e) {
-            alert('Kesalahan server: ' + e.message);
+// ==================== DELETE ====================
+function openDelModal(id) {
+    delId = id;
+    document.getElementById('del-modal').style.display = 'flex';
+}
+
+function closeDelModal() {
+    delId = null;
+    document.getElementById('del-modal').style.display = 'none';
+    const btn = document.querySelector('#del-modal button:last-child');
+    if (btn) { btn.disabled = false; btn.textContent = 'Hapus'; }
+}
+
+async function confirmDel() {
+    if (!delId) { alert('ID tidak ditemukan.'); return; }
+    const btn = document.querySelector('#del-modal button:last-child');
+    btn.disabled = true;
+    btn.textContent = 'Menghapus...';
+    try {
+        const res  = await fetch('/api/invoice-details/' + delId, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success || data.status === 'success') {
+            closeDelModal();
+            await loadMergedProducts();
+            await loadDetails();
+        } else {
+            alert('Gagal hapus: ' + (data.error || 'Unknown error'));
             btn.disabled = false;
             btn.textContent = 'Hapus';
         }
+    } catch(e) {
+        alert('Kesalahan server: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = 'Hapus';
     }
+}
 
-    // ==================== HELPERS ====================
-    function fmtDate(str) {
-        if (!str) return '—';
-        const s = str.slice(0,10).split('-');
-        return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
-    }
-    function fmtNum4(v) { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}); }
-    function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+// ==================== HELPERS ====================
+function fmtDate(str) {
+    if (!str) return '—';
+    const s = str.slice(0,10).split('-');
+    return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
+}
+function fmtNum4(v) { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}); }
+function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-    function formatCur(val, cur) {
-        const n = parseFloat(val)||0;
-        return cur === 'IDR'
-        ? 'Rp ' + n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:0})
-        : '$ '  + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
-    }
+function formatCur(val, cur) {
+    const n = parseFloat(val)||0;
+    return cur === 'IDR'
+    ? 'Rp ' + n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:0})
+    : '$ '  + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
+}
 </script>
 </body>
 </html>

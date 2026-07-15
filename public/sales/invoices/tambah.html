@@ -106,6 +106,28 @@
                         <input type="date" id="f-invoice_date" class="fi">
                     </div>
                 </div>
+
+                <div class="section-title"><i class="ti ti-calendar-dollar"></i> Kurs / Exchange Rate</div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:stretch;margin-bottom:14px">
+                    <div class="rate-calendar-wrap" style="width:320px;flex-shrink:0;border:1px solid var(--border-color);border-radius:10px;overflow:hidden">
+                        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--primary-light);border-bottom:1px solid var(--border-color)">
+                            <button type="button" onclick="calPrev()" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:1rem"><i class="ti ti-chevron-left"></i></button>
+                            <span id="cal-label" style="font-weight:700;color:var(--primary)">—</span>
+                            <button type="button" onclick="calNext()" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:1rem"><i class="ti ti-chevron-right"></i></button>
+                        </div>
+                        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);padding:4px;gap:2px"></div>
+                    </div>
+                    <div style="border:1px solid var(--border-color);border-radius:10px;background:#f8fafc;display:flex;flex-direction:column;justify-content:center;padding:16px 20px">
+                        <div id="rate-info-empty" style="text-align:center;color:var(--text-muted);font-size:0.83rem">Pilih tanggal kurs yang bertanda biru.</div>
+                        <div id="rate-info-data" style="display:none">
+                            <div style="font-size:0.75rem;color:var(--text-muted)">Tanggal: <b id="ri-date" style="color:var(--text-main)">—</b></div>
+                            <div style="margin-top:8px;display:flex;gap:10px">
+                                <div><span style="font-size:0.7rem;color:#16a34a;font-weight:700">SELL</span><br><b id="ri-sell">—</b></div>
+                                <div><span style="font-size:0.7rem;color:#2563eb;font-weight:700">BUY</span><br><b id="ri-buy">—</b></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="section-title"><i class="ti ti-ship"></i> Info Pengiriman & Dokumen</div>
                 <div class="grid2" style="margin-bottom:14px">
                     <div class="fg"><label class="fl">L/C No</label><input type="text" id="f-lc_no" class="fi" placeholder="(opsional)"></div>
@@ -175,24 +197,31 @@
         const d = String(now.getDate()).padStart(2, '0');
         document.getElementById('f-invoice_date').value = `${y}-${m}-${d}`;
 
-        await Promise.all([loadCustomers(), loadContractsForSelection(), loadNextInvoiceNo()]);
-    });
+        document.addEventListener('DOMContentLoaded', async () => {
+            const now = new Date();
+            calYear = now.getFullYear(); calMonth = now.getMonth();
+            document.getElementById('f-invoice_date').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
-    async function loadCustomers() {
-        try {
-            const data = await fetch('/api/customers').then(r => r.json());
-            const sel = document.getElementById('f-customer_id');
-            data.forEach(c => {
-                const o = document.createElement('option');
-                o.value = c.id; o.textContent = c.name;
-                sel.appendChild(o);
-            });
-        } catch(e) { console.error('Gagal load customers', e); }
-    }
 
-    async function loadContractsForSelection() {
-        try {
-            const data = await fetch('/api/contracts').then(r => r.json());
+            await Promise.all([loadCustomers(), loadContractsForSelection(), loadNextInvoiceNo(), loadRates()]);
+            renderCalendar();
+        });
+
+        async function loadCustomers() {
+            try {
+                const data = await fetch('/api/customers').then(r => r.json());
+                const sel = document.getElementById('f-customer_id');
+                data.forEach(c => {
+                    const o = document.createElement('option');
+                    o.value = c.id; o.textContent = c.name;
+                    sel.appendChild(o);
+                });
+            } catch(e) { console.error('Gagal load customers', e); }
+        }
+
+        async function loadContractsForSelection() {
+            try {
+                const data = await fetch('/api/contracts').then(r => r.json());
             // Filter status dihilangkan, langsung masukkan semua data contracts
             allContracts = data;
         } catch(e) {
@@ -318,8 +347,10 @@
         if (!gv('f-currency'))     { showAlert('❌ Mata uang wajib dipilih.', 'error'); return; }
         if (!gv('f-invoice_date')) { showAlert('❌ Invoice date wajib diisi.', 'error'); return; }
         if (!selectedContracts.length) { showAlert('❌ Pilih minimal 1 contract.', 'error'); return; }
+        if (!selectedRate) { showAlert('❌ Pilih kurs terlebih dahulu.', 'error'); return; }
 
         const payload = {
+            rate_id: selectedRate.id,
             invoice_no:  gv('f-invoice_no'),
             customer_id: parseInt(gv('f-customer_id')),
             currency:    gv('f-currency'),
@@ -362,6 +393,48 @@
             btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut ke Detail';
         });
     }
-</script>
+
+    let allRates = [], ratesByDate = {}, selectedRate = null, calYear = 0, calMonth = 0, selectedDateStr = null;
+    const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const DAYS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+    function pad(n){ return String(n).padStart(2,'0'); }
+
+    async function loadRates() {
+        allRates = await fetch('/api/rates').then(r => r.json());
+        ratesByDate = {};
+        allRates.forEach(r => { const k = r.created_at.slice(0,10); if (!ratesByDate[k]) ratesByDate[k] = r; });
+    }
+
+    function renderCalendar() {
+        document.getElementById('cal-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
+        const todayStr = new Date().toISOString().slice(0,10);
+        let html = DAYS.map(d => `<div style="text-align:center;font-size:0.7rem;font-weight:700;color:var(--text-muted);padding:4px 0">${d}</div>`).join('');
+        const firstDay = new Date(calYear, calMonth, 1).getDay();
+        const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+        for (let i=0;i<firstDay;i++) html += `<div></div>`;
+            for (let d=1; d<=daysInMonth; d++) {
+                const ds = `${calYear}-${pad(calMonth+1)}-${pad(d)}`;
+                const hasRate = !!ratesByDate[ds];
+                const isSel = ds === selectedDateStr;
+                const style = `text-align:center;padding:6px 2px;font-size:0.8rem;border-radius:6px;cursor:${hasRate?'pointer':'default'};
+                background:${isSel?'var(--primary)':hasRate?'#eff6ff':'transparent'};color:${isSel?'#fff':hasRate?'#1d4ed8':'#94a3b8'};font-weight:${hasRate?'800':'400'}`;
+                html += `<div style="${style}" ${hasRate?`onclick="selectDate('${ds}')"`:''}>${d}</div>`;
+            }
+            document.getElementById('cal-grid').innerHTML = html;
+        }
+        function calPrev(){ calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+        function calNext(){ calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar(); }
+        function selectDate(ds) {
+            const rate = ratesByDate[ds];
+            if (!rate) return;
+            selectedRate = rate; selectedDateStr = ds;
+            renderCalendar();
+            document.getElementById('rate-info-empty').style.display = 'none';
+            document.getElementById('rate-info-data').style.display = '';
+            document.getElementById('ri-date').textContent = ds;
+            document.getElementById('ri-sell').textContent = 'Rp ' + Number(rate.sell_rate).toLocaleString('id-ID');
+            document.getElementById('ri-buy').textContent  = 'Rp ' + Number(rate.buy_rate).toLocaleString('id-ID');
+        }
+    </script>
 </body>
 </html>

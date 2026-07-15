@@ -264,8 +264,8 @@
     const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
     // Pembulatan ke atas, 2 angka di belakang koma (untuk qty & price yang disimpan ke DB)
-    function ceil2(n) {
-        return Math.ceil((parseFloat(n) || 0) * 100) / 100;
+    function trunc2(n) {
+        return Math.round((parseFloat(n) || 0) * 100) / 100;
     }
 
     // ==================== INIT ====================
@@ -318,7 +318,6 @@
         const q = document.getElementById('f-product-search').value.toLowerCase().trim();
         const dd = document.getElementById('product-dropdown');
 
-        // Reset pilihan jika user mengetik ulang
         selectedProduct = null;
         document.getElementById('f-product_id').value = '';
         document.getElementById('f-base-price').value = '';
@@ -329,9 +328,10 @@
         if (!q) { dd.style.display = 'none'; return; }
 
         const filtered = products.filter(p =>
+            (p.nama && p.nama.toLowerCase().includes(q)) ||
             (p.fabric_no && p.fabric_no.toLowerCase().includes(q)) ||
             (p.fabric_name && p.fabric_name.toLowerCase().includes(q)) ||
-            (p.customer && p.customer.toLowerCase().includes(q)) ||
+            (p.customer_name && p.customer_name.toLowerCase().includes(q)) ||
             (p.color && p.color.toLowerCase().includes(q))
             ).slice(0, 20);
 
@@ -346,7 +346,7 @@
             <div class="fn">${esc(p.nama || '—')}</div>
             <div class="fm">
             ${p.fabric_no ? 'Fabric No: ' + esc(p.fabric_no) + ' · ' : ''}
-            ${p.customer ? esc(p.customer) + ' · ' : ''}
+            ${p.customer_name ? esc(p.customer_name) + ' · ' : ''}
             ${p.color ? esc(p.color) : ''}
             &nbsp;|&nbsp; USD/M: ${p.price_m ? '$ '+parseFloat(p.price_m).toFixed(4) : '-'}
             &nbsp; USD/Y: ${p.price_y ? '$ '+parseFloat(p.price_y).toFixed(4) : '-'}
@@ -370,7 +370,7 @@
         selectedProduct = p;
         document.getElementById('f-product_id').value       = p.id;
         document.getElementById('f-product-search').value =
-        [p.nama, p.fabric_no ? '('+p.fabric_no+')' : '', p.customer ? '['+p.customer+']' : ''].filter(Boolean).join(' ');
+        [p.nama, p.fabric_no ? '('+p.fabric_no+')' : ''].filter(Boolean).join(' ');
         document.getElementById('product-dropdown').style.display = 'none';
 
         // Isi color dari produk jika belum diisi user
@@ -493,17 +493,17 @@
         const diskonInCur = cur === 'IDR' ? diskonUSD * sellRate : diskonUSD;
 
         // Harga per unit USD & IDR -> dibulatkan ke atas 2 desimal sebelum disimpan ke DB
-        const price_usd = ceil2(basePriceUSD);
-        const price_idr = ceil2(basePriceUSD * sellRate);
+        const price_usd = trunc2(basePriceUSD);
+        const price_idr = trunc2(basePriceUSD * sellRate);
 
         // Qty dalam meter dan yard -> dibulatkan ke atas 2 desimal sebelum disimpan ke DB
         let qty_meter, qty_yard;
         if (unit === 'Yard') {
-            qty_yard  = ceil2(qty);
-            qty_meter = ceil2(qty * 0.9144);
+            qty_yard  = trunc2(qty);
+            qty_meter = trunc2(qty * 0.9144);
         } else {
-            qty_meter = ceil2(qty);
-            qty_yard  = ceil2(qty / 0.9144);
+            qty_meter = trunc2(qty);
+            qty_yard  = trunc2(qty / 0.9144);
         }
 
         // Subtotal USD dan IDR (dihitung dari nilai asli/presisi penuh, agar nominal tetap akurat)

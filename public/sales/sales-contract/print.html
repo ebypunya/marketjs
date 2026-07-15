@@ -41,8 +41,8 @@
         .tbl { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 8pt; }
         .tbl th { background: #ebebeb; border: 1px solid #aaa; padding: 5px 6px; text-align: center; font-weight: 700; font-size: 7.5pt; text-transform: uppercase; line-height: 1.3; }
         .tbl td { border: 1px solid #bbb; padding: 5px 7px; vertical-align: middle; line-height: 1.4; }
-        .tbl td.c { text-align: center; }
-        .tbl td.r { text-align: right; }
+        .tbl td.c { text-align: center; white-space: nowrap; }
+        .tbl td.r { text-align: right; white-space: nowrap; }
         .tbl tbody tr:nth-child(even) { background: #fafafa; }
 
         /* INFO TABLE */
@@ -74,6 +74,7 @@
     </style>
 </head>
 <body>
+
     <div class="page-wrapper">
         <div class="action-bar">
             <button class="btn btn-secondary" onclick="window.history.back()">← Kembali</button>
@@ -115,13 +116,13 @@
             <table class="tbl">
                 <thead>
                     <tr>
-                        <th style="width:17%">Article<br>Nomor</th>
-                        <th style="width:13%">Color</th>
-                        <th style="width:18%">Quantity<br>About</th>
+                        <th style="width:16%">Article<br>Nomor</th>
+                        <th style="width:11%">Color</th>
+                        <th style="width:15%">Quantity<br>About</th>
                         <th style="width:6%">Unit</th>
-                        <th style="width:20%">Price</th>
-                        <th style="width:16%">Total Amount<br>About</th>
-                        <th style="width:10%">Shipping Schedule<br><span style="font-size:6.5pt;font-weight:400">EXW URASE PRIMA*</span></th>
+                        <th style="width:18%">Price</th>
+                        <th style="width:22%">Total Amount<br>About</th>
+                        <th style="width:12%">Shipping Schedule<br><span style="font-size:6.5pt;font-weight:400">EXW URASE PRIMA*</span></th>
                     </tr>
                 </thead>
                 <tbody id="items-tbody">
@@ -170,7 +171,7 @@
     <script>
         const contractId = new URLSearchParams(window.location.search).get('id');
         if (!contractId) window.location.href = '/sales/sales-contract';
-
+        function trunc2(v) { return Math.round((parseFloat(v)||0) * 100) / 100; }
         const MO_S = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
         const MO_L = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
 
@@ -206,31 +207,34 @@
                 tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:#999">Tidak ada item produk.</td></tr>';
             } else {
                 tbody.innerHTML = details.map(d => {
-                    // qty/price/stotal/yard tidak lagi diambil dari kolom generik (sudah dihapus dari tabel),
-                    // melainkan dari kolom qty_meter/qty_yard, price_usd/price_idr, stotal_usd/stotal_idr.
                     const qty    = parseFloat(d.unit === 'Yard' ? d.qty_yard : d.qty_meter) || 0;
                     const yard   = parseFloat(d.qty_yard) || 0;
                     const price  = parseFloat(cur === 'IDR' ? d.price_idr  : d.price_usd)  || 0;
                     const stotal = parseFloat(cur === 'IDR' ? d.stotal_idr : d.stotal_usd) || 0;
+
+                    const priceM_USD = parseFloat(d.price_m) || 0;
+                    const priceY_USD = parseFloat(d.price_y) || 0;
+
                     let qCell, pCell, tCell;
 
                     if (cur === 'IDR') {
                         if (d.unit === 'Meter') {
-                            const pY = price * 0.9144;
-                            qCell = `${fmtID(qty,2)} m<br><span style="color:#555;font-size:7pt">(${fmtID(yard,2)} Y)</span>`;
-                            pCell = `IDR ${fmtID(price,2)}/m<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(pY,2)}/Y)</span>`;
-                            tCell = `IDR ${fmtID(stotal,2)}<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(stotal,2)})</span>`;
+                            const pY = priceY_USD > 0 ? trunc2(priceY_USD * sellRate) : trunc2(price * 0.9144);
+                            const stotalY = trunc2(pY * yard);
+                            qCell = `${fmtID(trunc2(qty),2)} m<br><span style="color:#555;font-size:7pt">(${fmtID(trunc2(yard),2)} Y)</span>`;
+                            pCell = `IDR ${fmtID(trunc2(price),2)}/m<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(pY,2)}/Y)</span>`;
+                            tCell = `IDR ${fmtID(trunc2(stotal),2)}<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(stotalY,2)})</span>`;
                         } else {
-                            const pM = price / 0.9144;
-                            qCell = `${fmtID(qty,2)} Y<br><span style="color:#555;font-size:7pt">(${fmtID(qty*0.9144,2)} m)</span>`;
-                            pCell = `IDR ${fmtID(price,2)}/Y<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(pM,2)}/m)</span>`;
-                            tCell = `IDR ${fmtID(stotal,2)}`;
+                            const pM = priceM_USD > 0 ? trunc2(priceM_USD * sellRate) : trunc2(price / 0.9144);
+                            qCell = `${fmtID(trunc2(qty),2)} Y<br><span style="color:#555;font-size:7pt">(${fmtID(trunc2(qty*0.9144),2)} m)</span>`;
+                            pCell = `IDR ${fmtID(trunc2(price),2)}/Y<br><span style="color:#555;font-size:7pt">(IDR ${fmtID(pM,2)}/m)</span>`;
+                            tCell = `IDR ${fmtID(trunc2(stotal),2)}`;
                         }
                     } else {
                         const ul = d.unit==='Yard'?'Y':'m';
-                        qCell = `${fmtID(qty,2)} ${d.unit}`;
-                        pCell = `$ ${fmtUS(price)}/${ul}`;
-                        tCell = `$ ${fmtUS(stotal)}`;
+                        qCell = `${fmtID(trunc2(qty),2)} ${d.unit}`;
+                        pCell = `$ ${fmtUS(trunc2(price))}/${ul}`;
+                        tCell = `$ ${fmtUS(trunc2(stotal))}`;
                     }
 
                     return `<tr>

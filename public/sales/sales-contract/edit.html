@@ -448,7 +448,7 @@
         .then(data => {
             if (data.success) {
                 showAlert('✅ Contract berhasil diperbarui!', 'success');
-                setTimeout(() => { window.location.href = '/sales/sales-contract'; }, 1200);
+                setTimeout(() => { window.location.href = '/sales/sales-contract/detail?id=' + contractId; }, 1200);
             } else {
                 showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
                 btn.disabled = false;
