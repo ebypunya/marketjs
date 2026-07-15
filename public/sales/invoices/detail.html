@@ -402,7 +402,9 @@ function onProductPick() {
     document.getElementById('f-diskon').value = '';
 
     const cur = invoice.currency || 'USD';
-    const prices = [...new Set(selectedGroup.portions.map(p => cur === 'IDR' ? p.price_idr : p.price_usd))];
+    // Bandingkan price_usd saja — ini nilai dasar yang currency-independent.
+    // Konversi ke IDR akan selalu pakai kurs invoice, jadi tidak relevan dibandingkan di sini.
+    const prices = [...new Set(selectedGroup.portions.map(p => p.price_usd))];
     const priceWarn = prices.length > 1
     ? `<br><span style="color:#c2410c;font-weight:700">⚠️ Harga berbeda antar contract — subtotal dihitung otomatis per contract sumber, bisa terpecah jadi beberapa baris saat disimpan.</span>`
     : '';
@@ -484,7 +486,7 @@ function calcSubtotal() {
     let subtotal = 0;
     let weightedPriceSum = 0;
     allocation.forEach(({ portion, qty: qtyUsed }) => {
-        cconst sellRate = parseFloat(invoice.sell_rate) || 0;
+        const sellRate = parseFloat(invoice.sell_rate) || 0;
         const basePrice = cur === 'IDR' ? (portion.price_usd * sellRate) : portion.price_usd;
         const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
         subtotal += Math.max(0, (basePrice - diskonVal) * qtyUsed);
