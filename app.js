@@ -817,16 +817,16 @@ function adjustContractDetailInvoiced(contractDetailId, deltaMeter, deltaYard, c
 }
 
 app.get('/api/contract-details/:contractId', requireLogin, (req, res) => {
-   const sql = `
-   SELECT cd.*, 
-   p.nama, p.fabric_no, p.fabric_name, p.color AS product_color,
-   p.price_m, p.price_y
-   FROM contract_details cd
-   LEFT JOIN products p ON p.id = cd.product_id
-   WHERE cd.contract_id = ?
-   ORDER BY cd.created_at ASC
-   `;
-   db.query(sql, [req.params.contractId], (err, results) => {
+ const sql = `
+ SELECT cd.*, 
+ p.nama, p.fabric_no, p.fabric_name, p.color AS product_color,
+ p.price_m, p.price_y
+ FROM contract_details cd
+ LEFT JOIN products p ON p.id = cd.product_id
+ WHERE cd.contract_id = ?
+ ORDER BY cd.created_at ASC
+ `;
+ db.query(sql, [req.params.contractId], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
 });
@@ -1153,10 +1153,10 @@ app.post('/api/invoices', requireLogin, (req, res) => {
 
         const insertSql = `
         INSERT INTO invoices 
-        (invoice_no, customer_id, currency, total, status,
+        (invoice_no, customer_id, currency, rate_id, total, status,
         lc_no, vessel, case_mark, from_location, to_location, delivery_note_no, ppn_percent,
         created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         `;
 
         db.query(insertSql, [

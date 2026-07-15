@@ -141,10 +141,7 @@
                     <div class="fg"><label class="fl">From</label><input type="text" id="f-from_location" class="fi" placeholder="Contoh: PURWAKARTA"></div>
                     <div class="fg"><label class="fl">To</label><input type="text" id="f-to_location" class="fi" placeholder="Contoh: JAKARTA"></div>
                 </div>
-                <div class="fg" style="margin-bottom:14px;max-width:200px">
-                    <label class="fl">PPN (%)</label>
-                    <input type="number" id="f-ppn_percent" class="fi" step="0.01" min="0" value="11">
-                </div>
+                
                 <!-- SECTION 2: PILIH CONTRACTS -->
                 <div class="section-title"><i class="ti ti-shopping-cart"></i> Pilih Contracts</div>
 
@@ -186,43 +183,40 @@
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
-    let allContracts = [];          // semua contract dari /api/contracts
-    let selectedContracts = [];     // array contract object, urut sesuai saat dipilih
+    let allContracts = [];
+    let selectedContracts = [];
     let dropdownTimer = null;
+
+    let allRates = [], ratesByDate = {}, selectedRate = null, calYear = 0, calMonth = 0, selectedDateStr = null;
+    const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const DAYS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 
     document.addEventListener('DOMContentLoaded', async () => {
         const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const d = String(now.getDate()).padStart(2, '0');
-        document.getElementById('f-invoice_date').value = `${y}-${m}-${d}`;
+        calYear = now.getFullYear();
+        calMonth = now.getMonth();
+        document.getElementById('f-invoice_date').value =
+        `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const now = new Date();
-            calYear = now.getFullYear(); calMonth = now.getMonth();
-            document.getElementById('f-invoice_date').value = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        await Promise.all([loadCustomers(), loadContractsForSelection(), loadNextInvoiceNo(), loadRates()]);
+        renderCalendar();
+    });
 
+    async function loadCustomers() {
+        try {
+            const data = await fetch('/api/customers').then(r => r.json());
+            const sel = document.getElementById('f-customer_id');
+            data.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c.id; o.textContent = c.name;
+                sel.appendChild(o);
+            });
+        } catch(e) { console.error('Gagal load customers', e); }
+    }
 
-            await Promise.all([loadCustomers(), loadContractsForSelection(), loadNextInvoiceNo(), loadRates()]);
-            renderCalendar();
-        });
-
-        async function loadCustomers() {
-            try {
-                const data = await fetch('/api/customers').then(r => r.json());
-                const sel = document.getElementById('f-customer_id');
-                data.forEach(c => {
-                    const o = document.createElement('option');
-                    o.value = c.id; o.textContent = c.name;
-                    sel.appendChild(o);
-                });
-            } catch(e) { console.error('Gagal load customers', e); }
-        }
-
-        async function loadContractsForSelection() {
-            try {
-                const data = await fetch('/api/contracts').then(r => r.json());
-            // Filter status dihilangkan, langsung masukkan semua data contracts
+    async function loadContractsForSelection() {
+        try {
+            const data = await fetch('/api/contracts').then(r => r.json());
             allContracts = data;
         } catch(e) {
             showAlert('Gagal memuat contracts', 'error');
@@ -284,9 +278,9 @@
         clearTimeout(dropdownTimer);
         const c = allContracts.find(x => x.id === contractId);
         if (!c) return;
-        if (selectedContracts.some(x => x.id === contractId)) return; // sudah ada, skip
+        if (selectedContracts.some(x => x.id === contractId)) return;
 
-        selectedContracts.push(c); // ditambahkan di akhir array -> urutan tampil sesuai saat dipilih
+        selectedContracts.push(c);
         document.getElementById('f-contract-search').value = '';
         document.getElementById('contract-dropdown').style.display = 'none';
         renderSelectedContracts();
@@ -364,7 +358,7 @@
             delivery_note_no: gv('f-delivery_note_no') || null,
             from_location:    gv('f-from_location') || null,
             to_location:      gv('f-to_location') || null,
-            ppn_percent:      gv('f-ppn_percent') || 11,
+            ppn_percent:      11,
         };
 
         const btn = document.getElementById('btn-submit');
@@ -394,9 +388,7 @@
         });
     }
 
-    let allRates = [], ratesByDate = {}, selectedRate = null, calYear = 0, calMonth = 0, selectedDateStr = null;
-    const MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    const DAYS = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+    // ==================== KURS CALENDAR ====================
     function pad(n){ return String(n).padStart(2,'0'); }
 
     async function loadRates() {
@@ -407,7 +399,6 @@
 
     function renderCalendar() {
         document.getElementById('cal-label').textContent = `${MONTHS[calMonth]} ${calYear}`;
-        const todayStr = new Date().toISOString().slice(0,10);
         let html = DAYS.map(d => `<div style="text-align:center;font-size:0.7rem;font-weight:700;color:var(--text-muted);padding:4px 0">${d}</div>`).join('');
         const firstDay = new Date(calYear, calMonth, 1).getDay();
         const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
