@@ -30,8 +30,8 @@ function renderLayout() {
     const sidebarHTML = `
     <aside class="sidebar">
     <div class="logo-brand">
-    <div style="width:32px;height:32px;background:var(--primary);border-radius:8px;flex-shrink:0"></div>
-    DeV#477
+    <img src="/assets/img/logo-uraseku-icon.png" alt="UraseKu" style="height:34px;width:34px;object-fit:contain">
+    UraseKu
     </div>
     <nav class="nav-group">
 

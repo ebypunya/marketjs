@@ -124,7 +124,7 @@
         tbody.innerHTML = data.map((it, i) => `
             <tr>
             <td style="padding:13px 18px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
-            <td style="padding:13px 18px;font-weight:700;color:var(--primary)">${escHtml(it.kode_barang || '-')}</td>
+            <td style="padding:13px 18px;font-weight:600;color:var(--text-main);font-family:monospace;font-size:0.85rem">${escHtml(it.kode_barang || '-')}</td>
             <td style="padding:13px 18px;font-weight:600">${escHtml(it.nama_barang || '-')}</td>
             <td style="padding:13px 18px">
             ${it.grup ? `<span style="background:var(--primary-light);color:var(--primary);padding:3px 10px;border-radius:20px;font-size:0.78rem;font-weight:700">${escHtml(it.grup)}</span>` : '<span style="color:var(--text-muted)">-</span>'}

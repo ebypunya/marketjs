@@ -1,199 +1,322 @@
+/* =========================================================================
+URASEKU / MARKETJS — AUTH THEME
+Palette derived from the UraseKu mark: deep navy "U" + vivid orange pulse.
+Signature motif: the heartbeat/pulse line from the logo, reused as a
+living divider across the login, register and reset-password screens.
+========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --bg: #f8fafc;
-    --text: #1e293b;
-    --card-bg: #ffffff;
+/* Brand */
+--navy-950: #0a1240;
+--navy-800: #131f6e;
+--navy-600: #24357f;
+--orange-500: #ff6a13;
+--orange-600: #e8580a;
+--orange-100: #ffe9d8;
+
+/* Mapped to original variable names so every page keeps working */
+--primary: var(--orange-500);
+--primary-hover: var(--orange-600);
+--bg: #f5f6fb;
+--text: #10163a;
+--card-bg: #ffffff;
+
+--muted: #6b7280;
+--line: #e7eaf5;
+
+/* Reusable heartbeat-pulse line, straight from the logo */
+--pulse-svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='26' viewBox='0 0 140 26'%3E%3Cpath d='M0 13H30L36 3L45 23L52 8L58 18L64 13H140' fill='none' stroke='%23ff6a13' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
+* { box-sizing: border-box; }
+
 body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    background-color: var(--bg);
-    color: var(--text);
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
+font-family: 'Inter', system-ui, -apple-system, sans-serif;
+color: var(--text);
+margin: 0;
+min-height: 100vh;
+display: flex;
+justify-content: center;
+align-items: center;
+position: relative;
+overflow-x: hidden;
+background:
+radial-gradient(900px 500px at 12% -10%, rgba(255, 106, 19, 0.14), transparent 60%),
+radial-gradient(900px 600px at 110% 10%, rgba(19, 31, 110, 0.16), transparent 55%),
+var(--bg);
+}
+
+/* Faint drifting pulse line across the whole viewport — ambient, not loud */
+body::before {
+content: '';
+position: fixed;
+inset: auto 0 8% 0;
+height: 26px;
+background-image: var(--pulse-svg);
+background-repeat: repeat-x;
+background-size: 140px 26px;
+opacity: 0.10;
+animation: pulse-drift 9s linear infinite;
+pointer-events: none;
+}
+
+@keyframes pulse-drift {
+from { background-position-x: 0; }
+to   { background-position-x: -280px; }
 }
 
 .container {
-    width: 100%;
-    max-width: 400px;
-    padding: 20px;
+width: 100%;
+max-width: 400px;
+padding: 20px;
+position: relative;
+z-index: 1;
 }
 
 .form-card {
-    background: var(--card-bg);
-    padding: 40px;
-    border-radius: 16px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+background: var(--card-bg);
+padding: 40px;
+border-radius: 20px;
+box-shadow:
+0 30px 60px -20px rgba(10, 18, 64, 0.25),
+0 2px 6px rgba(10, 18, 64, 0.06);
+position: relative;
+overflow: hidden;
+border: 1px solid var(--line);
+}
+
+/* Top accent: navy bar with a live orange pulse running through it,
+echoing the pulse that runs through the U in the logo */
+.form-card::before {
+content: '';
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 5px;
+background: linear-gradient(90deg, var(--navy-800), var(--navy-600) 45%, var(--orange-500));
+}
+.form-card::after {
+content: '';
+position: absolute;
+top: 0; left: 0; right: 0;
+height: 26px;
+background-image: var(--pulse-svg);
+background-repeat: repeat-x;
+background-size: 140px 26px;
+background-position-y: -10px;
+opacity: 0.55;
+animation: pulse-drift 6s linear infinite;
 }
 
 h2 {
-    margin-top: 0;
-    font-size: 1.5rem;
-    text-align: center;
-    color: #111827;
+margin: 6px 0 6px;
+font-family: 'Sora', 'Inter', sans-serif;
+font-size: 1.6rem;
+font-weight: 800;
+text-align: center;
+letter-spacing: -0.02em;
+background: linear-gradient(90deg, var(--navy-800), var(--navy-600) 60%, var(--orange-500));
+-webkit-background-clip: text;
+background-clip: text;
+color: transparent;
 }
 
 .form-group {
-    margin-bottom: 20px;
+margin-bottom: 20px;
 }
 
 label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    font-size: 0.9rem;
+display: block;
+margin-bottom: 8px;
+font-weight: 600;
+font-size: 0.85rem;
+color: var(--navy-800);
+letter-spacing: 0.2px;
 }
 
 input[type="text"],
 input[type="email"],
 input[type="password"] {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    box-sizing: border-box;
-    transition: border-color 0.2s;
+width: 100%;
+padding: 12px 16px;
+border: 1.5px solid var(--line);
+border-radius: 10px;
+box-sizing: border-box;
+background: #fbfbfe;
+font-family: inherit;
+font-size: 0.95rem;
+color: var(--text);
+transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
 }
 
+input::placeholder { color: #a3aac2; }
+
 input:focus {
-    outline: none;
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+outline: none;
+border-color: var(--orange-500);
+background: #fff;
+box-shadow: 0 0 0 4px rgba(255, 106, 19, 0.14);
 }
 
 .password-wrapper {
-    position: relative;
+position: relative;
 }
 
 .toggle-password {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-    font-size: 1.1rem;
-    user-select: none;
+position: absolute;
+right: 12px;
+top: 50%;
+transform: translateY(-50%);
+cursor: pointer;
+font-size: 1.1rem;
+user-select: none;
+opacity: 0.75;
+transition: opacity 0.15s;
 }
+.toggle-password:hover { opacity: 1; }
 
 .form-options {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 25px;
-    font-size: 0.85rem;
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 25px;
+font-size: 0.85rem;
 }
 
 /* Custom Checkbox */
 .checkbox-container {
-    display: block;
-    position: relative;
-    padding-left: 25px;
-    cursor: pointer;
+display: block;
+position: relative;
+padding-left: 26px;
+cursor: pointer;
+color: var(--muted);
+font-weight: 500;
 }
 
 .checkbox-container input {
-    position: absolute;
-    opacity: 0;
-    cursor: pointer;
-    height: 0;
-    width: 0;
+position: absolute;
+opacity: 0;
+cursor: pointer;
+height: 0;
+width: 0;
 }
 
 .checkmark {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 18px;
-    width: 18px;
-    background-color: #eee;
-    border-radius: 4px;
+position: absolute;
+top: 0;
+left: 0;
+height: 18px;
+width: 18px;
+background-color: #eef0f8;
+border: 1.5px solid var(--line);
+border-radius: 5px;
+transition: background 0.15s, border-color 0.15s;
 }
 
-.checkbox-container:hover input ~ .checkmark {
-    background-color: #ccc;
-}
+.checkbox-container:hover input ~ .checkmark { border-color: var(--orange-500); }
 
 .checkbox-container input:checked ~ .checkmark {
-    background-color: var(--primary);
+background: linear-gradient(135deg, var(--orange-500), var(--orange-600));
+border-color: var(--orange-600);
 }
 
 .checkmark:after {
-    content: "";
-    position: absolute;
-    display: none;
+content: "";
+position: absolute;
+display: none;
 }
 
 .checkbox-container input:checked ~ .checkmark:after {
-    display: block;
+display: block;
 }
 
 .checkbox-container .checkmark:after {
-    left: 6px;
-    top: 2px;
-    width: 5px;
-    height: 10px;
-    border: solid white;
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
+left: 6px;
+top: 2px;
+width: 5px;
+height: 10px;
+border: solid white;
+border-width: 0 2px 2px 0;
+transform: rotate(45deg);
 }
 
 .forgot-link {
-    color: var(--primary);
-    text-decoration: none;
+color: var(--orange-600);
+text-decoration: none;
+font-weight: 600;
 }
+.forgot-link:hover { text-decoration: underline; }
 
 .btn-primary {
-    width: 100%;
-    padding: 12px;
-    background-color: var(--primary);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.2s;
+width: 100%;
+padding: 13px;
+background: linear-gradient(135deg, var(--orange-500), var(--orange-600));
+color: white;
+border: none;
+border-radius: 10px;
+font-weight: 700;
+font-size: 0.95rem;
+letter-spacing: 0.2px;
+cursor: pointer;
+font-family: inherit;
+box-shadow: 0 10px 24px -8px rgba(232, 88, 10, 0.55);
+transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s;
 }
 
 .btn-primary:hover {
-    background-color: var(--primary-hover);
+background: linear-gradient(135deg, var(--orange-600), var(--navy-800));
+transform: translateY(-1px);
+box-shadow: 0 14px 28px -8px rgba(232, 88, 10, 0.6);
 }
+.btn-primary:active { transform: translateY(0); }
 
 .switch-form {
-    text-align: center;
-    margin-top: 25px;
-    font-size: 0.9rem;
+text-align: center;
+margin-top: 25px;
+font-size: 0.9rem;
+color: var(--muted);
 }
 
 .switch-form a {
-    color: var(--primary);
-    text-decoration: none;
-    font-weight: 600;
+color: var(--navy-800);
+text-decoration: none;
+font-weight: 700;
 }
+.switch-form a:hover { color: var(--orange-600); }
 
 footer {
-    text-align: center;
-    margin-top: 30px;
-    color: #94a3b8;
-    font-size: 0.8rem;
+text-align: center;
+margin-top: 30px;
+color: #9aa1c2;
+font-size: 0.78rem;
+letter-spacing: 0.3px;
+position: relative;
+z-index: 1;
 }
 
 /* Animations */
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+from { opacity: 0; transform: translateY(20px); }
+to { opacity: 1; transform: translateY(0); }
 }
 
 .animate-fade-in {
-    animation: fadeIn 0.6s ease-out;
+animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Responsive */
 @media (max-width: 480px) {
-    .form-card {
-        padding: 25px;
-    }
+.form-card {
+padding: 25px;
+}
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+body::before,
+.form-card::after,
+.animate-fade-in {
+animation: none !important;
+}
 }
