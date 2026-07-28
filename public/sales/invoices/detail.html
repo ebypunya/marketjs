@@ -77,6 +77,11 @@
         .alert-success { background: #f0fdf4; color: #16a34a; }
         .alert-error { background: #fef2f2; color: #dc2626; }
         .alert-warn { background: #fff7ed; color: #92400e; }
+
+        .merge-badge {
+            display: inline-block; background: #f5f3ff; color: #7c3aed; padding: 1px 7px;
+            border-radius: 10px; font-size: 0.65rem; font-weight: 800; margin-left: 6px; vertical-align: middle;
+        }
     </style>
 </head>
 <body class="dashboard-page">
@@ -103,23 +108,23 @@
             <div class="section-title"><i class="ti ti-plus"></i> Tambah Product dari Contract</div>
             <div id="alert-form" style="display:none" class="alert"></div>
             <div id="no-product-warn" style="display:none" class="alert alert-warn">
-                Tidak ada produk tersisa dari contract dengan mata uang <b id="ncw-cur"></b> yang terhubung ke invoice ini.
-                Tambahkan contract lain lewat halaman Edit Invoice, atau ubah mata uang invoice.
+                Tidak ada sisa produk pada contract ini yang bisa ditambahkan ke invoice.
             </div>
 
-            <div style="margin-bottom:12px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
                 <div class="fg">
-                    <label class="fl">Produk <span style="color:#ef4444">*</span></label>
-                    <select id="f-product" class="fi" onchange="onProductPick()">
-                        <option value="">-- Pilih Produk --</option>
+                    <label class="fl">1. Pilih Contract <span style="color:#ef4444">*</span></label>
+                    <select id="f-contract" class="fi" onchange="onContractPick()">
+                        <option value="">-- Pilih Contract --</option>
                     </select>
-                    <small style="font-size:0.75rem;color:var(--text-muted);margin-top:5px">
-                        💡 Jika produk yang sama ada di lebih dari satu contract, sisanya otomatis digabungkan di sini.
-                    </small>
+                </div>
+                <div class="fg">
+                    <label class="fl">2. Pilih Produk <span style="color:#ef4444">*</span></label>
+                    <select id="f-product" class="fi" onchange="onProductPick()" disabled>
+                        <option value="">-- Pilih Contract Dahulu --</option>
+                    </select>
                 </div>
             </div>
-
-            <div id="product-source-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#1e40af;margin-bottom:12px"></div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;margin-bottom:12px">
                 <div class="fg">
@@ -131,7 +136,7 @@
                     <input type="text" id="f-unit-display" class="fi" disabled placeholder="—">
                 </div>
                 <div class="fg">
-                    <label class="fl">Sisa Qty Tersedia</label>
+                    <label class="fl">Sisa Qty di Contract Ini</label>
                     <input type="text" id="f-remaining-display" class="fi" disabled placeholder="—">
                 </div>
                 <div class="fg">
@@ -179,11 +184,17 @@
                     <i class="ti ti-plus"></i> Tambah
                 </button>
             </div>
+
+            <div id="price-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#1e40af;margin-top:4px"></div>
         </div>
 
         <!-- TABEL ITEM PRODUCT -->
         <div class="bento-item" style="margin-bottom:20px">
-            <div class="section-title"><i class="ti ti-list-details"></i> Daftar Product Invoice</div>
+            <div class="section-title"><i class="ti ti-list-details"></i> Daftar Product Invoice
+                <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--text-muted);font-size:0.72rem">
+                    (product yang sama otomatis digabung menjadi satu baris)
+                </span>
+            </div>
             <div style="overflow-x:auto">
                 <table class="detail-table">
                     <thead>
@@ -216,8 +227,8 @@
                         <div id="total-display" style="font-size:2rem;font-weight:800;letter-spacing:-1px">—</div>
                     </div>
                     <div style="text-align:right">
-                        <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL ITEM</div>
-                        <div id="total-items" style="font-size:1.5rem;font-weight:800">0 item</div>
+                        <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL PRODUK</div>
+                        <div id="total-items" style="font-size:1.5rem;font-weight:800">0 produk</div>
                     </div>
                 </div>
             </div>
@@ -238,8 +249,8 @@
 <!-- MODAL HAPUS -->
 <div id="del-modal" class="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.45);align-items:center;justify-content:center;z-index:999">
     <div style="background:#fff;border-radius:14px;padding:24px;max-width:380px;width:90%">
-        <h3 style="margin:0 0 8px;font-size:1rem">Hapus Item?</h3>
-        <p style="margin:0 0 20px;color:var(--text-muted);font-size:0.88rem">Item produk ini akan dihapus dari invoice, sisa qty akan dikembalikan ke contract, dan total invoice dihitung ulang.</p>
+        <h3 style="margin:0 0 8px;font-size:1rem">Hapus Product Ini?</h3>
+        <p id="del-modal-desc" style="margin:0 0 20px;color:var(--text-muted);font-size:0.88rem">Seluruh baris product ini (bisa berasal dari lebih dari satu penambahan/contract) akan dihapus dari invoice, sisa qty akan dikembalikan ke contract masing-masing, dan total invoice dihitung ulang.</p>
         <div style="display:flex;gap:10px;justify-content:flex-end">
             <button onclick="closeDelModal()" style="padding:9px 18px;border:1px solid var(--border-color);background:#fff;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
             <button onclick="confirmDel()" style="padding:9px 20px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
@@ -249,477 +260,547 @@
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
-   const invoiceId = new URLSearchParams(window.location.search).get('id');
-   if (!invoiceId) window.location.href = '/sales/invoices';
+ const invoiceId = new URLSearchParams(window.location.search).get('id');
+ if (!invoiceId) window.location.href = '/sales/invoices';
 
-   let invoice        = null;
-let mergedProducts = [];   // hasil gabungan sisa item lintas contract
-let selectedGroup  = null; // grup produk yang sedang dipilih
-let details        = [];
-let delId          = null;
-let diskonMode     = 'pct';
-let deliveryStatus = 'full';
+ let invoice = null;
+   let allProducts = [];                 // master produk (untuk ambil price_m / price_y TERKINI)
+   let contractRemainingMap = {};         // contract_id -> array sisa item contract_details (qty>0.009)
+   let selectedContract = null;           // contract yang sedang dipilih
+   let remainingItems = [];               // sisa item untuk contract yang dipilih
+   let selectedItem = null;               // contract_detail yang dipilih (sumber tunggal, TIDAK digabung lintas contract)
+   let details = [];                      // baris mentah dari /api/invoice-details/by-invoice/:id
+   let groupedRowsCache = [];             // hasil group by product+color+unit, untuk render tabel & delete
+   let delIds = [];                       // id-id invoice_details yang akan dihapus (bisa lebih dari satu jika digabung)
+   let diskonMode = 'pct';
+   let deliveryStatus = 'full';
 
-const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+   const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
-document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('btn-print').href = '/sales/invoices/print?id=' + invoiceId;
-    await loadInvoice();
-    await loadMergedProducts();
-    await loadDetails();
-});
+   document.addEventListener('DOMContentLoaded', async () => {
+     document.getElementById('btn-print').href = '/sales/invoices/print?id=' + invoiceId;
+     await loadInvoice();
+     await loadAllProducts();
+     await loadContractRemaining();
+     populateContractDropdown();
+     await loadDetails();
+ });
 
-function setDeliveryStatus(s) {
-    deliveryStatus = s;
-    document.getElementById('btn-status-full').className = s === 'full' ? 'active' : '';
-    document.getElementById('btn-status-partial').className = s === 'partial' ? 'active' : '';
-}
+   function setDeliveryStatus(s) {
+     deliveryStatus = s;
+     document.getElementById('btn-status-full').className = s === 'full' ? 'active' : '';
+     document.getElementById('btn-status-partial').className = s === 'partial' ? 'active' : '';
+ }
 
-async function loadInvoice() {
-    try {
-        invoice = await fetch('/api/invoices/' + invoiceId).then(r => r.json());
-        renderInvoiceInfo();
-    } catch(e) { showAlert('Gagal memuat data invoice.', 'error'); }
-}
+ async function loadInvoice() {
+     try {
+         invoice = await fetch('/api/invoices/' + invoiceId).then(r => r.json());
+         renderInvoiceInfo();
+     } catch(e) { showAlert('Gagal memuat data invoice.', 'error'); }
+ }
 
-function renderInvoiceInfo() {
-    const i = invoice;
-    document.getElementById('ic-kurs').textContent = i.sell_rate ? 'Rp ' + Number(i.sell_rate).toLocaleString('id-ID') : '—';
-    document.getElementById('ic-no').textContent       = i.invoice_no   || '—';
-    document.getElementById('ic-customer').textContent = i.customer_name || '—';
-    document.getElementById('ic-currency').innerHTML   =
-    `<span class="badge-status ${i.currency==='USD'?'badge-usd':'badge-idr'}">${i.currency}</span>`;
-    document.getElementById('ic-date').textContent     = i.invoice_date ? fmtDate(i.invoice_date) : (i.created_at ? fmtDate(i.created_at) : '—');
+ function renderInvoiceInfo() {
+     const i = invoice;
+     document.getElementById('ic-kurs').textContent = i.sell_rate ? 'Rp ' + Number(i.sell_rate).toLocaleString('id-ID') : '—';
+     document.getElementById('ic-no').textContent       = i.invoice_no   || '—';
+     document.getElementById('ic-customer').textContent = i.customer_name || '—';
+     document.getElementById('ic-currency').innerHTML   =
+     `<span class="badge-status ${i.currency==='USD'?'badge-usd':'badge-idr'}">${i.currency}</span>`;
+     document.getElementById('ic-date').textContent     = i.invoice_date ? fmtDate(i.invoice_date) : (i.created_at ? fmtDate(i.created_at) : '—');
 
-    const wrap = document.getElementById('ic-contracts');
-    if (!i.contracts || !i.contracts.length) {
-        wrap.innerHTML = '<span style="color:var(--text-muted);font-size:0.85rem">—</span>';
-    } else {
-        wrap.innerHTML = i.contracts.map((c) => `
-            <span class="contract-chip">
-            ${esc(c.contract_no)}
-            <small>${c.order_no ? ('No Order: ' + esc(c.order_no)) : ''} · ${esc(c.currency)}</small>
-            </span>
-            `).join('');
-    }
-}
+     const wrap = document.getElementById('ic-contracts');
+     if (!i.contracts || !i.contracts.length) {
+         wrap.innerHTML = '<span style="color:var(--text-muted);font-size:0.85rem">—</span>';
+     } else {
+         wrap.innerHTML = i.contracts.map((c) => `
+             <span class="contract-chip">
+             ${esc(c.contract_no)}
+             <small>${c.order_no ? ('No Order: ' + esc(c.order_no)) : ''} · ${esc(c.currency)}</small>
+             </span>
+             `).join('');
+     }
+ }
 
-// ==================== GABUNGKAN SISA ITEM LINTAS CONTRACT ====================
-async function loadMergedProducts() {
-    const matching = (invoice.contracts || []).filter(c => c.currency === invoice.currency);
-    const warnBox = document.getElementById('no-product-warn');
+   // ==================== MASTER PRODUK (harga TERKINI, bukan harga contract) ====================
+   async function loadAllProducts() {
+     try {
+         allProducts = await fetch('/api/products').then(r => r.json());
+     } catch(e) {
+         console.error('Gagal load products', e);
+         showAlert('Gagal memuat harga produk terkini.', 'error');
+     }
+ }
 
-    if (!matching.length) {
-        document.getElementById('ncw-cur').textContent = invoice.currency;
-        warnBox.style.display = 'block';
-        mergedProducts = [];
-        populateProductDropdown();
-        return;
-    }
+ function findProduct(productId) {
+     return allProducts.find(p => p.id === productId) || null;
+ }
 
-    try {
-        // Urutan 'matching' sudah FIFO (added_at ASC dari backend), jadi urutan portions ikut FIFO
-        const results = await Promise.all(
-            matching.map(c => fetch('/api/contract-details/remaining/' + c.id).then(r => r.json()).then(items => ({ contract: c, items })))
-            );
+   // Harga dasar produk TERKINI dalam USD, sesuai unit (Meter -> price_m, Yard -> price_y)
+   function getBasePriceUSD() {
+     if (!selectedItem) return 0;
+     const product = findProduct(selectedItem.product_id);
+     if (!product) return 0;
+     return selectedItem.unit === 'Yard' ? (parseFloat(product.price_y) || 0) : (parseFloat(product.price_m) || 0);
+ }
 
-        const map = new Map();
-        results.forEach(({ contract, items }) => {
-            (items || []).forEach(it => {
-                const remaining = it.unit === 'Yard' ? parseFloat(it.remaining_yard) : parseFloat(it.remaining_meter);
-                if (!(remaining > 0.009)) return;
+   // ==================== SISA PRODUK PER CONTRACT (TIDAK digabung lintas contract) ====================
+   async function fetchRemainingForContract(contractId) {
+     try {
+         const items = await fetch('/api/contract-details/remaining/' + contractId).then(r => r.json());
+         return (items || []).filter(it => {
+             const remaining = it.unit === 'Yard' ? parseFloat(it.remaining_yard) : parseFloat(it.remaining_meter);
+             return remaining > 0.009;
+         });
+     } catch(e) {
+         console.error('Gagal load sisa contract ' + contractId, e);
+         return [];
+     }
+ }
 
-                const key = [it.product_id, it.color || it.product_color || '', it.unit].join('|');
-                if (!map.has(key)) {
-                    map.set(key, {
-                        key,
-                        product_id: it.product_id,
-                        color: it.color || it.product_color || '',
-                        unit: it.unit,
-                        fabric_no: it.fabric_no,
-                        fabric_name: it.fabric_name,
-                        totalRemaining: 0,
-                        portions: []
-                    });
-                }
-                const grp = map.get(key);
-                grp.totalRemaining += remaining;
-                grp.portions.push({
-                    contract_id: contract.id,
-                    contract_no: contract.contract_no,
-                    contract_detail_id: it.id,
-                    remaining,
-                    price_usd: parseFloat(it.price_usd) || 0,
-                    price_idr: parseFloat(it.price_idr) || 0,
-                });
-            });
-        });
+ async function loadContractRemaining() {
+     const contracts = invoice.contracts || [];
+     contractRemainingMap = {};
+     await Promise.all(contracts.map(async c => {
+         contractRemainingMap[c.id] = await fetchRemainingForContract(c.id);
+     }));
+ }
 
-        mergedProducts = Array.from(map.values());
+ function populateContractDropdown() {
+     const sel = document.getElementById('f-contract');
+     const contracts = invoice.contracts || [];
+     const prevVal = sel.value;
 
-        if (!mergedProducts.length) {
-            document.getElementById('ncw-cur').textContent = invoice.currency;
-            warnBox.style.display = 'block';
-        } else {
-            warnBox.style.display = 'none';
-        }
+     if (!contracts.length) {
+         sel.innerHTML = '<option value="">-- Tidak ada contract terhubung --</option>';
+         sel.disabled = true;
+         return;
+     }
+     sel.disabled = false;
+     sel.innerHTML = '<option value="">-- Pilih Contract --</option>' +
+     contracts.map(c => {
+         const items = contractRemainingMap[c.id] || [];
+         const label = `${c.contract_no}${c.order_no ? ' (No Order: ' + c.order_no + ')' : ''} — ${items.length} produk tersisa`;
+         return `<option value="${c.id}">${esc(label)}</option>`;
+     }).join('');
 
-        populateProductDropdown();
-    } catch(e) {
-        showAlert('Gagal memuat produk dari contract.', 'error');
-        console.error(e);
-    }
-}
+     if (prevVal && contracts.some(c => String(c.id) === String(prevVal))) {
+         sel.value = prevVal;
+     }
+ }
 
-function populateProductDropdown() {
-    const sel = document.getElementById('f-product');
-    sel.innerHTML = '<option value="">-- Pilih Produk --</option>' +
-    mergedProducts.map(g => {
-        const label = [g.fabric_name || g.fabric_no || 'Produk', g.color || null].filter(Boolean).join(' - ');
-        const contractCount = new Set(g.portions.map(p => p.contract_id)).size;
-        const remLbl = fmtNum4(g.totalRemaining) + ' ' + (g.unit === 'Yard' ? 'Y' : 'm');
-        const src = contractCount > 1 ? ` (gabungan ${contractCount} contract)` : '';
-        return `<option value="${g.key}">${esc(label)} — Sisa: ${remLbl}${src}</option>`;
-    }).join('');
-    sel.disabled = !mergedProducts.length;
-}
+ function onContractPick() {
+     const cid = parseInt(document.getElementById('f-contract').value);
+     selectedContract = (invoice.contracts || []).find(c => c.id === cid) || null;
+     remainingItems = selectedContract ? (contractRemainingMap[selectedContract.id] || []) : [];
+     selectedItem = null;
+     resetItemDetailFields();
+     populateProductDropdown();
 
-function onProductPick() {
-    const key = document.getElementById('f-product').value;
-    selectedGroup = mergedProducts.find(g => g.key === key) || null;
+     document.getElementById('no-product-warn').style.display =
+     (selectedContract && remainingItems.length === 0) ? 'block' : 'none';
+ }
 
-    if (!selectedGroup) {
-        resetProductSelection();
-        return;
-    }
+ function populateProductDropdown() {
+     const sel = document.getElementById('f-product');
+     if (!selectedContract) {
+         sel.innerHTML = '<option value="">-- Pilih Contract Dahulu --</option>';
+         sel.disabled = true;
+         return;
+     }
+     if (!remainingItems.length) {
+         sel.innerHTML = '<option value="">-- Tidak Ada Sisa Produk --</option>';
+         sel.disabled = true;
+         return;
+     }
+     sel.disabled = false;
+     sel.innerHTML = '<option value="">-- Pilih Produk --</option>' +
+     remainingItems.map(it => {
+         const remaining = it.unit === 'Yard' ? it.remaining_yard : it.remaining_meter;
+         const label = [it.fabric_name || it.fabric_no || 'Produk', it.color || it.product_color || null].filter(Boolean).join(' - ');
+         return `<option value="${it.id}">${esc(label)} — Sisa: ${fmtNum4(remaining)} ${it.unit === 'Yard' ? 'Y' : 'm'}</option>`;
+     }).join('');
+ }
 
-    document.getElementById('f-color').value = selectedGroup.color || '—';
-    document.getElementById('f-unit-display').value = selectedGroup.unit;
-    document.getElementById('f-remaining-display').value =
-    fmtNum4(selectedGroup.totalRemaining) + ' ' + (selectedGroup.unit === 'Yard' ? 'Yard' : 'Meter');
-    document.getElementById('f-qty').max = selectedGroup.totalRemaining;
-    document.getElementById('f-qty').value = '';
-    document.getElementById('f-diskon').value = '';
+ function onProductPick() {
+     const detailId = parseInt(document.getElementById('f-product').value);
+     selectedItem = remainingItems.find(it => it.id === detailId) || null;
 
-    const cur = invoice.currency || 'USD';
-    // Bandingkan price_usd saja — ini nilai dasar yang currency-independent.
-    // Konversi ke IDR akan selalu pakai kurs invoice, jadi tidak relevan dibandingkan di sini.
-    const prices = [...new Set(selectedGroup.portions.map(p => p.price_usd))];
-    const priceWarn = prices.length > 1
-    ? `<br><span style="color:#c2410c;font-weight:700">⚠️ Harga berbeda antar contract — subtotal dihitung otomatis per contract sumber, bisa terpecah jadi beberapa baris saat disimpan.</span>`
-    : '';
+     if (!selectedItem) {
+         resetItemDetailFields();
+         return;
+     }
 
-    const info = document.getElementById('product-source-info');
-    info.innerHTML = '<i class="ti ti-info-circle" style="margin-right:4px"></i>Sumber: ' +
-    selectedGroup.portions.map(p => `${esc(p.contract_no)} (sisa ${fmtNum4(p.remaining)} ${selectedGroup.unit === 'Yard' ? 'Y' : 'm'})`).join(', ') +
-    priceWarn;
-    info.style.display = 'block';
+     const remaining = selectedItem.unit === 'Yard' ? selectedItem.remaining_yard : selectedItem.remaining_meter;
 
-    calcSubtotal();
-}
+     document.getElementById('f-color').value = selectedItem.color || selectedItem.product_color || '—';
+     document.getElementById('f-unit-display').value = selectedItem.unit;
+     document.getElementById('f-remaining-display').value =
+     fmtNum4(remaining) + ' ' + (selectedItem.unit === 'Yard' ? 'Yard' : 'Meter');
+     document.getElementById('f-qty').max = remaining;
+     document.getElementById('f-qty').value = '';
+     document.getElementById('f-diskon').value = '';
 
-function resetProductSelection() {
-    selectedGroup = null;
-    resetItemDetailFields();
-    document.getElementById('product-source-info').style.display = 'none';
-}
+     const product = findProduct(selectedItem.product_id);
+     if (!product) {
+         showAlert('⚠️ Data harga produk terkini tidak ditemukan untuk item ini.', 'error');
+     }
 
-function resetItemDetailFields() {
-    document.getElementById('f-color').value = '';
-    document.getElementById('f-unit-display').value = '';
-    document.getElementById('f-remaining-display').value = '';
-    document.getElementById('f-qty').value = '';
-    document.getElementById('f-diskon').value = '';
-    document.getElementById('f-base-price').value = '';
-    document.getElementById('f-stotal').value = '';
-    document.getElementById('f-packages').value = '';
-    document.getElementById('f-package_unit').value = 'PACKAGES';
-    setDeliveryStatus('full');
-}
+     calcSubtotal();
+ }
 
-// Alokasikan qty yang diminta ke portions (FIFO sesuai urutan contract ditambahkan)
-function allocatePortions(qty) {
-    let remainingQty = qty;
-    const allocation = [];
-    for (const p of selectedGroup.portions) {
-        if (remainingQty <= 0.0001) break;
-        const use = Math.min(p.remaining, remainingQty);
-        if (use > 0.0001) {
-            allocation.push({ portion: p, qty: use });
-            remainingQty -= use;
-        }
-    }
-    return { allocation, unallocated: remainingQty };
-}
+ function resetItemDetailFields() {
+     document.getElementById('f-product').value = '';
+     document.getElementById('f-color').value = '';
+     document.getElementById('f-unit-display').value = '';
+     document.getElementById('f-remaining-display').value = '';
+     document.getElementById('f-qty').value = '';
+     document.getElementById('f-diskon').value = '';
+     document.getElementById('f-base-price').value = '';
+     document.getElementById('f-stotal').value = '';
+     document.getElementById('f-packages').value = '';
+     document.getElementById('f-package_unit').value = 'PACKAGES';
+     document.getElementById('price-info').style.display = 'none';
+     setDeliveryStatus('full');
+ }
 
-function updateFormLabels() {
-    if (!invoice) return;
-    const cur = invoice.currency || 'USD';
-    document.getElementById('lbl-base-price').textContent = `Harga Dasar (${cur})`;
-    document.getElementById('lbl-subtotal').textContent   = `Subtotal (${cur})`;
-    document.getElementById('th-price').textContent   = `PRICE (${cur})`;
-    document.getElementById('th-stotal').textContent  = `SUBTOTAL (${cur})`;
-}
+ function updateFormLabels() {
+     if (!invoice) return;
+     const cur = invoice.currency || 'USD';
+     document.getElementById('lbl-base-price').textContent = `Harga Dasar (${cur})`;
+     document.getElementById('lbl-subtotal').textContent   = `Subtotal (${cur})`;
+     document.getElementById('th-price').textContent   = `PRICE (${cur})`;
+     document.getElementById('th-stotal').textContent  = `SUBTOTAL (${cur})`;
+ }
 
-function setDiskonMode(mode) {
-    diskonMode = mode;
-    document.getElementById('btn-diskon-pct').className = mode==='pct' ? 'active' : '';
-    document.getElementById('btn-diskon-nom').className = mode==='nom' ? 'active' : '';
-    document.getElementById('lbl-diskon-hint').textContent =
-    mode === 'pct' ? '% dari harga dasar' : 'Nominal dalam ' + (invoice ? invoice.currency : '');
-    document.getElementById('f-diskon').value = '';
-    calcSubtotal();
-}
+ function setDiskonMode(mode) {
+     diskonMode = mode;
+     document.getElementById('btn-diskon-pct').className = mode==='pct' ? 'active' : '';
+     document.getElementById('btn-diskon-nom').className = mode==='nom' ? 'active' : '';
+     document.getElementById('lbl-diskon-hint').textContent =
+     mode === 'pct' ? '% dari harga dasar' : 'Nominal dalam ' + (invoice ? invoice.currency : '');
+     document.getElementById('f-diskon').value = '';
+     calcSubtotal();
+ }
 
-function calcSubtotal() {
-    if (!invoice || !selectedGroup) {
-        document.getElementById('f-base-price').value = '—';
-        document.getElementById('f-stotal').value = '—';
-        return;
-    }
-    const cur = invoice.currency || 'USD';
-    const qty = parseFloat(document.getElementById('f-qty').value) || 0;
-    const diskonRaw = parseFloat(document.getElementById('f-diskon').value) || 0;
+   // Harga dasar yang DIPAKAI = harga produk TERKINI (dari master produk) x KURS INVOICE (bukan kurs contract)
+   function calcSubtotal() {
+     if (!invoice || !selectedItem) {
+         document.getElementById('f-base-price').value = '—';
+         document.getElementById('f-stotal').value = '—';
+         return;
+     }
+     const cur         = invoice.currency || 'USD';
+     const sellRate     = parseFloat(invoice.sell_rate) || 0;
+     const basePriceUSD = getBasePriceUSD();
+     const basePrice    = cur === 'IDR' ? (basePriceUSD * sellRate) : basePriceUSD;
 
-    const { allocation } = allocatePortions(qty);
+     const qty       = parseFloat(document.getElementById('f-qty').value) || 0;
+     const diskonRaw = parseFloat(document.getElementById('f-diskon').value) || 0;
+     const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
+     const subtotal  = Math.max(0, (basePrice - diskonVal) * qty);
 
-    let subtotal = 0;
-    let weightedPriceSum = 0;
-    allocation.forEach(({ portion, qty: qtyUsed }) => {
-        const sellRate = parseFloat(invoice.sell_rate) || 0;
-        const basePrice = cur === 'IDR' ? (portion.price_usd * sellRate) : portion.price_usd;
-        const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
-        subtotal += Math.max(0, (basePrice - diskonVal) * qtyUsed);
-        weightedPriceSum += basePrice * qtyUsed;
-    });
+     document.getElementById('f-base-price').value = basePrice > 0 ? formatCur(basePrice, cur) : '—';
+     document.getElementById('f-stotal').value = (subtotal > 0 || qty > 0) ? formatCur(subtotal, cur) : '—';
 
-    const firstPrice = selectedGroup.portions[0]
-    ? (cur === 'IDR' ? selectedGroup.portions[0].price_idr : selectedGroup.portions[0].price_usd)
-    : 0;
-    const avgPrice = qty > 0 ? weightedPriceSum / qty : firstPrice;
+     const info = document.getElementById('price-info');
+     if (basePriceUSD > 0 && cur === 'IDR') {
+         info.style.display = '';
+         info.innerHTML =
+         `<i class="ti ti-arrows-exchange" style="margin-right:4px"></i>
+         Harga Produk (master, terkini): <b>$ ${basePriceUSD.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4})}</b>
+         &times; Kurs Invoice <b>Rp ${sellRate.toLocaleString('id-ID')}</b>
+         = <b>${formatCur(basePrice,'IDR')}</b> per ${selectedItem.unit}
+         ${diskonRaw>0 ? ' &nbsp;|&nbsp; Diskon: <b>' + formatCur(diskonVal*qty,'IDR') + '</b>' : ''}`;
+     } else if (basePriceUSD > 0 && diskonRaw > 0) {
+         info.style.display = '';
+         info.innerHTML =
+         `<i class="ti ti-info-circle" style="margin-right:4px"></i>
+         Diskon: ${diskonMode==='pct' ? diskonRaw+'% = ' : ''}
+         <b>${formatCur(diskonVal,cur)}</b> per unit
+         &rarr; total diskon <b>${formatCur(diskonVal*qty,cur)}</b>`;
+     } else {
+         info.style.display = 'none';
+     }
 
-    document.getElementById('f-base-price').value =
-    avgPrice > 0 ? formatCur(avgPrice, cur) + (allocation.length > 1 ? ' (avg)' : '') : '—';
-    document.getElementById('f-stotal').value =
-    (subtotal > 0 || qty > 0) ? formatCur(subtotal, cur) : '—';
+     updateFormLabels();
+ }
 
-    updateFormLabels();
-}
+   // ==================== ALERT ====================
+   function showAlert(msg, type) {
+     const box = document.getElementById('alert-form');
+     box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
+     box.textContent = msg;
+     box.style.display = 'block';
+     if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
+ }
 
-// ==================== ALERT ====================
-function showAlert(msg, type) {
-    const box = document.getElementById('alert-form');
-    box.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
-    box.textContent = msg;
-    box.style.display = 'block';
-    if (type === 'success') setTimeout(() => box.style.display = 'none', 3000);
-}
+ function gv(id) { return document.getElementById(id).value.trim(); }
 
-function gv(id) { return document.getElementById(id).value.trim(); }
+   // ==================== ADD ITEM (satu contract, satu product, satu baris) ====================
+   async function addItem() {
+     if (!selectedContract) { showAlert('❌ Pilih contract terlebih dahulu.', 'error'); return; }
+     if (!selectedItem)     { showAlert('❌ Pilih produk terlebih dahulu.', 'error'); return; }
 
-// ==================== ADD ITEM (otomatis dipecah jika lintas contract) ====================
-async function addItem() {
-    if (!selectedGroup) { showAlert('❌ Pilih produk terlebih dahulu.', 'error'); return; }
+     const product = findProduct(selectedItem.product_id);
+     if (!product) { showAlert('❌ Data harga produk terkini tidak ditemukan.', 'error'); return; }
 
-    const qty = parseFloat(gv('f-qty'));
-    if (!qty || qty <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
+     const qty = parseFloat(gv('f-qty'));
+     if (!qty || qty <= 0) { showAlert('❌ Quantity harus lebih dari 0.', 'error'); return; }
 
-    if (qty - selectedGroup.totalRemaining > 0.01) {
-        showAlert(`❌ Qty melebihi total sisa gabungan (sisa: ${fmtNum4(selectedGroup.totalRemaining)} ${selectedGroup.unit === 'Yard' ? 'Y' : 'm'}).`, 'error');
-        return;
-    }
+     const remaining = selectedItem.unit === 'Yard' ? parseFloat(selectedItem.remaining_yard) : parseFloat(selectedItem.remaining_meter);
+     if (qty - remaining > 0.01) {
+         showAlert(`❌ Qty melebihi sisa di contract ini (sisa: ${fmtNum4(remaining)} ${selectedItem.unit === 'Yard' ? 'Y' : 'm'}).`, 'error');
+         return;
+     }
 
-    const { allocation, unallocated } = allocatePortions(qty);
-    if (unallocated > 0.01) {
-        showAlert('❌ Sisa qty tidak dapat dialokasikan ke contract manapun.', 'error');
-        return;
-    }
+     const cur          = invoice.currency || 'USD';
+     const sellRate      = parseFloat(invoice.sell_rate) || 0;
+     const basePriceUSD  = getBasePriceUSD();
+     const basePrice     = cur === 'IDR' ? (basePriceUSD * sellRate) : basePriceUSD;
+     const diskonRaw     = parseFloat(gv('f-diskon')) || 0;
+     const diskonVal     = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
+     const stotal        = Math.max(0, (basePrice - diskonVal) * qty);
 
-    const cur = invoice.currency || 'USD';
-    const diskonRaw = parseFloat(gv('f-diskon')) || 0;
-    const packages = gv('f-packages') || null;
-    const packageUnit = document.getElementById('f-package_unit').value;
+     let qty_meter, qty_yard;
+     if (selectedItem.unit === 'Yard') {
+         qty_yard  = qty;
+         qty_meter = qty * 0.9144;
+     } else {
+         qty_meter = qty;
+         qty_yard  = qty / 0.9144;
+     }
 
-    const btn = document.getElementById('btn-submit-item');
-    btn.disabled = true;
+     const payload = {
+         invoice_id:         parseInt(invoiceId),
+         product_id:         selectedItem.product_id,
+         contract_detail_id: selectedItem.id,
+         contract_id:        selectedContract.id,
+         color:              selectedItem.color || selectedItem.product_color || null,
+         unit:               selectedItem.unit,
+         qty_meter, qty_yard,
+           price_usd:          basePrice,          // harga per unit DALAM MATA UANG INVOICE (produk x kurs invoice)
+           diskon:             diskonVal * qty,     // total diskon
+           stotal_usd:         stotal,
+           packages:           gv('f-packages') || null,
+           package_unit:       document.getElementById('f-package_unit').value,
+           delivery_status:    deliveryStatus,
+       };
 
-    try {
-        for (let i = 0; i < allocation.length; i++) {
-            const { portion, qty: qtyUsed } = allocation[i];
-            const basePrice = cur === 'IDR' ? portion.price_idr : portion.price_usd;
-            const diskonVal = diskonMode === 'pct' ? basePrice * (diskonRaw / 100) : diskonRaw;
-            const stotalPortion = Math.max(0, (basePrice - diskonVal) * qtyUsed);
+       const btn = document.getElementById('btn-submit-item');
+       btn.disabled = true;
 
-            let qty_meter, qty_yard;
-            if (selectedGroup.unit === 'Yard') {
-                qty_yard  = qtyUsed;
-                qty_meter = qtyUsed * 0.9144;
-            } else {
-                qty_meter = qtyUsed;
-                qty_yard  = qtyUsed / 0.9144;
-            }
+       try {
+         const data = await fetch('/api/invoice-details', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(payload)
+         }).then(r => r.json());
 
-            const payload = {
-                invoice_id:         parseInt(invoiceId),
-                product_id:         selectedGroup.product_id,
-                contract_detail_id: portion.contract_detail_id,
-                contract_id:        portion.contract_id,
-                color:              selectedGroup.color || null,
-                unit:               selectedGroup.unit,
-                qty_meter, qty_yard,
-                price_usd:          basePrice,
-                diskon:             diskonVal * qtyUsed,
-                stotal_usd:         stotalPortion,
-                packages:           i === 0 ? packages : null, // packages dicatat sekali saja di baris pertama
-                package_unit:       packageUnit,
-                delivery_status:    deliveryStatus,
-            };
+         if (!data.success) {
+             showAlert('❌ ' + (data.error || 'Gagal menyimpan item.'), 'error');
+             return;
+         }
 
-            const data = await fetch('/api/invoice-details', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }).then(r => r.json());
+         showAlert('✅ Product berhasil ditambahkan.', 'success');
 
-            if (!data.success) {
-                showAlert('❌ ' + (data.error || 'Gagal menyimpan salah satu bagian item.'), 'error');
-                await loadMergedProducts();
-                await loadDetails();
-                return;
-            }
-        }
+           // Refresh sisa qty contract yang baru saja dipakai, lalu segarkan dropdown (contract tetap terpilih)
+           const contractId = selectedContract.id;
+           contractRemainingMap[contractId] = await fetchRemainingForContract(contractId);
+           populateContractDropdown();
+           document.getElementById('f-contract').value = contractId;
+           remainingItems = contractRemainingMap[contractId] || [];
+           populateProductDropdown();
+           resetItemDetailFields();
+           selectedItem = null;
 
-        showAlert('✅ Product berhasil ditambahkan' + (allocation.length > 1 ? ` (otomatis dipecah dari ${allocation.length} contract).` : '.'), 'success');
-        document.getElementById('f-product').value = '';
-        resetProductSelection();
-        await loadMergedProducts();
-        await loadDetails();
-    } catch(e) {
-        showAlert('❌ Kesalahan server: ' + e.message, 'error');
-    } finally {
-        btn.disabled = false;
-    }
-}
+           document.getElementById('no-product-warn').style.display = remainingItems.length === 0 ? 'block' : 'none';
 
-// ==================== LOAD & RENDER DETAILS ====================
-async function loadDetails() {
-    try {
-        details = await fetch('/api/invoice-details/by-invoice/' + invoiceId).then(r => r.json());
-        renderDetails();
-        updateTotal();
-    } catch(e) { console.error('Gagal load details', e); }
-}
+           await loadDetails();
+       } catch(e) {
+         showAlert('❌ Kesalahan server: ' + e.message, 'error');
+     } finally {
+         btn.disabled = false;
+     }
+ }
 
-function renderDetails() {
-    const tbody = document.getElementById('detail-tbody');
-    const cur   = invoice?.currency || 'USD';
-    updateFormLabels();
+   // ==================== LOAD DETAILS ====================
+   async function loadDetails() {
+     try {
+         details = await fetch('/api/invoice-details/by-invoice/' + invoiceId).then(r => r.json());
+         renderDetails();
+         updateTotal();
+     } catch(e) { console.error('Gagal load details', e); }
+ }
 
-    if (!details.length) {
-        tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
-        return;
-    }
+   // Gabungkan baris dengan product_id + color + unit yang sama, walau berasal dari
+   // penambahan / contract yang berbeda-beda.
+   function groupDetails(list) {
+     const map = new Map();
+     list.forEach(d => {
+         const key = [d.product_id, d.color || '', d.unit].join('|');
+         if (!map.has(key)) {
+             map.set(key, {
+                 key,
+                 product_id: d.product_id,
+                 fabric_no: d.fabric_no,
+                 fabric_name: d.fabric_name,
+                 color: d.color,
+                 unit: d.unit,
+                 qty_meter: 0,
+                 qty_yard: 0,
+                 diskon: 0,
+                 stotal_usd: 0,
+                 packages_total: 0,
+                 package_unit: d.package_unit,
+                 contract_nos: new Set(),
+                 delivery_statuses: new Set(),
+                 ids: [],
+             });
+         }
+         const g = map.get(key);
+         g.qty_meter  += parseFloat(d.qty_meter)  || 0;
+         g.qty_yard   += parseFloat(d.qty_yard)   || 0;
+         g.diskon     += parseFloat(d.diskon)     || 0;
+         g.stotal_usd += parseFloat(d.stotal_usd) || 0;
+         if (d.packages) g.packages_total += parseFloat(d.packages) || 0;
+         if (d.contract_no) g.contract_nos.add(d.contract_no);
+         g.delivery_statuses.add(d.delivery_status || 'full');
+         g.ids.push(d.id);
+     });
+     return Array.from(map.values());
+ }
 
-    tbody.innerHTML = details.map((d, i) => {
-        const price  = parseFloat(d.price_usd || 0);
-        const stotal = parseFloat(d.stotal_usd || 0);
-        const diskon = parseFloat(d.diskon || 0);
-        const qty    = parseFloat(d.unit === 'Yard' ? d.qty_yard : d.qty_meter) || 0;
-        const unitLbl = d.unit === 'Yard' ? 'Y' : 'm';
-        const pkgUnitLbl = d.package_unit === 'ROLL' ? 'Roll' : 'Pack';
+ function renderDetails() {
+     const tbody = document.getElementById('detail-tbody');
+     const cur   = invoice?.currency || 'USD';
+     updateFormLabels();
 
-        return `
-        <tr>
-        <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
-        <td style="font-size:0.82rem">${d.packages ? esc(d.packages) + ' ' + pkgUnitLbl : '—'}</td>
-        <td style="font-weight:700">${esc(d.fabric_name || '—')}</td>
-        <td style="font-size:0.85rem;color:var(--primary)">${esc(d.fabric_no || '—')}</td>
-        <td style="font-size:0.8rem;color:var(--text-muted)">${esc(d.contract_no || '—')}</td>
-        <td>${esc(d.color || '—')}</td>
-        <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
-        <td style="text-align:right;font-weight:600">${fmtNum4(qty)} ${unitLbl}</td>
-        <td style="text-align:right;font-weight:600">${formatCur(price, cur)}</td>
-        <td style="text-align:right;color:#64748b;font-size:0.8rem">${formatCur(diskon, cur)}</td>
-        <td style="text-align:right;font-weight:700;color:#2563eb">${formatCur(stotal, cur)}</td>
-        <td>${d.delivery_status === 'partial'
-        ? '<span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">PARTIAL</span>'
-        : '<span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">FULL</span>'}</td>
-        <td>
-        <button class="btn-del" onclick="openDelModal(${d.id})">
-        <i class="ti ti-trash" style="font-size:12px"></i>
-        </button>
-        </td>
-        </tr>`;
-    }).join('');
-}
+     groupedRowsCache = groupDetails(details);
 
-function updateTotal() {
-    if (!invoice) return;
-    const cur   = invoice.currency || 'USD';
-    const total = details.reduce((s, d) => s + (parseFloat(d.stotal_usd) || 0), 0);
+     if (!groupedRowsCache.length) {
+         tbody.innerHTML = `<tr><td colspan="13" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item. Tambahkan produk di atas.</td></tr>`;
+         return;
+     }
 
-    document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
-    document.getElementById('total-items').textContent   = details.length + ' item';
+     tbody.innerHTML = groupedRowsCache.map((g, i) => {
+         const qty     = parseFloat(g.unit === 'Yard' ? g.qty_yard : g.qty_meter) || 0;
+           const price   = qty > 0 ? (g.stotal_usd + g.diskon) / qty : 0; // rata-rata harga per unit
+           const unitLbl = g.unit === 'Yard' ? 'Y' : 'm';
+           const pkgUnitLbl = g.package_unit === 'ROLL' ? 'Roll' : 'Pack';
+           const mergedBadge = g.ids.length > 1 ? `<span class="merge-badge">${g.ids.length}× digabung</span>` : '';
 
-    fetch('/api/invoices/' + invoiceId + '/total', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ total })
-    }).catch(()=>{});
-}
+           let statusLbl;
+           if (g.delivery_statuses.size > 1) {
+             statusLbl = '<span style="background:#eff6ff;color:#2563eb;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">MIXED</span>';
+         } else if ([...g.delivery_statuses][0] === 'partial') {
+             statusLbl = '<span style="background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">PARTIAL</span>';
+         } else {
+             statusLbl = '<span style="background:#f0fdf4;color:#16a34a;padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700">FULL</span>';
+         }
 
-// ==================== DELETE ====================
-function openDelModal(id) {
-    delId = id;
-    document.getElementById('del-modal').style.display = 'flex';
-}
+         return `
+         <tr>
+         <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
+         <td style="font-size:0.82rem">${g.packages_total ? fmtNum4(g.packages_total) + ' ' + pkgUnitLbl : '—'}</td>
+         <td style="font-weight:700">${esc(g.fabric_name || '—')}${mergedBadge}</td>
+         <td style="font-size:0.85rem;color:var(--primary)">${esc(g.fabric_no || '—')}</td>
+         <td style="font-size:0.8rem;color:var(--text-muted)">${esc([...g.contract_nos].join(', ') || '—')}</td>
+         <td>${esc(g.color || '—')}</td>
+         <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(g.unit)}</span></td>
+         <td style="text-align:right;font-weight:600">${fmtNum4(qty)} ${unitLbl}</td>
+         <td style="text-align:right;font-weight:600">${formatCur(price, cur)}</td>
+         <td style="text-align:right;color:#64748b;font-size:0.8rem">${formatCur(g.diskon, cur)}</td>
+         <td style="text-align:right;font-weight:700;color:#2563eb">${formatCur(g.stotal_usd, cur)}</td>
+         <td>${statusLbl}</td>
+         <td>
+         <button class="btn-del" onclick="openDelModalByIndex(${i})">
+         <i class="ti ti-trash" style="font-size:12px"></i>
+         </button>
+         </td>
+         </tr>`;
+     }).join('');
+ }
 
-function closeDelModal() {
-    delId = null;
-    document.getElementById('del-modal').style.display = 'none';
-    const btn = document.querySelector('#del-modal button:last-child');
-    if (btn) { btn.disabled = false; btn.textContent = 'Hapus'; }
-}
+ function updateTotal() {
+     if (!invoice) return;
+     const cur   = invoice.currency || 'USD';
+     const total = details.reduce((s, d) => s + (parseFloat(d.stotal_usd) || 0), 0);
 
-async function confirmDel() {
-    if (!delId) { alert('ID tidak ditemukan.'); return; }
-    const btn = document.querySelector('#del-modal button:last-child');
-    btn.disabled = true;
-    btn.textContent = 'Menghapus...';
-    try {
-        const res  = await fetch('/api/invoice-details/' + delId, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success || data.status === 'success') {
-            closeDelModal();
-            await loadMergedProducts();
-            await loadDetails();
-        } else {
-            alert('Gagal hapus: ' + (data.error || 'Unknown error'));
-            btn.disabled = false;
-            btn.textContent = 'Hapus';
-        }
-    } catch(e) {
-        alert('Kesalahan server: ' + e.message);
-        btn.disabled = false;
-        btn.textContent = 'Hapus';
-    }
-}
+     document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
+     document.getElementById('total-items').textContent   = groupedRowsCache.length + ' produk';
 
-// ==================== HELPERS ====================
-function fmtDate(str) {
-    if (!str) return '—';
-    const s = str.slice(0,10).split('-');
-    return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
-}
-function fmtNum4(v) { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}); }
-function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+     fetch('/api/invoices/' + invoiceId + '/total', {
+         method: 'PUT',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ total })
+     }).catch(()=>{});
+ }
 
-function formatCur(val, cur) {
-    const n = parseFloat(val)||0;
-    return cur === 'IDR'
-    ? 'Rp ' + n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:0})
-    : '$ '  + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
-}
+   // ==================== DELETE (bisa lebih dari 1 id jika baris hasil gabungan) ====================
+   function openDelModalByIndex(i) {
+     const g = groupedRowsCache[i];
+     if (!g) return;
+     delIds = g.ids;
+     document.getElementById('del-modal-desc').textContent = g.ids.length > 1
+     ? `Product ini merupakan gabungan dari ${g.ids.length} baris (beberapa contract/penambahan). Semua akan dihapus dari invoice, sisa qty dikembalikan ke masing-masing contract, dan total invoice dihitung ulang.`
+     : 'Item ini akan dihapus dari invoice, sisa qty akan dikembalikan ke contract, dan total invoice dihitung ulang.';
+     document.getElementById('del-modal').style.display = 'flex';
+ }
+
+ function closeDelModal() {
+     delIds = [];
+     document.getElementById('del-modal').style.display = 'none';
+     const btn = document.querySelector('#del-modal button:last-child');
+     if (btn) { btn.disabled = false; btn.textContent = 'Hapus'; }
+ }
+
+ async function confirmDel() {
+     if (!delIds.length) { alert('ID tidak ditemukan.'); return; }
+     const btn = document.querySelector('#del-modal button:last-child');
+     btn.disabled = true;
+     btn.textContent = 'Menghapus...';
+     try {
+         for (const id of delIds) {
+             const res  = await fetch('/api/invoice-details/' + id, { method: 'DELETE' });
+             const data = await res.json();
+             if (!data.success && data.status !== 'success') {
+                 throw new Error(data.error || ('Gagal menghapus salah satu item (id ' + id + ').'));
+             }
+         }
+         closeDelModal();
+
+           // Sisa qty di beberapa contract mungkin berubah -> refresh semua supaya dropdown akurat
+           await loadContractRemaining();
+           populateContractDropdown();
+           if (selectedContract) {
+             remainingItems = contractRemainingMap[selectedContract.id] || [];
+             populateProductDropdown();
+             document.getElementById('no-product-warn').style.display = remainingItems.length === 0 ? 'block' : 'none';
+         }
+
+         await loadDetails();
+     } catch(e) {
+         alert('Kesalahan server: ' + e.message);
+         btn.disabled = false;
+         btn.textContent = 'Hapus';
+     }
+ }
+
+   // ==================== HELPERS ====================
+   function fmtDate(str) {
+     if (!str) return '—';
+     const s = str.slice(0,10).split('-');
+     return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
+ }
+ function fmtNum4(v) { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4}); }
+ function esc(s)     { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+ function formatCur(val, cur) {
+     const n = parseFloat(val)||0;
+     return cur === 'IDR'
+     ? 'Rp ' + n.toLocaleString('id-ID',{minimumFractionDigits:0,maximumFractionDigits:0})
+     : '$ '  + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
+ }
 </script>
 </body>
 </html>
