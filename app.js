@@ -49,6 +49,44 @@ dbGudang.getConnection((err, conn) => {
     }
 });
 
+// Koneksi database PRODUKSI (terpisah, untuk tracking riwayat produksi per contract)
+const dbProduksi = mysql.createPool({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'produksi',
+    waitForConnections: true,
+    connectionLimit: 10,
+    dateStrings: true
+});
+
+dbProduksi.getConnection((err, conn) => {
+    if (err) {
+        console.error('Koneksi Database PRODUKSI Gagal:', err.message);
+    } else {
+        console.log('Database PRODUKSI Terhubung! [Status: OK]');
+        conn.release();
+    }
+});
+// Koneksi database INSPECT (terpisah, untuk data inspeksi kain per contract)
+const dbInspect = mysql.createPool({
+    host: 'localhost',
+    user: 'root',
+    password: '',
+    database: 'inspect',
+    waitForConnections: true,
+    connectionLimit: 10,
+    dateStrings: true
+});
+
+dbInspect.getConnection((err, conn) => {
+    if (err) {
+        console.error('Koneksi Database INSPECT Gagal:', err.message);
+    } else {
+        console.log('Database INSPECT Terhubung! [Status: OK]');
+        conn.release();
+    }
+});
 
 
 // =========================================================================
@@ -159,6 +197,9 @@ app.get('/sales/sales-contract/detail', requireLogin, (req, res) => {
 });
 app.get('/sales/sales-contract/print', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'print.html'));
+});
+app.get('/sales/sales-contract/produksi', requireLogin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'sales', 'sales-contract', 'produksi.html'));
 });
 
 app.get('/sales/invoices', requireLogin, (req, res) => {
@@ -976,7 +1017,121 @@ app.delete('/api/contract-details/:id', requireLogin, (req, res) => {
     });
 });
 
+// =========================================================================
+// API TRACKING PRODUKSI — ambil riwayat produksi berdasarkan contract_no
+// (cross-database: marketjs.contracts -> produksi.master_produksi -> produksi.riwayat_produksi)
+// =========================================================================
+app.get('/api/produksi/by-contract/:contractNo', requireLogin, (req, res) => {
+    const contractNo = req.params.contractNo;
 
+    const sqlMaster = `
+    SELECT id_master_produksi, barcode, no_kontrak, no_wo, no_batch, kode_kain, warna
+    FROM master_produksi
+    WHERE no_kontrak LIKE ?
+    ORDER BY id_master_produksi ASC
+    `;
+
+    dbProduksi.query(sqlMaster, [contractNo + '//%'], (err, masterRows) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        if (!masterRows.length) {
+            return res.json({ master: [] });
+        }
+
+        const barcodes = masterRows.map(m => m.barcode);
+
+        const sqlRiwayat = `
+        SELECT id_riwayat_produksi, barcode, proses_produksi, mesin, nama_operator, qtty, waktu_mulai, waktu_selesai
+        FROM riwayat_produksi
+        WHERE barcode IN (?)
+        ORDER BY waktu_mulai ASC
+        `;
+
+        // Bangun total panjang greige (SUM pcs1_panjang s/d pcs30_panjang) per barcode
+        const pcsColumns = Array.from({ length: 30 }, (_, i) => `IFNULL(pcs${i + 1}_panjang, 0)`).join(' + ');
+        const sqlPlatingdown = `
+        SELECT barcode, SUM(${pcsColumns}) AS total_panjang
+        FROM proses_platingdown
+        WHERE barcode IN (?)
+        GROUP BY barcode
+        `;
+
+        dbProduksi.query(sqlRiwayat, [barcodes], (err2, riwayatRows) => {
+            if (err2) return res.status(500).json({ error: err2.message });
+
+            dbProduksi.query(sqlPlatingdown, [barcodes], (err3, platingRows) => {
+                if (err3) return res.status(500).json({ error: err3.message });
+
+                const riwayatByBarcode = {};
+                riwayatRows.forEach(r => {
+                    if (!riwayatByBarcode[r.barcode]) riwayatByBarcode[r.barcode] = [];
+                    riwayatByBarcode[r.barcode].push(r);
+                });
+
+                const panjangByBarcode = {};
+                platingRows.forEach(p => {
+                    panjangByBarcode[p.barcode] = parseFloat(p.total_panjang) || 0;
+                });
+
+                const result = masterRows.map(m => ({
+                    barcode: m.barcode,
+                    no_kontrak: m.no_kontrak,
+                    no_wo: m.no_wo,
+                    no_batch: m.no_batch,
+                    kode_kain: m.kode_kain,
+                    warna: m.warna,
+                    panjang_greige: panjangByBarcode.hasOwnProperty(m.barcode) ? panjangByBarcode[m.barcode] : null,
+                    riwayat: riwayatByBarcode[m.barcode] || []
+                }));
+
+                res.json({ master: result });
+            });
+        });
+    });
+});
+
+
+// =========================================================================
+// API DATA INSPECT — ambil hasil inspeksi kain berdasarkan contract_no
+// (cross-database: marketjs.contracts -> inspect.detail_inspect)
+// dikelompokkan per no_lot (= no_batch di produksi)
+// =========================================================================
+app.get('/api/inspect/by-contract/:contractNo', requireLogin, (req, res) => {
+    const contractNo = req.params.contractNo;
+
+    const sql = `
+    SELECT id_detail, no_kontrak, no_lot, Nocolor, no_pcs, panjang, berat, inspector, tanggal, no_mesin, grade
+    FROM detail_inspect
+    WHERE no_kontrak LIKE ?
+    ORDER BY no_lot ASC, no_pcs ASC
+    `;
+
+    dbInspect.query(sql, [contractNo + '//%'], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        if (!rows.length) {
+            return res.json({ batches: [], total_panjang_all: 0, total_pcs_all: 0 });
+        }
+
+        // Kelompokkan per no_lot (= no_batch)
+        const batchMap = {};
+        rows.forEach(r => {
+            const key = r.no_lot || '-';
+            if (!batchMap[key]) {
+                batchMap[key] = { no_lot: key, items: [], total_panjang: 0, total_pcs: 0 };
+            }
+            batchMap[key].items.push(r);
+            batchMap[key].total_panjang += parseFloat(r.panjang) || 0;
+            batchMap[key].total_pcs += 1;
+        });
+
+        const batches = Object.values(batchMap);
+        const total_panjang_all = batches.reduce((s, b) => s + b.total_panjang, 0);
+        const total_pcs_all     = batches.reduce((s, b) => s + b.total_pcs, 0);
+
+        res.json({ batches, total_panjang_all, total_pcs_all });
+    });
+});
 // =========================================================================
 // BACKEND ENDPOINTS (REST API TRANSAKSI INVOICES)
 // =========================================================================

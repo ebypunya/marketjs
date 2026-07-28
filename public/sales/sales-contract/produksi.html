@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Produksi - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title {
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--primary); margin: 0 0 14px; padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-light); display: flex; align-items: center; gap: 8px;
+        }
+        .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; }
+        .info-card { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; }
+        .info-card .lbl { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+        .info-card .val { font-size: 0.92rem; font-weight: 700; color: var(--text-main); }
+
+        .tab-btn {
+            padding: 10px 18px; border: none; background: none; cursor: pointer;
+            font-family: inherit; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);
+            border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s;
+        }
+        .tab-btn:hover { color: var(--primary); }
+        .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+        .barcode-card { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+        .barcode-head {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; background: var(--bg-main); border-bottom: 1px solid var(--border-color);
+            cursor: pointer; user-select: none;
+        }
+        .barcode-head:hover { background: #f1f5f9; }
+        .barcode-body { padding: 4px 18px 14px; }
+
+        .inspect-batch-card { border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+        .inspect-batch-head {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 18px; background: var(--bg-main); border-bottom: 1px solid var(--border-color);
+            cursor: pointer; user-select: none;
+        }
+        .inspect-batch-head:hover { background: #f1f5f9; }
+        .inspect-batch-body { padding: 4px 18px 14px; }
+
+        .riwayat-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .riwayat-table th {
+            text-align: left; padding: 8px 6px; font-size: 0.68rem; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .riwayat-table td { padding: 8px 6px; border-bottom: 1px solid var(--border-color); }
+        .riwayat-table tbody tr:last-child td { border-bottom: none; }
+
+        .badge-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; }
+        .grade-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; }
+
+        .empty-box { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+        .empty-box i { font-size: 2.6rem; display: block; margin-bottom: 10px; opacity: .3; }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-file-description"></i> Info Contract</div>
+            <div class="info-grid">
+                <div class="info-card"><div class="lbl">Contract No</div><div class="val" id="ic-no">—</div></div>
+                <div class="info-card"><div class="lbl">Customer</div><div class="val" id="ic-customer">—</div></div>
+                <div class="info-card"><div class="lbl">Status Contract</div><div class="val" id="ic-status">—</div></div>
+                <div class="info-card"><div class="lbl">Total Panjang Greige</div><div class="val" id="ic-total-greige" style="color:var(--primary)">—</div></div>
+                <div class="info-card"><div class="lbl">Total Panjang Inspect</div><div class="val" id="ic-total-inspect-panjang" style="color:#16a34a">—</div></div>
+                <div class="info-card"><div class="lbl">Total PCS Inspect</div><div class="val" id="ic-total-inspect-pcs" style="color:#c2410c">—</div></div>
+            </div>
+        </div>
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div style="display:flex;gap:8px;margin-bottom:18px;border-bottom:1px solid var(--border-color)">
+                <button class="tab-btn active" id="tab-btn-produksi" onclick="switchTab('produksi')">
+                    <i class="ti ti-timeline"></i> Riwayat Produksi
+                </button>
+                <button class="tab-btn" id="tab-btn-inspect" onclick="switchTab('inspect')">
+                    <i class="ti ti-clipboard-check"></i> Data Inspect
+                </button>
+            </div>
+
+            <!-- TAB: RIWAYAT PRODUKSI -->
+            <div id="tab-produksi">
+                <div id="loading-box" style="text-align:center;padding:30px;color:var(--text-muted)">Memuat data produksi...</div>
+                <div id="empty-box" class="empty-box" style="display:none">
+                    <i class="ti ti-barcode-off"></i>
+                    Belum ada data produksi untuk contract ini.
+                </div>
+                <div id="produksi-wrap"></div>
+            </div>
+
+            <!-- TAB: DATA INSPECT -->
+            <div id="tab-inspect" style="display:none">
+                <div id="loading-box-inspect" style="text-align:center;padding:30px;color:var(--text-muted)">Memuat data inspect...</div>
+                <div id="empty-box-inspect" class="empty-box" style="display:none">
+                    <i class="ti ti-clipboard-off"></i>
+                    Belum ada data inspect untuk contract ini.
+                </div>
+                <div id="inspect-wrap"></div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px">
+            <a href="/sales/sales-contract"
+            style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+            <i class="ti ti-arrow-left"></i> Kembali ke Daftar
+        </a>
+    </div>
+
+</div>
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    const params     = new URLSearchParams(window.location.search);
+    const contractId = params.get('id');
+    const contractNo = params.get('no');
+
+    if (!contractId || !contractNo) window.location.href = '/sales/sales-contract';
+
+    const STATUS_CONFIG = {
+        draft:      { label: 'Draft',      bg: '#f1f5f9', color: '#475569' },
+        confirmed:  { label: 'Confirmed',  bg: '#eff6ff', color: '#2563eb' },
+        done:       { label: 'Done',       bg: '#f0fdf4', color: '#16a34a' },
+        cancelled:  { label: 'Cancelled',  bg: '#fef2f2', color: '#dc2626' },
+    };
+
+    function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function fmtNum(v) {
+        if (v === null || v === undefined || v === '') return '-';
+        return Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+    }
+
+    function fmtDateTime(str) {
+        if (!str) return '—';
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return '—';
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const hh = String(d.getHours()).padStart(2, '0');
+        const mi = String(d.getMinutes()).padStart(2, '0');
+        return `${dd}/${mm}/${d.getFullYear()} ${hh}:${mi}`;
+    }
+
+    function fmtDateOnly(str) {
+        if (!str) return '—';
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return '—';
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return `${dd}/${mm}/${d.getFullYear()}`;
+    }
+
+    function statusBadge(status, map, defaultLabel) {
+        const s = map[(status || '').toLowerCase()] || { bg: '#f1f5f9', color: '#64748b' };
+        return `<span class="badge-status" style="background:${s.bg};color:${s.color}">${esc(status || defaultLabel || '-')}</span>`;
+    }
+
+    function prosesStatusBadge(waktuSelesai) {
+        return waktuSelesai
+        ? `<span class="badge-status" style="background:#f0fdf4;color:#16a34a">Selesai</span>`
+        : `<span class="badge-status" style="background:#fff7ed;color:#c2410c">Proses</span>`;
+    }
+
+    function barcodeStatusBadge(riwayat) {
+        if (!riwayat.length) {
+            return `<span class="badge-status" style="background:#f1f5f9;color:#64748b">Belum Diproses</span>`;
+        }
+        const allDone = riwayat.every(r => r.waktu_selesai);
+        return allDone
+        ? `<span class="badge-status" style="background:#f0fdf4;color:#16a34a">Selesai</span>`
+        : `<span class="badge-status" style="background:#fff7ed;color:#c2410c">Dalam Proses</span>`;
+    }
+
+    function gradeBadge(grade) {
+        const g = (grade || '').toUpperCase();
+        const map = {
+            A: { bg: '#f0fdf4', color: '#16a34a' },
+            B: { bg: '#fff7ed', color: '#c2410c' },
+            C: { bg: '#fef2f2', color: '#dc2626' },
+        };
+        const s = map[g] || { bg: '#f1f5f9', color: '#64748b' };
+        return `<span class="grade-badge" style="background:${s.bg};color:${s.color}">${esc(grade || '-')}</span>`;
+    }
+
+    // ==================== TABS ====================
+    function switchTab(tab) {
+        document.getElementById('tab-produksi').style.display = tab === 'produksi' ? 'block' : 'none';
+        document.getElementById('tab-inspect').style.display  = tab === 'inspect'  ? 'block' : 'none';
+        document.getElementById('tab-btn-produksi').classList.toggle('active', tab === 'produksi');
+        document.getElementById('tab-btn-inspect').classList.toggle('active', tab === 'inspect');
+    }
+
+    // ==================== INFO CONTRACT ====================
+    async function loadContractInfo() {
+        try {
+            const c = await fetch('/api/contracts/' + contractId).then(r => r.json());
+            document.getElementById('ic-no').textContent       = c.contract_no || contractNo;
+            document.getElementById('ic-customer').textContent = c.customer_name || '—';
+            document.getElementById('ic-status').innerHTML     = statusBadge(c.status, STATUS_CONFIG, c.status);
+        } catch (e) {
+            document.getElementById('ic-no').textContent = contractNo;
+        }
+    }
+
+    // ==================== TAB PRODUKSI ====================
+    async function loadProduksi() {
+        try {
+            const res  = await fetch('/api/produksi/by-contract/' + encodeURIComponent(contractNo));
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            renderProduksi(data.master || []);
+            renderTotalGreige(data.master || []);
+        } catch (e) {
+            document.getElementById('loading-box').textContent = '❌ Gagal memuat data produksi: ' + e.message;
+            console.error('loadProduksi error:', e);
+        }
+    }
+
+    function renderTotalGreige(list) {
+        const total = list.reduce((sum, m) => sum + (parseFloat(m.panjang_greige) || 0), 0);
+        document.getElementById('ic-total-greige').textContent = list.length ? fmtNum(total) + ' m' : '—';
+    }
+
+    function renderProduksi(list) {
+        document.getElementById('loading-box').style.display = 'none';
+        const wrap = document.getElementById('produksi-wrap');
+
+        if (!list.length) {
+            document.getElementById('empty-box').style.display = 'block';
+            wrap.innerHTML = '';
+            return;
+        }
+
+        wrap.innerHTML = list.map((m, i) => `
+            <div class="barcode-card">
+            <div class="barcode-head" onclick="toggleCard(${i})">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <i class="ti ti-chevron-right" id="chevron-${i}" style="font-size:15px;color:var(--text-muted);transition:transform .2s"></i>
+            <span style="font-weight:700;color:var(--text-main)">${esc(m.no_batch || '-')}</span>
+            ${m.kode_kain ? `<span style="color:var(--primary);font-weight:600">${esc(m.kode_kain)}</span>` : ''}
+            ${m.warna ? `<span style="color:var(--text-muted);font-size:0.82rem">(${esc(m.warna)})</span>` : ''}
+            ${m.no_wo ? `<span style="font-size:0.72rem;color:var(--text-muted);background:#f1f5f9;padding:2px 8px;border-radius:10px">WO: ${esc(m.no_wo)}</span>` : ''}
+            </div>
+            ${barcodeStatusBadge(m.riwayat)}
+            </div>
+            <div class="barcode-body" id="body-${i}" style="display:none">
+            <div style="padding:10px 0;font-size:0.78rem;color:var(--text-muted)">
+            <b style="color:var(--text-main)">Panjang Greige:</b>
+            <span style="font-weight:700;color:var(--primary)">${m.panjang_greige !== null ? fmtNum(m.panjang_greige) + ' m' : '—'}</span>
+            </div>
+            ${
+                m.riwayat && m.riwayat.length
+                ? `<table class="riwayat-table">
+                <thead>
+                <tr>
+                <th>Proses Produksi</th>
+                <th>Mesin</th>
+                <th>Operator</th>
+                <th>Waktu Mulai</th>
+                <th>Waktu Selesai</th>
+                <th>Status</th>
+                </tr>
+                </thead>
+                <tbody>
+                ${m.riwayat.map(r => `
+                    <tr>
+                    <td style="font-weight:600">${esc(r.proses_produksi || '-')}</td>
+                    <td style="color:var(--text-muted)">${esc(r.mesin || '-')}</td>
+                    <td style="color:var(--text-muted)">${esc(r.nama_operator || '-')}</td>
+                    <td style="color:var(--text-muted)">${fmtDateTime(r.waktu_mulai)}</td>
+                    <td style="color:var(--text-muted)">${fmtDateTime(r.waktu_selesai)}</td>
+                    <td>${prosesStatusBadge(r.waktu_selesai)}</td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+                </table>`
+                : `<div style="padding:10px 0;color:var(--text-muted);font-size:0.82rem">Belum ada riwayat proses untuk barcode ini.</div>`
+            }
+            </div>
+            </div>
+            `).join('');
+    }
+
+    function toggleCard(i) {
+        const body    = document.getElementById('body-' + i);
+        const chevron = document.getElementById('chevron-' + i);
+        const isOpen  = body.style.display === 'block';
+        body.style.display = isOpen ? 'none' : 'block';
+        chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+    }
+
+    // ==================== TAB INSPECT ====================
+    async function loadInspect() {
+        try {
+            const res  = await fetch('/api/inspect/by-contract/' + encodeURIComponent(contractNo));
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            renderInspect(data.batches || []);
+            renderTotalInspect(data.total_panjang_all || 0, data.total_pcs_all || 0);
+        } catch (e) {
+            document.getElementById('loading-box-inspect').textContent = '❌ Gagal memuat data inspect: ' + e.message;
+            console.error('loadInspect error:', e);
+        }
+    }
+
+    function renderTotalInspect(totalPanjang, totalPcs) {
+        document.getElementById('ic-total-inspect-panjang').textContent = totalPanjang ? fmtNum(totalPanjang) + ' m' : '—';
+        document.getElementById('ic-total-inspect-pcs').textContent     = totalPcs ? fmtNum(totalPcs) + ' pcs' : '—';
+    }
+
+    function renderInspect(batches) {
+        document.getElementById('loading-box-inspect').style.display = 'none';
+        const wrap = document.getElementById('inspect-wrap');
+
+        if (!batches.length) {
+            document.getElementById('empty-box-inspect').style.display = 'block';
+            wrap.innerHTML = '';
+            return;
+        }
+
+        wrap.innerHTML = batches.map((b, i) => `
+            <div class="inspect-batch-card">
+            <div class="inspect-batch-head" onclick="toggleInspectCard(${i})">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <i class="ti ti-chevron-right" id="inspect-chevron-${i}" style="font-size:15px;color:var(--text-muted);transition:transform .2s"></i>
+            <span style="font-weight:700;color:var(--text-main)">No. Lot / Batch: ${esc(b.no_lot)}</span>
+            <span style="font-size:0.72rem;color:var(--text-muted);background:#f1f5f9;padding:2px 8px;border-radius:10px">${b.total_pcs} pcs</span>
+            </div>
+            <span style="font-weight:700;color:var(--primary)">${fmtNum(b.total_panjang)} m</span>
+            </div>
+            <div class="inspect-batch-body" id="inspect-body-${i}" style="display:none">
+            <table class="riwayat-table">
+            <thead>
+            <tr>
+            <th>No. PCS</th>
+            <th style="text-align:right">Panjang</th>
+            <th>Grade</th>
+            <th>No. Mesin</th>
+            <th>Inspector</th>
+            <th>Tanggal</th>
+            </tr>
+            </thead>
+            <tbody>
+            ${b.items.map(it => `
+                <tr>
+                <td style="font-weight:600">${esc(it.no_pcs)}</td>
+                <td style="text-align:right;font-weight:600">${fmtNum(it.panjang)} m</td>
+                <td>${gradeBadge(it.grade)}</td>
+                <td style="color:var(--text-muted)">${esc(it.no_mesin || '-')}</td>
+                <td style="color:var(--text-muted)">${esc(it.inspector || '-')}</td>
+                <td style="color:var(--text-muted)">${fmtDateOnly(it.tanggal)}</td>
+                </tr>
+                `).join('')}
+            </tbody>
+            </table>
+            </div>
+            </div>
+            `).join('');
+    }
+
+    function toggleInspectCard(i) {
+        const body    = document.getElementById('inspect-body-' + i);
+        const chevron = document.getElementById('inspect-chevron-' + i);
+        const isOpen  = body.style.display === 'block';
+        body.style.display = isOpen ? 'none' : 'block';
+        chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+    }
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', () => {
+        loadContractInfo();
+        loadProduksi();
+        loadInspect();
+    });
+</script>
+</body>
+</html>
