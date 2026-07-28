@@ -68,7 +68,7 @@
             <div class="info-grid">
                 <div class="info-card"><div class="lbl">Contract No</div><div class="val" id="ic-no">—</div></div>
                 <div class="info-card"><div class="lbl">Customer</div><div class="val" id="ic-customer">—</div></div>
-                <div class="info-card"><div class="lbl">Status Contract</div><div class="val" id="ic-status">—</div></div>
+                <div class="info-card"><div class="lbl">Panjang Contract</div><div class="val" id="ic-panjang-contract" style="color:var(--primary)">—</div></div>
                 <div class="info-card"><div class="lbl">Total Panjang Greige</div><div class="val" id="ic-total-greige" style="color:var(--primary)">—</div></div>
                 <div class="info-card"><div class="lbl">Total Panjang Inspect</div><div class="val" id="ic-total-inspect-panjang" style="color:#16a34a">—</div></div>
                 <div class="info-card"><div class="lbl">Total PCS Inspect</div><div class="val" id="ic-total-inspect-pcs" style="color:#c2410c">—</div></div>
@@ -123,13 +123,6 @@
 
     if (!contractId || !contractNo) window.location.href = '/sales/sales-contract';
 
-    const STATUS_CONFIG = {
-        draft:      { label: 'Draft',      bg: '#f1f5f9', color: '#475569' },
-        confirmed:  { label: 'Confirmed',  bg: '#eff6ff', color: '#2563eb' },
-        done:       { label: 'Done',       bg: '#f0fdf4', color: '#16a34a' },
-        cancelled:  { label: 'Cancelled',  bg: '#fef2f2', color: '#dc2626' },
-    };
-
     function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
     function fmtNum(v) {
@@ -155,11 +148,6 @@
         const dd = String(d.getDate()).padStart(2, '0');
         const mm = String(d.getMonth() + 1).padStart(2, '0');
         return `${dd}/${mm}/${d.getFullYear()}`;
-    }
-
-    function statusBadge(status, map, defaultLabel) {
-        const s = map[(status || '').toLowerCase()] || { bg: '#f1f5f9', color: '#64748b' };
-        return `<span class="badge-status" style="background:${s.bg};color:${s.color}">${esc(status || defaultLabel || '-')}</span>`;
     }
 
     function prosesStatusBadge(waktuSelesai) {
@@ -203,9 +191,20 @@
             const c = await fetch('/api/contracts/' + contractId).then(r => r.json());
             document.getElementById('ic-no').textContent       = c.contract_no || contractNo;
             document.getElementById('ic-customer').textContent = c.customer_name || '—';
-            document.getElementById('ic-status').innerHTML     = statusBadge(c.status, STATUS_CONFIG, c.status);
         } catch (e) {
             document.getElementById('ic-no').textContent = contractNo;
+        }
+    }
+
+    // Panjang Contract = total qty_meter dari seluruh item di contract_details (jumlah yang di-order)
+    async function loadPanjangContract() {
+        try {
+            const items = await fetch('/api/contract-details/by-contract/' + contractId).then(r => r.json());
+            const total = (items || []).reduce((sum, it) => sum + (parseFloat(it.qty_meter) || 0), 0);
+            document.getElementById('ic-panjang-contract').textContent = items && items.length ? fmtNum(total) + ' m' : '—';
+        } catch (e) {
+            document.getElementById('ic-panjang-contract').textContent = '—';
+            console.error('loadPanjangContract error:', e);
         }
     }
 
@@ -376,6 +375,7 @@
     // ==================== INIT ====================
     document.addEventListener('DOMContentLoaded', () => {
         loadContractInfo();
+        loadPanjangContract();
         loadProduksi();
         loadInspect();
     });

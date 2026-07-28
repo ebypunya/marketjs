@@ -858,16 +858,16 @@ function adjustContractDetailInvoiced(contractDetailId, deltaMeter, deltaYard, c
 }
 
 app.get('/api/contract-details/:contractId', requireLogin, (req, res) => {
- const sql = `
- SELECT cd.*, 
- p.nama, p.fabric_no, p.fabric_name, p.color AS product_color,
- p.price_m, p.price_y
- FROM contract_details cd
- LEFT JOIN products p ON p.id = cd.product_id
- WHERE cd.contract_id = ?
- ORDER BY cd.created_at ASC
- `;
- db.query(sql, [req.params.contractId], (err, results) => {
+   const sql = `
+   SELECT cd.*, 
+   p.nama, p.fabric_no, p.fabric_name, p.color AS product_color,
+   p.price_m, p.price_y
+   FROM contract_details cd
+   LEFT JOIN products p ON p.id = cd.product_id
+   WHERE cd.contract_id = ?
+   ORDER BY cd.created_at ASC
+   `;
+   db.query(sql, [req.params.contractId], (err, results) => {
     if (err) return res.status(500).json({ error: err.message });
     res.json(results);
 });
@@ -1100,7 +1100,7 @@ app.get('/api/inspect/by-contract/:contractNo', requireLogin, (req, res) => {
     const contractNo = req.params.contractNo;
 
     const sql = `
-    SELECT id_detail, no_kontrak, no_lot, Nocolor, no_pcs, panjang, berat, inspector, tanggal, no_mesin, grade
+    SELECT id_detail, no_kontrak, no_lot, Nocolor, no_pcs, panjang, berat, inspector, tanggal, nomesin, grade
     FROM detail_inspect
     WHERE no_kontrak LIKE ?
     ORDER BY no_lot ASC, no_pcs ASC

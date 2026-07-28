@@ -7,56 +7,506 @@
     <link rel="stylesheet" href="/assets/css/dashboard.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .dash-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+        .dash-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; margin-bottom: 1.25rem; }
+        .dash-grid-2 { display: grid; grid-template-columns: 1.1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+        @media (max-width: 1100px) {
+            .dash-grid { grid-template-columns: repeat(2, 1fr); }
+            .dash-grid-3 { grid-template-columns: repeat(2, 1fr); }
+            .dash-grid-2 { grid-template-columns: 1fr; }
+        }
+
+        .kpi-icon {
+            width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.15rem; margin-bottom: 12px;
+        }
+        .kpi-sub { font-size: 0.76rem; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
+        .kpi-sub b { color: var(--text-main); }
+        .trend-up   { color: #16a34a; }
+        .trend-down { color: #dc2626; }
+
+        .card-title {
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
+            color: var(--text-muted); margin-bottom: 16px; display: flex; align-items: center; gap: 6px;
+        }
+        .card-title i { color: var(--primary); font-size: 15px; }
+
+        /* Bar chart kontrak per bulan */
+        .bar-chart-wrap { display: flex; align-items: flex-end; gap: 10px; height: 150px; padding-top: 20px; }
+        .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; }
+        .bar-fill {
+            width: 100%; max-width: 34px; border-radius: 7px 7px 3px 3px;
+            background: var(--primary-light); position: relative; transition: height .3s ease;
+            display: flex; align-items: flex-start; justify-content: center;
+        }
+        .bar-fill.current { background: linear-gradient(180deg, var(--orange-500), var(--orange-600)); }
+        .bar-count { font-size: 0.68rem; font-weight: 800; color: var(--text-main); margin-bottom: 4px; margin-top: -18px; }
+        .bar-fill.current .bar-count { color: var(--orange-600); }
+        .bar-label { font-size: 0.68rem; color: var(--text-muted); font-weight: 700; margin-top: 8px; }
+
+        /* Watchlist contract mendekati ship */
+        .watch-row {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 12px 14px; border-radius: 10px; background: var(--bg-main); margin-bottom: 8px;
+        }
+        .watch-row:last-child { margin-bottom: 0; }
+        .watch-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+        .watch-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .watch-no { font-weight: 800; color: var(--primary); font-size: 0.85rem; }
+        .watch-cust { font-size: 0.78rem; color: var(--text-muted); }
+        .watch-progress-track { width: 90px; height: 6px; background: #e2e8f0; border-radius: 10px; overflow: hidden; flex-shrink: 0; }
+        .watch-progress-fill { height: 100%; border-radius: 10px; }
+        .watch-days { font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+
+        /* Recent activity */
+        .activity-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border-color); }
+        .activity-row:last-child { border-bottom: none; }
+        .activity-icon { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+        .activity-main { flex: 1; min-width: 0; }
+        .activity-title { font-weight: 700; font-size: 0.85rem; color: var(--text-main); }
+        .activity-sub { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+        .activity-right { text-align: right; flex-shrink: 0; }
+        .activity-val { font-weight: 700; font-size: 0.82rem; }
+        .activity-date { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+
+        /* To-do reminder */
+        .todo-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+        .todo-item:last-child { border-bottom: none; }
+        .todo-label { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+        .todo-label i { color: var(--primary); font-size: 16px; }
+        .todo-count { font-size: 0.75rem; font-weight: 800; padding: 3px 11px; border-radius: 20px; background: var(--primary-light); color: var(--primary); }
+        .todo-count.zero { background: #f1f5f9; color: #94a3b8; }
+
+        .empty-mini { text-align: center; padding: 24px 10px; color: var(--text-muted); font-size: 0.82rem; }
+        .badge-status { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.68rem; font-weight: 800; }
+
+        .skeleton { color: var(--text-muted); font-size: 0.82rem; text-align: center; padding: 20px; }
+    </style>
 </head>
 <body class="dashboard-page">
 
     <div id="app-content">
-        <div class="bento-grid">
-            <div class="bento-item bento-large">
-                <span class="stat-label">Monthly Growth</span>
-                <div style="margin-top:25px;display:flex;align-items:flex-end;gap:12px;height:160px">
-                    <div style="flex:1;height:40%;background:var(--primary-light);border-radius:6px"></div>
-                    <div style="flex:1;height:65%;background:var(--primary-light);border-radius:6px"></div>
-                    <div style="flex:1;height:50%;background:var(--primary-light);border-radius:6px"></div>
-                    <div style="flex:1;height:85%;background:var(--primary);border-radius:6px"></div>
-                    <div style="flex:1;height:60%;background:var(--primary-light);border-radius:6px"></div>
-                    <div style="flex:1;height:95%;background:var(--primary-light);border-radius:6px"></div>
-                </div>
+
+        <!-- ================= KPI UTAMA ================= -->
+        <div class="dash-grid" id="kpi-row">
+            <div class="bento-item">
+                <div class="kpi-icon" style="background:#eff6ff;color:#2563eb"><i class="ti ti-file-invoice"></i></div>
+                <span class="stat-label">Sales Contract Bulan Ini</span>
+                <span class="stat-number" id="kpi-contract-count">—</span>
+                <div class="kpi-sub" id="kpi-contract-value">Memuat...</div>
             </div>
             <div class="bento-item">
-                <span class="stat-label">Net Revenue</span>
-                <span class="stat-number">Rp 2.4B</span>
-                <div style="margin-top:10px;color:#10b981;font-weight:700;font-size:0.8rem">↑ 12.5%</div>
+                <div class="kpi-icon" style="background:#f0fdf4;color:#16a34a"><i class="ti ti-receipt"></i></div>
+                <span class="stat-label">Invoice Bulan Ini</span>
+                <span class="stat-number" id="kpi-invoice-count">—</span>
+                <div class="kpi-sub" id="kpi-invoice-value">Memuat...</div>
             </div>
             <div class="bento-item">
-                <span class="stat-label">Total Orders</span>
-                <span class="stat-number">1,240</span>
-                <div style="margin-top:10px;color:var(--text-muted);font-size:0.8rem">Across 12 regions</div>
+                <div class="kpi-icon" style="background:#fff7ed;color:#c2410c"><i class="ti ti-clock-dollar"></i></div>
+                <span class="stat-label">Outstanding Invoice</span>
+                <span class="stat-number" id="kpi-outstanding-count">—</span>
+                <div class="kpi-sub" id="kpi-outstanding-value">Memuat...</div>
             </div>
-            <div class="bento-item bento-medium">
-                <span class="stat-label">Recent Activity</span>
-                <table class="data-table">
-                    <thead>
-                        <tr><th>CLIENT</th><th>STATUS</th><th>AMOUNT</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Marketplace-A</td>
-                            <td style="color:#10b981;font-weight:600">Success</td>
-                            <td>Rp 150k</td>
-                        </tr>
-                        <tr>
-                            <td>Global-User</td>
-                            <td style="color:#f59e0b;font-weight:600">Pending</td>
-                            <td>Rp 840k</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div class="bento-item">
+                <div class="kpi-icon" style="background:#f5f3ff;color:#7c3aed"><i class="ti ti-currency-dollar"></i></div>
+                <span class="stat-label">Kurs Terkini (USD)</span>
+                <span class="stat-number" id="kpi-kurs-sell">—</span>
+                <div class="kpi-sub" id="kpi-kurs-sub">Memuat...</div>
             </div>
         </div>
+
+        <!-- ================= RINGKASAN KECIL ================= -->
+        <div class="dash-grid-3">
+            <div class="bento-item" style="display:flex;align-items:center;gap:14px">
+                <div class="kpi-icon" style="background:#eef2ff;color:var(--primary);margin-bottom:0"><i class="ti ti-users"></i></div>
+                <div>
+                    <span class="stat-label">Total Customer</span>
+                    <div class="stat-number" id="kpi-total-customer" style="font-size:1.5rem;margin-top:2px">—</div>
+                </div>
+            </div>
+            <div class="bento-item" style="display:flex;align-items:center;gap:14px">
+                <div class="kpi-icon" style="background:#eef2ff;color:var(--primary);margin-bottom:0"><i class="ti ti-shirt"></i></div>
+                <div>
+                    <span class="stat-label">Total Product</span>
+                    <div class="stat-number" id="kpi-total-product" style="font-size:1.5rem;margin-top:2px">—</div>
+                </div>
+            </div>
+            <div class="bento-item" style="display:flex;align-items:center;gap:14px">
+                <div class="kpi-icon" style="background:#fff7ed;color:#c2410c;margin-bottom:0"><i class="ti ti-progress"></i></div>
+                <div>
+                    <span class="stat-label">Contract Belum Full Invoice</span>
+                    <div class="stat-number" id="kpi-belum-full" style="font-size:1.5rem;margin-top:2px">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= CHART ================= -->
+        <div class="dash-grid-2">
+            <div class="bento-item">
+                <div class="card-title"><i class="ti ti-chart-bar"></i> Trend Sales Contract (6 Bulan Terakhir)</div>
+                <div id="chart-contract" class="bar-chart-wrap"><div class="skeleton" style="width:100%">Memuat data...</div></div>
+            </div>
+            <div class="bento-item">
+                <div class="card-title"><i class="ti ti-chart-line"></i> Trend Kurs Sell Rate (USD → Rp)</div>
+                <div id="chart-kurs"><div class="skeleton">Memuat data...</div></div>
+            </div>
+        </div>
+
+        <!-- ================= PERLU PERHATIAN ================= -->
+        <div class="bento-item" style="margin-bottom:1.25rem">
+            <div class="card-title"><i class="ti ti-alert-triangle"></i> Perlu Perhatian &mdash; Mendekati / Lewat Jadwal Kirim</div>
+            <div id="watchlist-wrap"><div class="skeleton">Memuat data...</div></div>
+        </div>
+
+        <!-- ================= AKTIVITAS TERBARU + TO-DO ================= -->
+        <div class="dash-grid-2">
+            <div class="bento-item">
+                <div class="card-title"><i class="ti ti-history"></i> Aktivitas Terbaru</div>
+                <div id="activity-wrap"><div class="skeleton">Memuat data...</div></div>
+            </div>
+            <div class="bento-item">
+                <div class="card-title"><i class="ti ti-checklist"></i> Perlu Ditindaklanjuti</div>
+                <div id="todo-wrap"><div class="skeleton">Memuat data...</div></div>
+            </div>
+        </div>
+
     </div>
 
     <script src="/assets/js/sidebar.js"></script>
     <script src="/assets/js/layout.js"></script>
+    <script>
+        const MONTHS_S = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+        function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        function fmtCur(val, cur) {
+            const n = parseFloat(val) || 0;
+            return cur === 'IDR'
+            ? 'Rp ' + n.toLocaleString('id-ID', { maximumFractionDigits: 0 })
+            : '$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function fmtDateShort(str) {
+            if (!str) return '—';
+            const p = str.slice(0, 10).split('-');
+            return `${p[2]} ${MONTHS_S[parseInt(p[1]) - 1]} ${p[0]}`;
+        }
+
+        function todayStr() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        }
+
+        // Selisih hari antara dua string tanggal YYYY-MM-DD (local, tanpa efek timezone)
+        function dayDiff(dateStr, fromStr) {
+            const a = dateStr.slice(0,10).split('-').map(Number);
+            const b = fromStr.slice(0,10).split('-').map(Number);
+            const dA = new Date(a[0], a[1]-1, a[2]);
+            const dB = new Date(b[0], b[1]-1, b[2]);
+            return Math.round((dA - dB) / 86400000);
+        }
+
+        let CONTRACTS = [], INVOICES = [], RATES = [], CUSTOMERS = [], PRODUCTS = [];
+
+        async function loadAll() {
+            try {
+                [CONTRACTS, INVOICES, RATES, CUSTOMERS, PRODUCTS] = await Promise.all([
+                    fetch('/api/contracts').then(r => r.json()),
+                    fetch('/api/invoices').then(r => r.json()),
+                    fetch('/api/rates').then(r => r.json()),
+                    fetch('/api/customers').then(r => r.json()),
+                    fetch('/api/products').then(r => r.json()),
+                    ]);
+            } catch (e) {
+                console.error('Gagal memuat data dashboard:', e);
+                return;
+            }
+
+            renderKpi();
+            renderRingkasan();
+            renderChartContract();
+            renderChartKurs();
+            renderWatchlist();
+            renderActivity();
+            renderTodo();
+        }
+
+        // ==================== KPI UTAMA ====================
+        function renderKpi() {
+            const thisMonth = todayStr().slice(0, 7);
+
+            // Sales Contract bulan ini
+            const contractsThisMonth = CONTRACTS.filter(c => (c.created_at || '').slice(0,7) === thisMonth);
+            const cUsd = contractsThisMonth.filter(c => c.currency !== 'IDR').reduce((s,c) => s + (parseFloat(c.total)||0), 0);
+            const cIdr = contractsThisMonth.filter(c => c.currency === 'IDR').reduce((s,c) => s + (parseFloat(c.total)||0), 0);
+            document.getElementById('kpi-contract-count').textContent = contractsThisMonth.length;
+            document.getElementById('kpi-contract-value').innerHTML =
+            (cUsd > 0 ? '<b>'+fmtCur(cUsd,'USD')+'</b>' : '') +
+            (cUsd > 0 && cIdr > 0 ? ' &nbsp;+&nbsp; ' : '') +
+            (cIdr > 0 ? '<b>'+fmtCur(cIdr,'IDR')+'</b>' : '') ||
+            (contractsThisMonth.length ? '' : 'Belum ada contract bulan ini');
+            if (!cUsd && !cIdr) document.getElementById('kpi-contract-value').textContent = contractsThisMonth.length ? '—' : 'Belum ada contract bulan ini';
+
+            // Invoice bulan ini
+            const invoicesThisMonth = INVOICES.filter(i => (i.created_at || '').slice(0,7) === thisMonth);
+            const iUsd = invoicesThisMonth.filter(i => i.currency !== 'IDR').reduce((s,i) => s + (parseFloat(i.total)||0), 0);
+            const iIdr = invoicesThisMonth.filter(i => i.currency === 'IDR').reduce((s,i) => s + (parseFloat(i.total)||0), 0);
+            document.getElementById('kpi-invoice-count').textContent = invoicesThisMonth.length;
+            const invParts = [];
+            if (iUsd > 0) invParts.push('<b>'+fmtCur(iUsd,'USD')+'</b>');
+            if (iIdr > 0) invParts.push('<b>'+fmtCur(iIdr,'IDR')+'</b>');
+            document.getElementById('kpi-invoice-value').innerHTML = invParts.length ? invParts.join(' &nbsp;+&nbsp; ') : 'Belum ada invoice bulan ini';
+
+            // Outstanding invoice (belum paid / cancelled)
+            const outstanding = INVOICES.filter(i => i.status !== 'paid' && i.status !== 'cancelled');
+            const oUsd = outstanding.filter(i => i.currency !== 'IDR').reduce((s,i) => s + (parseFloat(i.total)||0), 0);
+            const oIdr = outstanding.filter(i => i.currency === 'IDR').reduce((s,i) => s + (parseFloat(i.total)||0), 0);
+            document.getElementById('kpi-outstanding-count').textContent = outstanding.length;
+            const outParts = [];
+            if (oUsd > 0) outParts.push('<b>'+fmtCur(oUsd,'USD')+'</b>');
+            if (oIdr > 0) outParts.push('<b>'+fmtCur(oIdr,'IDR')+'</b>');
+            document.getElementById('kpi-outstanding-value').innerHTML = outParts.length ? outParts.join(' &nbsp;+&nbsp; ') + ' belum lunas' : 'Semua invoice lunas 🎉';
+
+            // Kurs terkini
+            if (RATES.length) {
+                const latest = RATES[0];
+                document.getElementById('kpi-kurs-sell').textContent = 'Rp ' + Number(latest.sell_rate).toLocaleString('id-ID');
+                let subHtml = 'Buy: Rp ' + Number(latest.buy_rate).toLocaleString('id-ID');
+                if (RATES.length > 1) {
+                    const diff = parseFloat(latest.sell_rate) - parseFloat(RATES[1].sell_rate);
+                    if (diff !== 0) {
+                        const cls = diff > 0 ? 'trend-up' : 'trend-down';
+                        const arrow = diff > 0 ? '↑' : '↓';
+                        subHtml += ` &nbsp;<span class="${cls}">${arrow} Rp ${Math.abs(diff).toLocaleString('id-ID')}</span>`;
+                    }
+                }
+                document.getElementById('kpi-kurs-sub').innerHTML = subHtml;
+            } else {
+                document.getElementById('kpi-kurs-sell').textContent = '—';
+                document.getElementById('kpi-kurs-sub').textContent = 'Belum ada data kurs';
+            }
+        }
+
+        // ==================== RINGKASAN KECIL ====================
+        function renderRingkasan() {
+            document.getElementById('kpi-total-customer').textContent = CUSTOMERS.length;
+            document.getElementById('kpi-total-product').textContent  = PRODUCTS.length;
+
+            const belumFull = CONTRACTS.filter(c => {
+                const total    = parseFloat(c.total_qty_meter) || 0;
+                const invoiced = parseFloat(c.total_qty_invoiced_meter) || 0;
+                return total > 0 && invoiced < total && c.status !== 'cancelled';
+            });
+            document.getElementById('kpi-belum-full').textContent = belumFull.length;
+        }
+
+        // ==================== CHART: CONTRACT PER BULAN ====================
+        function renderChartContract() {
+            const now = new Date();
+            const buckets = [];
+            for (let i = 5; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                buckets.push({ key, label: MONTHS_S[d.getMonth()], count: 0 });
+            }
+            CONTRACTS.forEach(c => {
+                const key = (c.created_at || '').slice(0,7);
+                const b = buckets.find(x => x.key === key);
+                if (b) b.count++;
+            });
+
+            const max = Math.max(1, ...buckets.map(b => b.count));
+            const currentKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+            const html = buckets.map(b => {
+                const heightPct = Math.max(6, Math.round((b.count / max) * 100));
+                const isCurrent = b.key === currentKey;
+                return `
+                <div class="bar-col">
+                <div class="bar-fill ${isCurrent ? 'current' : ''}" style="height:${heightPct}%">
+                <span class="bar-count">${b.count}</span>
+                </div>
+                <span class="bar-label">${b.label}</span>
+                </div>`;
+            }).join('');
+
+            document.getElementById('chart-contract').innerHTML = html;
+        }
+
+        // ==================== CHART: KURS TREND (SVG line) ====================
+        function renderChartKurs() {
+            const el = document.getElementById('chart-kurs');
+            if (!RATES.length) {
+                el.innerHTML = '<div class="empty-mini">Belum ada data kurs.</div>';
+                return;
+            }
+            // Ambil 8 data terakhir, urutkan ascending berdasarkan waktu
+            const points = RATES.slice(0, 8).slice().reverse();
+            const values = points.map(p => parseFloat(p.sell_rate) || 0);
+            const min = Math.min(...values), max = Math.max(...values);
+            const range = (max - min) || 1;
+
+            const W = 560, H = 150, padX = 10, padY = 18;
+            const stepX = points.length > 1 ? (W - padX*2) / (points.length - 1) : 0;
+
+            const coords = values.map((v, i) => {
+                const x = padX + stepX * i;
+                const y = padY + (H - padY*2) * (1 - (v - min) / range);
+                return [x, y];
+            });
+
+            const polyline = coords.map(c => c.join(',')).join(' ');
+            const areaPoints = `${padX},${H-padY} ` + polyline + ` ${padX + stepX*(points.length-1)},${H-padY}`;
+
+            const circles = coords.map((c, i) => `<circle cx="${c[0]}" cy="${c[1]}" r="3.5" fill="#fff" stroke="#ff6a13" stroke-width="2"/>`).join('');
+            const lastLabel = `<text x="${coords[coords.length-1][0]}" y="${coords[coords.length-1][1]-10}" text-anchor="end" font-size="11" font-weight="800" fill="#e8580a">Rp ${values[values.length-1].toLocaleString('id-ID')}</text>`;
+
+            const dateLabels = points.map((p,i) => {
+                const x = padX + stepX * i;
+                return `<text x="${x}" y="${H-2}" text-anchor="middle" font-size="9" fill="#94a3b8">${fmtDateShort(p.created_at)}</text>`;
+            }).join('');
+
+            el.innerHTML = `
+            <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:150px" preserveAspectRatio="none">
+            <polyline points="${areaPoints}" fill="rgba(255,106,19,0.08)" stroke="none"/>
+            <polyline points="${polyline}" fill="none" stroke="#ff6a13" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+            ${circles}
+            ${lastLabel}
+            </svg>
+            <div style="display:flex;justify-content:space-between;font-size:0.68rem;color:var(--text-muted);padding:0 10px">
+            ${points.map(p => `<span>${fmtDateShort(p.created_at)}</span>`).join('')}
+            </div>`;
+        }
+
+        // ==================== WATCHLIST: mendekati / lewat date_ship ====================
+        function renderWatchlist() {
+            const today = todayStr();
+            const wrap = document.getElementById('watchlist-wrap');
+
+            const list = CONTRACTS
+            .filter(c => c.date_ship && c.status !== 'done' && c.status !== 'cancelled')
+            .map(c => {
+                const total    = parseFloat(c.total_qty_meter) || 0;
+                const invoiced = parseFloat(c.total_qty_invoiced_meter) || 0;
+                const pct      = total > 0 ? Math.min(100, Math.round((invoiced/total)*100)) : 0;
+                    const diff     = dayDiff(c.date_ship, today); // negatif = sudah lewat
+                    return { ...c, pct, diff };
+                })
+                .filter(c => c.pct < 100 && c.diff <= 14) // lewat, atau <=14 hari lagi, dan belum full invoice
+                .sort((a,b) => a.diff - b.diff)
+                .slice(0, 8);
+
+                if (!list.length) {
+                    wrap.innerHTML = '<div class="empty-mini">🎉 Tidak ada contract yang mendekati atau lewat jadwal kirim.</div>';
+                    return;
+                }
+
+                wrap.innerHTML = list.map(c => {
+                    let dotColor, dayLabel, dayBg, dayColor;
+                    if (c.diff < 0) {
+                        dotColor = '#dc2626'; dayBg = '#fef2f2'; dayColor = '#dc2626';
+                        dayLabel = `Lewat ${Math.abs(c.diff)} hari`;
+                    } else if (c.diff <= 3) {
+                        dotColor = '#dc2626'; dayBg = '#fef2f2'; dayColor = '#dc2626';
+                        dayLabel = c.diff === 0 ? 'Hari ini' : `${c.diff} hari lagi`;
+                    } else {
+                        dotColor = '#c2410c'; dayBg = '#fff7ed'; dayColor = '#c2410c';
+                        dayLabel = `${c.diff} hari lagi`;
+                    }
+                    const progColor = c.pct === 0 ? '#94a3b8' : (c.pct < 100 ? '#ff6a13' : '#16a34a');
+
+                    return `
+                    <div class="watch-row">
+                    <div class="watch-left">
+                    <span class="watch-dot" style="background:${dotColor}"></span>
+                    <div style="min-width:0">
+                    <div class="watch-no">${esc(c.contract_no)}</div>
+                    <div class="watch-cust">${esc(c.customer_name || '—')} &middot; Ship: ${fmtDateShort(c.date_ship)}</div>
+                    </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:12px;flex-shrink:0">
+                    <div style="text-align:right">
+                    <div style="font-size:0.72rem;font-weight:800;color:${progColor}">${c.pct}% invoiced</div>
+                    <div class="watch-progress-track"><div class="watch-progress-fill" style="width:${c.pct}%;background:${progColor}"></div></div>
+                    </div>
+                    <span class="watch-days" style="background:${dayBg};color:${dayColor}">${dayLabel}</span>
+                    </div>
+                    </div>`;
+                }).join('');
+            }
+
+        // ==================== RECENT ACTIVITY ====================
+        function renderActivity() {
+            const wrap = document.getElementById('activity-wrap');
+            const items = [
+            ...CONTRACTS.map(c => ({ type: 'contract', date: c.created_at, no: c.contract_no, cust: c.customer_name, val: c.total, cur: c.currency, status: c.status })),
+            ...INVOICES.map(i => ({ type: 'invoice', date: i.created_at, no: i.invoice_no, cust: i.customer_name, val: i.total, cur: i.currency, status: i.status })),
+            ].filter(x => x.date)
+            .sort((a,b) => new Date(b.date) - new Date(a.date))
+            .slice(0, 7);
+
+            if (!items.length) {
+                wrap.innerHTML = '<div class="empty-mini">Belum ada aktivitas.</div>';
+                return;
+            }
+
+            const STATUS_COLOR = {
+                draft: { bg:'#f1f5f9', color:'#475569' }, confirmed: { bg:'#eff6ff', color:'#2563eb' },
+                finalized: { bg:'#eff6ff', color:'#2563eb' }, done: { bg:'#f0fdf4', color:'#16a34a' },
+                paid: { bg:'#f0fdf4', color:'#16a34a' }, cancelled: { bg:'#fef2f2', color:'#dc2626' },
+            };
+
+            wrap.innerHTML = items.map(x => {
+                const isContract = x.type === 'contract';
+                const s = STATUS_COLOR[x.status] || { bg:'#f1f5f9', color:'#64748b' };
+                return `
+                <div class="activity-row">
+                <div class="activity-icon" style="background:${isContract ? '#eff6ff' : '#f0fdf4'};color:${isContract ? '#2563eb' : '#16a34a'}">
+                <i class="ti ${isContract ? 'ti-file-invoice' : 'ti-receipt'}"></i>
+                </div>
+                <div class="activity-main">
+                <div class="activity-title">${esc(x.no)} <span class="badge-status" style="background:${s.bg};color:${s.color};margin-left:4px">${esc(x.status||'-')}</span></div>
+                <div class="activity-sub">${isContract ? 'Sales Contract' : 'Invoice'} &middot; ${esc(x.cust || '—')}</div>
+                </div>
+                <div class="activity-right">
+                <div class="activity-val">${fmtCur(x.val, x.cur)}</div>
+                <div class="activity-date">${fmtDateShort(x.date)}</div>
+                </div>
+                </div>`;
+            }).join('');
+        }
+
+        // ==================== TO-DO / PERLU DITINDAKLANJUTI ====================
+        function renderTodo() {
+            const wrap = document.getElementById('todo-wrap');
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const sevenDaysAgoStr = sevenDaysAgo.toISOString().slice(0,10);
+
+            const draftContracts = CONTRACTS.filter(c => c.status === 'draft').length;
+            const draftInvoices  = INVOICES.filter(i => i.status === 'draft').length;
+            const newCustomers   = CUSTOMERS.filter(c => c.created_at && c.created_at.slice(0,10) >= sevenDaysAgoStr).length;
+            const updatedProducts = PRODUCTS.filter(p => p.updated_at && p.updated_at.slice(0,10) >= sevenDaysAgoStr).length;
+
+            const rows = [
+            { icon: 'ti-file-dots', label: 'Sales Contract berstatus Draft', count: draftContracts, href: '/sales/sales-contract' },
+            { icon: 'ti-receipt-off', label: 'Invoice berstatus Draft', count: draftInvoices, href: '/sales/invoices' },
+            { icon: 'ti-user-plus', label: 'Customer baru (7 hari terakhir)', count: newCustomers, href: '/master-data/customers' },
+            { icon: 'ti-shirt', label: 'Product diperbarui (7 hari terakhir)', count: updatedProducts, href: '/master-data/products' },
+            ];
+
+            wrap.innerHTML = rows.map(r => `
+                <a href="${r.href}" style="text-decoration:none;color:inherit;display:block">
+                <div class="todo-item">
+                <span class="todo-label"><i class="ti ${r.icon}"></i> ${r.label}</span>
+                <span class="todo-count ${r.count === 0 ? 'zero' : ''}">${r.count}</span>
+                </div>
+                </a>
+                `).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAll);
+    </script>
 </body>
 </html>
