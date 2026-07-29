@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice Sample - Print</title>
+    <style>
+        * { margin:0;padding:0;box-sizing:border-box }
+        body { font-family: Arial, sans-serif; font-size: 10pt; background:#e5e7eb; color:#000 }
+        .page-wrapper { display:flex;flex-direction:column;align-items:center;padding:24px 16px 40px;min-height:100vh }
+        .action-bar { display:flex;gap:10px;margin-bottom:18px }
+        .btn { padding:9px 22px;border:none;border-radius:8px;font-size:0.88rem;font-weight:700;cursor:pointer;font-family:Arial,sans-serif }
+        .btn-primary { background:#4f46e5;color:#fff }
+        .btn-secondary { background:#fff;color:#374151;border:1px solid #d1d5db }
+        .page { width:210mm;min-height:297mm;background:#fff;padding:13mm 15mm;box-shadow:0 4px 32px rgba(0,0,0,0.13) }
+        .co-header { display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:8px;border-bottom:2.5px solid #000;margin-bottom:10px }
+        .co-name { font-size:14pt;font-weight:900;letter-spacing:0.5px;margin-bottom:3px }
+        .co-addr { font-size:7.5pt;color:#333;line-height:1.55 }
+        .inv-title { font-size:16pt;font-weight:900;letter-spacing:2px;text-transform:uppercase;padding-top:4px }
+        .info-tbl-wrap { display:grid;grid-template-columns:1fr 1fr;gap:0 24px;margin:10px 0 12px }
+        .info-tbl { width:100%;border-collapse:collapse;font-size:8.3pt }
+        .info-tbl td { padding:2.5px 4px;vertical-align:top }
+        .info-tbl td.lbl { font-weight:700;white-space:nowrap;width:120px }
+        .info-tbl td.col { width:10px }
+        .tbl { width:100%;border-collapse:collapse;margin-bottom:8px;font-size:8pt }
+        .tbl th { background:#ebebeb;border:1px solid #aaa;padding:5px 6px;text-align:center;font-weight:700;font-size:7.5pt;text-transform:uppercase }
+        .tbl td { border:1px solid #bbb;padding:5px 7px;vertical-align:middle }
+        .tbl td.c { text-align:center }
+        .tbl td.r { text-align:right }
+        .tbl tbody tr:nth-child(even) { background:#fafafa }
+        .summary-wrap { display:flex;justify-content:flex-end;margin-bottom:10px }
+        .summary-tbl { border-collapse:collapse;font-size:9pt;min-width:280px }
+        .summary-tbl td { padding:4px 8px }
+        .summary-tbl td.lbl { font-weight:900;text-align:left }
+        .summary-tbl td.val { text-align:right;font-weight:900;border-top:1.5px solid #000;padding-top:6px;font-size:10pt }
+        .sig-row { display:flex;justify-content:flex-end;margin-top:34px;font-size:8.5pt }
+        .sig-box { width:46%;text-align:center }
+        .sig-line { border-bottom:1px solid #000;margin:44px 0 4px }
+        .sig-name { font-weight:700 }
+        @media print {
+            body { background:#fff }
+            .page-wrapper { padding:0 }
+            .action-bar { display:none }
+            .page { width:100%;min-height:100%;padding:10mm 14mm;box-shadow:none }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="window.history.back()">← Kembali</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+        </div>
+
+        <div class="page">
+            <div class="co-header">
+                <div>
+                    <div class="co-name">PT URASE PRIMA</div>
+                    <div class="co-addr">
+                        Desa Cibinong, Ubrug - Jatiluhur, Purwakarta 41152, Jawa Barat - Indonesia<br>
+                        Phone: +62 264 822 4018 &nbsp;&nbsp; Email: sales@uraseprima.com
+                    </div>
+                </div>
+                <div class="inv-title">INVOICE SAMPLE</div>
+            </div>
+
+            <div class="info-tbl-wrap">
+                <table class="info-tbl">
+                    <tr><td class="lbl">No Invoice Sample</td><td class="col">:</td><td id="v-no">—</td></tr>
+                    <tr><td class="lbl">Reff No</td><td class="col">:</td><td id="v-reff">—</td></tr>
+                    <tr><td class="lbl">Messrs</td><td class="col">:</td><td id="v-messrs">—</td></tr>
+                    <tr><td class="lbl">Attn</td><td class="col">:</td><td id="v-attn">—</td></tr>
+                    <tr><td class="lbl">Date</td><td class="col">:</td><td id="v-date">—</td></tr>
+                </table>
+                <table class="info-tbl">
+                    <tr><td class="lbl">Delivery Date</td><td class="col">:</td><td id="v-delivery-date">—</td></tr>
+                    <tr><td class="lbl">Courier</td><td class="col">:</td><td id="v-courier">—</td></tr>
+                    <tr><td class="lbl">Receipt Number</td><td class="col">:</td><td id="v-receipt">—</td></tr>
+                    <tr><td class="lbl">Delivery Note No</td><td class="col">:</td><td id="v-delivery-note">—</td></tr>
+                    <tr><td class="lbl">Kurs</td><td class="col">:</td><td id="v-kurs">—</td></tr>
+                </table>
+            </div>
+
+            <table class="tbl">
+                <thead>
+                    <tr>
+                        <th style="width:44%">Description</th>
+                        <th style="width:16%">Quantity</th>
+                        <th style="width:20%" id="th-price">Unit Price</th>
+                        <th style="width:20%">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="items-tbody">
+                    <tr><td colspan="4" style="text-align:center;padding:18px;color:#999">Memuat data...</td></tr>
+                </tbody>
+            </table>
+
+            <div class="summary-wrap">
+                <table class="summary-tbl">
+                    <tr><td class="lbl">TOTAL</td><td class="val" id="s-total">—</td></tr>
+                </table>
+            </div>
+
+            <div class="sig-row">
+                <div class="sig-box">
+                    <div>Your Faithfully,</div>
+                    <div class="sig-line"></div>
+                    <div class="sig-name">PT URASE PRIMA</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const isId = new URLSearchParams(window.location.search).get('id');
+        if (!isId) window.location.href = '/finance/invoice-sample';
+
+        const MO_L = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        function dateLong(s) { if(!s) return '—'; const p=s.slice(0,10).split('-'); return `${MO_L[parseInt(p[1])-1]} ${parseInt(p[2])}, ${p[0]}`; }
+        function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function fmtID(v,d=2) { return parseFloat(v||0).toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+        function formatCur(val, cur, decimals) {
+            const n = parseFloat(val) || 0;
+            return cur === 'IDR'
+            ? 'IDR ' + n.toLocaleString('id-ID', { minimumFractionDigits: decimals ?? 0, maximumFractionDigits: decimals ?? 0 })
+            : 'USD ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        }
+
+        async function load() {
+            try {
+                const [d, items] = await Promise.all([
+                    fetch('/api/invoice-samples/' + isId).then(r => r.json()),
+                    fetch('/api/invoice-sample-details/by-invoice-sample/' + isId).then(r => r.json()),
+                    ]);
+                const cur = d.currency || 'USD';
+                document.title = 'Invoice Sample - ' + (d.invoice_sample_no || isId);
+
+                document.getElementById('v-no').textContent = d.invoice_sample_no || '—';
+                document.getElementById('v-reff').textContent = d.reff_no || '—';
+                document.getElementById('v-messrs').innerHTML = (d.customer_address ? esc(d.customer_name) + '<br>' + esc(d.customer_address).replace(/\n/g,'<br>') : esc(d.customer_name || '—'));
+                document.getElementById('v-attn').textContent = d.attn || '—';
+                document.getElementById('v-date').textContent = dateLong(d.invoice_date);
+                document.getElementById('v-delivery-date').textContent = dateLong(d.delivery_date);
+                document.getElementById('v-courier').textContent = d.courier || '—';
+                document.getElementById('v-receipt').textContent = d.receipt_number || '—';
+                document.getElementById('v-delivery-note').textContent = d.delivery_note_number || '—';
+                document.getElementById('v-kurs').textContent = d.sell_rate ? 'Rp ' + fmtID(d.sell_rate, 2) : '—';
+                document.getElementById('th-price').textContent = 'Unit Price (' + cur + ')';
+
+                const tbody = document.getElementById('items-tbody');
+                if (!items || !items.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:18px;color:#999">Tidak ada item.</td></tr>';
+                } else {
+                    tbody.innerHTML = items.map(it => {
+                        const qty = parseFloat(it.qty) || 0;
+                        const price = qty > 0 ? (parseFloat(it.stotal) || 0) / qty : 0;
+                        return `<tr>
+                        <td>${esc(it.description)}</td>
+                        <td class="c">${fmtID(qty)} ${esc(it.unit === 'Yard' ? 'YDS' : 'MTRS')}</td>
+                        <td class="r">${formatCur(price, cur)}</td>
+                        <td class="r" style="font-weight:700">${formatCur(it.stotal, cur)}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                const total = (items || []).reduce((s, it) => s + (parseFloat(it.stotal) || 0), 0);
+                document.getElementById('s-total').textContent = formatCur(total, cur);
+            } catch(e) {
+                console.error(e);
+                document.getElementById('items-tbody').innerHTML = '<tr><td colspan="4" style="text-align:center;color:red;padding:18px">Gagal memuat: ' + e.message + '</td></tr>';
+            }
+        }
+        load();
+    </script>
+</body>
+</html>

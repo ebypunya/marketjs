@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Invoice Sample - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title { font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin:24px 0 14px;padding-bottom:8px;border-bottom:2px solid var(--primary-light);display:flex;align-items:center;gap:8px }
+        .fg { display:flex;flex-direction:column }
+        .fl { font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px }
+        .fi { padding:10px 13px;border:1px solid var(--border-color);border-radius:9px;font-size:0.88rem;font-family:inherit;color:var(--text-main);background:var(--bg-main);outline:none;width:100%;box-sizing:border-box }
+        .fi:focus { border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,0.08) }
+        .grid2 { display:grid;grid-template-columns:1fr 1fr;gap:14px }
+        .grid3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+        <div class="bento-item" style="width:100%;box-sizing:border-box">
+            <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:0.88rem;font-weight:600"></div>
+
+            <div class="section-title"><i class="ti ti-file-invoice"></i> Identitas Invoice Sample</div>
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg"><label class="fl">No Invoice Sample <span style="color:#ef4444">*</span></label><input type="text" id="f-no" class="fi" placeholder="Memuat..."></div>
+                <div class="fg"><label class="fl">Reff No</label><input type="text" id="f-reff" class="fi" placeholder="No referensi (opsional)"></div>
+            </div>
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Messrs (Customer) <span style="color:#ef4444">*</span></label>
+                    <select id="f-customer" class="fi"><option value="">-- Pilih Customer --</option></select>
+                </div>
+                <div class="fg"><label class="fl">Attn</label><input type="text" id="f-attn" class="fi" placeholder="Nama penerima / attention"></div>
+            </div>
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg"><label class="fl">Date <span style="color:#ef4444">*</span></label><input type="date" id="f-date" class="fi"></div>
+                <div class="fg">
+                    <label class="fl">Unit Default Item</label>
+                    <select id="f-unit" class="fi"><option value="Meter">Meter</option><option value="Yard">Yard</option></select>
+                </div>
+            </div>
+
+            <div class="section-title"><i class="ti ti-currency-dollar"></i> Mata Uang & Kurs</div>
+            <div class="grid2" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Currency <span style="color:#ef4444">*</span></label>
+                    <select id="f-currency" class="fi"><option value="USD">USD (Dollar)</option><option value="IDR">IDR (Rupiah)</option></select>
+                </div>
+                <div class="fg">
+                    <label class="fl">Rate (Kurs) <span style="color:#ef4444">*</span></label>
+                    <select id="f-rate" class="fi"><option value="">-- Pilih Kurs --</option></select>
+                </div>
+            </div>
+
+            <div class="section-title"><i class="ti ti-ship"></i> Info Pengiriman</div>
+            <div class="grid3" style="margin-bottom:14px">
+                <div class="fg"><label class="fl">Delivery Date</label><input type="date" id="f-delivery_date" class="fi"></div>
+                <div class="fg"><label class="fl">Courier</label><input type="text" id="f-courier" class="fi" placeholder="Nama kurir/ekspedisi"></div>
+                <div class="fg"><label class="fl">Receipt Number</label><input type="text" id="f-receipt" class="fi" placeholder="No resi"></div>
+            </div>
+            <div class="fg" style="margin-bottom:28px">
+                <label class="fl">Delivery Note Number</label>
+                <input type="text" id="f-delivery_note" class="fi" placeholder="No surat jalan (opsional)">
+            </div>
+
+            <div style="display:flex;gap:10px">
+                <a href="/finance/invoice-sample" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit"><i class="ti ti-arrow-left"></i> Batal</a>
+                <button onclick="submitForm()" id="btn-submit" style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit"><i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Item</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/sidebar.js"></script>
+    <script src="/assets/js/layout.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const now = new Date();
+            document.getElementById('f-date').value = now.toISOString().slice(0,10);
+            await Promise.all([loadCustomers(), loadRates(), loadNextNo()]);
+        });
+
+        async function loadCustomers() {
+            try {
+                const data = await fetch('/api/customers').then(r => r.json());
+                const sel = document.getElementById('f-customer');
+                data.forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.name; sel.appendChild(o); });
+            } catch(e) { console.error('Gagal load customers', e); }
+        }
+
+        async function loadRates() {
+            try {
+                const data = await fetch('/api/rates').then(r => r.json());
+                const sel = document.getElementById('f-rate');
+                data.forEach(r => {
+                    const o = document.createElement('option');
+                    o.value = r.id;
+                    const d = new Date(r.created_at);
+                    const dateLbl = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+                    o.textContent = dateLbl + ' — Sell: Rp ' + Number(r.sell_rate).toLocaleString('id-ID');
+                    sel.appendChild(o);
+                });
+            } catch(e) { console.error('Gagal load rates', e); }
+        }
+
+        async function loadNextNo() {
+            try {
+                const data = await fetch('/api/invoice-samples/next-no').then(r => r.json());
+                document.getElementById('f-no').value = data.next_no || '';
+            } catch(e) { document.getElementById('f-no').placeholder = 'Masukkan no invoice sample'; }
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alert-box');
+            box.style.display = 'block';
+            box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+            box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+            box.textContent = msg;
+            box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        function gv(id) { return document.getElementById(id).value.trim(); }
+
+        function submitForm() {
+            if (!gv('f-no')) { showAlert('❌ No Invoice Sample wajib diisi.', 'error'); return; }
+            if (!gv('f-customer')) { showAlert('❌ Customer (Messrs) wajib dipilih.', 'error'); return; }
+            if (!gv('f-date')) { showAlert('❌ Date wajib diisi.', 'error'); return; }
+            if (!gv('f-rate')) { showAlert('❌ Rate (Kurs) wajib dipilih.', 'error'); return; }
+
+            const payload = {
+                invoice_sample_no: gv('f-no'),
+                reff_no: gv('f-reff') || null,
+                customer_id: parseInt(gv('f-customer')),
+                attn: gv('f-attn') || null,
+                invoice_date: gv('f-date'),
+                unit: gv('f-unit'),
+                currency: gv('f-currency'),
+                rate_id: parseInt(gv('f-rate')),
+                delivery_date: gv('f-delivery_date') || null,
+                courier: gv('f-courier') || null,
+                receipt_number: gv('f-receipt') || null,
+                delivery_note_number: gv('f-delivery_note') || null,
+            };
+
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+            fetch('/api/invoice-samples', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('✅ Invoice sample berhasil dibuat! Mengalihkan...', 'success');
+                    setTimeout(() => { window.location.href = '/finance/invoice-sample/detail?id=' + data.id; }, 1000);
+                } else {
+                    showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                    btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Item';
+                }
+            })
+            .catch(err => {
+                showAlert('❌ Kesalahan server: ' + err.message, 'error');
+                btn.disabled = false; btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Item';
+            });
+        }
+    </script>
+</body>
+</html>

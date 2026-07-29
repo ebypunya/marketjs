@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Invoice Sample - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title { font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin:0 0 14px;padding-bottom:8px;border-bottom:2px solid var(--primary-light);display:flex;align-items:center;gap:8px }
+        .info-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:12px }
+        .info-card { background:var(--bg-main);border:1px solid var(--border-color);border-radius:10px;padding:12px 16px }
+        .info-card .lbl { font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px }
+        .info-card .val { font-size:0.9rem;font-weight:700;color:var(--text-main) }
+        .fg { display:flex;flex-direction:column }
+        .fl { font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px }
+        .fi { padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.88rem;font-family:inherit;color:var(--text-main);background:#fff;outline:none;width:100%;box-sizing:border-box }
+        .fi:focus { border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.08) }
+        .fi:disabled { background:#f8fafc;color:var(--primary);font-weight:700 }
+        .detail-table { width:100%;border-collapse:collapse;font-size:0.85rem }
+        .detail-table th { background:var(--bg-main);padding:10px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border-color) }
+        .detail-table td { padding:10px 12px;border-bottom:1px solid var(--border-color) }
+        .btn-add { padding:9px 20px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px }
+        .btn-del { padding:5px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit }
+        .total-box { background:linear-gradient(135deg,var(--primary) 0%,#6366f1 100%);color:white;border-radius:14px;padding:20px 28px;display:flex;justify-content:space-between;align-items:center }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-file-description"></i> Info Invoice Sample</div>
+            <div class="info-grid">
+                <div class="info-card"><div class="lbl">No Invoice Sample</div><div class="val" id="ic-no">—</div></div>
+                <div class="info-card"><div class="lbl">Reff No</div><div class="val" id="ic-reff">—</div></div>
+                <div class="info-card"><div class="lbl">Messrs</div><div class="val" id="ic-customer">—</div></div>
+                <div class="info-card"><div class="lbl">Attn</div><div class="val" id="ic-attn">—</div></div>
+                <div class="info-card"><div class="lbl">Currency</div><div class="val" id="ic-currency">—</div></div>
+                <div class="info-card"><div class="lbl">Kurs (Sell Rate)</div><div class="val" id="ic-rate">—</div></div>
+                <div class="info-card"><div class="lbl">Date</div><div class="val" id="ic-date">—</div></div>
+                <div class="info-card"><div class="lbl">Delivery Date</div><div class="val" id="ic-delivery">—</div></div>
+            </div>
+        </div>
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-plus"></i> Tambah Item</div>
+            <div id="alert-form" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;font-weight:600"></div>
+
+            <div style="display:grid;grid-template-columns:3fr 1fr 1fr;gap:12px;margin-bottom:12px">
+                <div class="fg"><label class="fl">Description <span style="color:#ef4444">*</span></label><input type="text" id="f-desc" class="fi" placeholder="Deskripsi barang / item"></div>
+                <div class="fg"><label class="fl">Qty <span style="color:#ef4444">*</span></label><input type="number" id="f-qty" class="fi" placeholder="0" step="0.01" min="0" oninput="calcSubtotal()"></div>
+                <div class="fg">
+                    <label class="fl">Unit</label>
+                    <select id="f-item-unit" class="fi"><option value="Meter">Meter</option><option value="Yard">Yard</option></select>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.5fr 1.5fr auto;gap:12px;align-items:end">
+                <div class="fg"><label class="fl">Price (USD) <span style="color:#ef4444">*</span></label><input type="number" id="f-price" class="fi" placeholder="0.0000" step="0.0001" min="0" oninput="calcSubtotal()"></div>
+                <div class="fg"><label class="fl" id="lbl-subtotal">Subtotal</label><input type="text" id="f-stotal" class="fi" disabled placeholder="—"></div>
+                <button class="btn-add" onclick="addItem()"><i class="ti ti-plus"></i> Tambah</button>
+            </div>
+            <div id="price-info" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:0.82rem;color:#1e40af;margin-top:10px"></div>
+        </div>
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-list-details"></i> Daftar Item</div>
+            <div style="overflow-x:auto">
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th>#</th><th>DESCRIPTION</th><th>QTY</th><th>UNIT</th>
+                            <th style="text-align:right">PRICE (USD)</th>
+                            <th style="text-align:right" id="th-stotal">SUBTOTAL</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="detail-tbody">
+                        <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding:20px 0 4px">
+                <div class="total-box">
+                    <div>
+                        <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL INVOICE SAMPLE</div>
+                        <div id="total-display" style="font-size:2rem;font-weight:800;letter-spacing:-1px">—</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL ITEM</div>
+                        <div id="total-items" style="font-size:1.5rem;font-weight:800">0 item</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+            <a href="/finance/invoice-sample" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit"><i class="ti ti-arrow-left"></i> Kembali</a>
+            <a id="btn-print" href="#" target="_blank" style="padding:11px 24px;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;text-decoration:none;color:#fff;background:#16a34a;font-family:inherit;display:inline-flex;align-items:center;gap:6px"><i class="ti ti-printer"></i> Print</a>
+        </div>
+    </div>
+
+    <div id="del-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
+        <div style="background:#fff;border-radius:16px;padding:28px;max-width:340px;width:90%;text-align:center">
+            <div style="font-size:40px;margin-bottom:8px">🗑️</div>
+            <h3 style="margin:0 0 8px;color:#0f172a;font-size:1rem">Hapus item ini?</h3>
+            <div style="display:flex;gap:8px;justify-content:center">
+                <button onclick="closeDelModal()" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
+                <button onclick="confirmDel()" style="padding:9px 20px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/sidebar.js"></script>
+    <script src="/assets/js/layout.js"></script>
+    <script>
+        const isId = new URLSearchParams(window.location.search).get('id');
+        if (!isId) window.location.href = '/finance/invoice-sample';
+
+        let invoiceSample = null, details = [], delId = null;
+        const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('btn-print').href = '/finance/invoice-sample/print?id=' + isId;
+            await loadInvoiceSample();
+            await loadDetails();
+        });
+
+        async function loadInvoiceSample() {
+            try {
+                invoiceSample = await fetch('/api/invoice-samples/' + isId).then(r => r.json());
+                renderInfo();
+            } catch(e) { showAlert('Gagal memuat data.', 'error'); }
+        }
+
+        function renderInfo() {
+            const d = invoiceSample;
+            document.getElementById('ic-no').textContent = d.invoice_sample_no || '—';
+            document.getElementById('ic-reff').textContent = d.reff_no || '—';
+            document.getElementById('ic-customer').textContent = d.customer_name || '—';
+            document.getElementById('ic-attn').textContent = d.attn || '—';
+            document.getElementById('ic-currency').textContent = d.currency || 'USD';
+            document.getElementById('ic-rate').textContent = d.sell_rate ? 'Rp ' + Number(d.sell_rate).toLocaleString('id-ID') : '—';
+            document.getElementById('ic-date').textContent = fmtDate(d.invoice_date);
+            document.getElementById('ic-delivery').textContent = fmtDate(d.delivery_date);
+            document.getElementById('f-item-unit').value = d.unit || 'Meter';
+            document.getElementById('th-stotal').textContent = 'SUBTOTAL (' + (d.currency || 'USD') + ')';
+            document.getElementById('lbl-subtotal').textContent = 'Subtotal (' + (d.currency || 'USD') + ')';
+        }
+
+        function fmtDate(str) {
+            if (!str) return '—';
+            const s = str.slice(0,10).split('-');
+            return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
+        }
+
+        function calcSubtotal() {
+            if (!invoiceSample) return;
+            const cur = invoiceSample.currency || 'USD';
+            const sellRate = parseFloat(invoiceSample.sell_rate) || 1;
+            const qty = parseFloat(document.getElementById('f-qty').value) || 0;
+            const priceUSD = parseFloat(document.getElementById('f-price').value) || 0;
+            const priceInCur = cur === 'IDR' ? priceUSD * sellRate : priceUSD;
+            const subtotal = qty * priceInCur;
+
+            document.getElementById('f-stotal').value = (subtotal > 0 || qty > 0) ? formatCur(subtotal, cur) : '—';
+
+            const info = document.getElementById('price-info');
+            if (priceUSD > 0 && cur === 'IDR') {
+                info.style.display = '';
+                info.innerHTML = `<i class="ti ti-arrows-exchange" style="margin-right:4px"></i> Price: <b>$ ${priceUSD.toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4})}</b> &times; Kurs <b>Rp ${sellRate.toLocaleString('id-ID')}</b> = <b>${formatCur(priceInCur,'IDR')}</b> per unit`;
+            } else {
+                info.style.display = 'none';
+            }
+            return { priceInCur, subtotal };
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alert-form');
+            box.style.display = 'block';
+            box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+            box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+            box.textContent = msg;
+            if (type === 'success') setTimeout(() => box.style.display='none', 3000);
+        }
+        function gv(id) { return document.getElementById(id).value.trim(); }
+
+        async function addItem() {
+            const desc = gv('f-desc');
+            const qty = parseFloat(gv('f-qty'));
+            const priceUSD = parseFloat(gv('f-price'));
+            if (!desc) { showAlert('❌ Description wajib diisi.', 'error'); return; }
+            if (!qty || qty <= 0) { showAlert('❌ Qty harus lebih dari 0.', 'error'); return; }
+            if (!priceUSD || priceUSD <= 0) { showAlert('❌ Price harus lebih dari 0.', 'error'); return; }
+
+            const cur = invoiceSample.currency || 'USD';
+            const sellRate = parseFloat(invoiceSample.sell_rate) || 1;
+            const priceInCur = cur === 'IDR' ? priceUSD * sellRate : priceUSD;
+            const stotal = qty * priceInCur;
+
+            const payload = {
+                invoice_sample_id: parseInt(isId),
+                description: desc,
+                qty,
+                unit: gv('f-item-unit'),
+                price_usd: priceUSD,
+                stotal,
+            };
+
+            try {
+                const data = await fetch('/api/invoice-sample-details', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r => r.json());
+                if (data.success) {
+                    showAlert('✅ Item berhasil ditambahkan.', 'success');
+                    document.getElementById('f-desc').value = '';
+                    document.getElementById('f-qty').value = '';
+                    document.getElementById('f-price').value = '';
+                    document.getElementById('f-stotal').value = '';
+                    document.getElementById('price-info').style.display = 'none';
+                    await loadDetails();
+                } else {
+                    showAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
+                }
+            } catch(e) { showAlert('❌ Kesalahan server: ' + e.message, 'error'); }
+        }
+
+        async function loadDetails() {
+            try {
+                details = await fetch('/api/invoice-sample-details/by-invoice-sample/' + isId).then(r => r.json());
+                renderDetails();
+                updateTotal();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderDetails() {
+            const tbody = document.getElementById('detail-tbody');
+            const cur = invoiceSample?.currency || 'USD';
+            if (!details.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada item.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = details.map((d, i) => `
+                <tr>
+                <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
+                <td style="font-weight:600">${esc(d.description)}</td>
+                <td>${fmtNum(d.qty)}</td>
+                <td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:20px;font-size:0.75rem;font-weight:700">${esc(d.unit)}</span></td>
+                <td style="text-align:right">$ ${fmtUS(d.price_usd)}</td>
+                <td style="text-align:right;font-weight:700;color:#2563eb">${formatCur(d.stotal, cur)}</td>
+                <td><button class="btn-del" onclick="openDelModal(${d.id})"><i class="ti ti-trash" style="font-size:12px"></i></button></td>
+                </tr>`).join('');
+        }
+
+        function updateTotal() {
+            const cur = invoiceSample?.currency || 'USD';
+            const total = details.reduce((s,d) => s + (parseFloat(d.stotal)||0), 0);
+            document.getElementById('total-display').textContent = total > 0 ? formatCur(total, cur) : '—';
+            document.getElementById('total-items').textContent = details.length + ' item';
+        }
+
+        function openDelModal(id) { delId = id; document.getElementById('del-modal').style.display = 'flex'; }
+        function closeDelModal() { delId = null; document.getElementById('del-modal').style.display = 'none'; }
+        async function confirmDel() {
+            try {
+                const data = await fetch('/api/invoice-sample-details/' + delId, { method: 'DELETE' }).then(r => r.json());
+                if (data.success) { closeDelModal(); await loadDetails(); } else alert('Gagal hapus: ' + (data.error || 'Unknown error'));
+            } catch(e) { alert('Kesalahan server: ' + e.message); }
+        }
+
+        function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function fmtNum(v) { return parseFloat(v||0).toLocaleString('id-ID',{maximumFractionDigits:2}); }
+        function fmtUS(v) { return parseFloat(v||0).toLocaleString('en-US',{minimumFractionDigits:4,maximumFractionDigits:4}); }
+        function formatCur(val, cur) {
+            const n = parseFloat(val)||0;
+            return cur === 'IDR' ? 'Rp ' + n.toLocaleString('id-ID',{maximumFractionDigits:0}) : '$ ' + n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
+        }
+    </script>
+</body>
+</html>

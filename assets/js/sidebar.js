@@ -13,6 +13,10 @@ function getPageMeta() {
         '/master-data/kurs/tambah':        { title: 'Tambah Kurs',         sub: 'Input kurs baru.' },
         '/master-data/kurs/edit':          { title: 'Edit Kurs',           sub: 'Ubah data kurs.' },
         '/sales/sales-contract': { title: 'Sales Contract', sub: 'Daftar seluruh sales contract.' },
+        '/finance/invoice-sample':          { title: 'Invoice Sample',        sub: 'Daftar seluruh invoice sample.' },
+        '/finance/invoice-sample/tambah':   { title: 'Tambah Invoice Sample', sub: 'Buat invoice sample baru.' },
+        '/finance/invoice-sample/edit':     { title: 'Edit Invoice Sample',   sub: 'Ubah data invoice sample.' },
+        '/finance/invoice-sample/detail':   { title: 'Detail Invoice Sample', sub: 'Kelola item invoice sample.' },
 
         // ===== GUDANG (BARU) =====
         '/gudang/sparepart': { title: 'Gudang Sparepart', sub: 'Stok dan data sparepart mesin/kendaraan.' },
