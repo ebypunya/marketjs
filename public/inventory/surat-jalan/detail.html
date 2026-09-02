@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detail Surat Jalan - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title { font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--primary);margin:0 0 14px;padding-bottom:8px;border-bottom:2px solid var(--primary-light);display:flex;align-items:center;gap:8px }
+        .info-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:12px }
+        .info-card { background:var(--bg-main);border:1px solid var(--border-color);border-radius:10px;padding:12px 16px }
+        .info-card .lbl { font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px }
+        .info-card .val { font-size:0.9rem;font-weight:700;color:var(--text-main) }
+        .fg { display:flex;flex-direction:column }
+        .fl { font-size:0.75rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px }
+        .fi { padding:9px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.88rem;font-family:inherit;color:var(--text-main);background:#fff;outline:none;width:100%;box-sizing:border-box }
+        .fi:focus { border-color:var(--primary);box-shadow:0 0 0 3px rgba(79,70,229,.08) }
+        .detail-table { width:100%;border-collapse:collapse;font-size:0.85rem }
+        .detail-table th { background:var(--bg-main);padding:10px 12px;text-align:left;font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border-color) }
+        .detail-table td { padding:10px 12px;border-bottom:1px solid var(--border-color) }
+        .btn-add { padding:9px 20px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px }
+        .btn-del { padding:5px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:6px;font-size:0.78rem;font-weight:600;cursor:pointer;font-family:inherit }
+        .total-box { background:linear-gradient(135deg,var(--primary) 0%,#6366f1 100%);color:white;border-radius:14px;padding:20px 28px;display:flex;justify-content:space-between;align-items:center }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-file-description"></i> Info Surat Jalan</div>
+            <div class="info-grid">
+                <div class="info-card"><div class="lbl">No Surat Jalan</div><div class="val" id="ic-no">—</div></div>
+                <div class="info-card"><div class="lbl">Jenis</div><div class="val" id="ic-jenis">—</div></div>
+                <div class="info-card"><div class="lbl">Buyer</div><div class="val" id="ic-buyer">—</div></div>
+                <div class="info-card"><div class="lbl">Tanggal</div><div class="val" id="ic-tanggal">—</div></div>
+                <div class="info-card"><div class="lbl">Contract No</div><div class="val" id="ic-contract">—</div></div>
+                <div class="info-card"><div class="lbl">Faktur No</div><div class="val" id="ic-faktur">—</div></div>
+                <div class="info-card"><div class="lbl">Tujuan</div><div class="val" id="ic-tujuan">—</div></div>
+                <div class="info-card"><div class="lbl">Destinasi</div><div class="val" id="ic-destinasi">—</div></div>
+            </div>
+        </div>
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-plus"></i> Tambah Barang</div>
+            <div id="alert-form" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:0.85rem;font-weight:600"></div>
+
+            <div style="display:grid;grid-template-columns:3fr 1fr 1fr;gap:12px;margin-bottom:12px">
+                <div class="fg"><label class="fl">Deskripsi <span style="color:#ef4444">*</span></label><input type="text" id="f-deskripsi" class="fi" placeholder="Deskripsi barang / kain"></div>
+                <div class="fg"><label class="fl">Jumlah (Roll/Bal/dll)</label><input type="text" id="f-jumlah" class="fi" placeholder="Contoh: 5"></div>
+                <div class="fg"><label class="fl">Qty</label><input type="text" id="f-qty" class="fi" placeholder="Contoh: 500"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1.5fr 1.5fr auto;gap:12px;align-items:end">
+                <div class="fg">
+                    <label class="fl">Panjang <span style="color:#ef4444">*</span></label>
+                    <input type="number" id="f-panjang" class="fi" placeholder="0" step="0.01" min="0">
+                </div>
+                <div class="fg">
+                    <label class="fl">Satuan Panjang</label>
+                    <select id="f-sat_panjang" class="fi">
+                        <option value="Yard">Yard</option>
+                        <option value="Meter">Meter</option>
+                    </select>
+                </div>
+                <button class="btn-add" onclick="addItem()"><i class="ti ti-plus"></i> Tambah</button>
+            </div>
+        </div>
+
+        <div class="bento-item" style="margin-bottom:20px">
+            <div class="section-title"><i class="ti ti-list-details"></i> Daftar Barang</div>
+            <div style="overflow-x:auto">
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th>#</th><th>DESKRIPSI</th><th style="text-align:right">JUMLAH</th>
+                            <th style="text-align:right">QTY</th><th style="text-align:right">PANJANG</th><th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="detail-tbody">
+                        <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada barang.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="padding:20px 0 4px">
+                <div class="total-box">
+                    <div>
+                        <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL PANJANG</div>
+                        <div id="total-display" style="font-size:2rem;font-weight:800;letter-spacing:-1px">—</div>
+                    </div>
+                    <div style="text-align:right">
+                        <div style="font-size:0.72rem;font-weight:700;letter-spacing:1px;opacity:.8;margin-bottom:4px">TOTAL BARANG</div>
+                        <div id="total-items" style="font-size:1.5rem;font-weight:800">0 barang</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-bottom:20px">
+            <a href="/inventory/surat-jalan" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit"><i class="ti ti-arrow-left"></i> Kembali</a>
+            <a id="btn-edit" href="#" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--primary);background:var(--primary-light);font-family:inherit"><i class="ti ti-edit"></i> Edit Header</a>
+        </div>
+    </div>
+
+    <div id="del-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
+        <div style="background:#fff;border-radius:16px;padding:28px;max-width:340px;width:90%;text-align:center">
+            <div style="font-size:40px;margin-bottom:8px">🗑️</div>
+            <h3 style="margin:0 0 8px;color:#0f172a;font-size:1rem">Hapus barang ini?</h3>
+            <div style="display:flex;gap:8px;justify-content:center">
+                <button onclick="closeDelModal()" style="padding:9px 20px;border:1px solid var(--border-color);border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
+                <button onclick="confirmDel()" style="padding:9px 20px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/sidebar.js"></script>
+    <script src="/assets/js/layout.js"></script>
+    <script>
+        const sjId = new URLSearchParams(window.location.search).get('id');
+        if (!sjId) window.location.href = '/inventory/surat-jalan';
+
+        let suratJalan = null, details = [], delId = null;
+        const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('btn-edit').href = '/inventory/surat-jalan/edit?id=' + sjId;
+            await loadHeader();
+            await loadDetails();
+        });
+
+        async function loadHeader() {
+            try {
+                suratJalan = await fetch('/api/surat-jalan/' + sjId).then(r => r.json());
+                renderInfo();
+            } catch(e) { showAlert('Gagal memuat data.', 'error'); }
+        }
+
+        function renderInfo() {
+            const d = suratJalan;
+            document.getElementById('ic-no').textContent        = d.no_suratjalan || '—';
+            document.getElementById('ic-jenis').textContent     = d.jenis || '—';
+            document.getElementById('ic-buyer').textContent     = d.buyer || '—';
+            document.getElementById('ic-tanggal').textContent   = fmtDate(d.tanggal);
+            document.getElementById('ic-contract').textContent  = d.contract_no || '—';
+            document.getElementById('ic-faktur').textContent    = d.faktur_no || '—';
+            document.getElementById('ic-tujuan').textContent    = d.tujuan || '—';
+            document.getElementById('ic-destinasi').textContent = d.destinasi || '—';
+            document.getElementById('f-sat_panjang').value      = d.sat_panjang || 'Yard';
+        }
+
+        function fmtDate(str) {
+            if (!str) return '—';
+            const s = str.slice(0,10).split('-');
+            return `${s[2]} ${MONTHS[parseInt(s[1])-1]} ${s[0]}`;
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alert-form');
+            box.style.display = 'block';
+            box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+            box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+            box.textContent = msg;
+            if (type === 'success') setTimeout(() => box.style.display='none', 3000);
+        }
+        function gv(id) { return document.getElementById(id).value.trim(); }
+
+        async function addItem() {
+            const deskripsi = gv('f-deskripsi');
+            const panjang   = parseFloat(gv('f-panjang'));
+            if (!deskripsi) { showAlert('❌ Deskripsi wajib diisi.', 'error'); return; }
+            if (!panjang || panjang <= 0) { showAlert('❌ Panjang harus lebih dari 0.', 'error'); return; }
+
+            const payload = {
+                id_suratjalan: parseInt(sjId),
+                no_suratjalan: suratJalan.no_suratjalan,
+                deskripsi,
+                jumlah:      gv('f-jumlah') || null,
+                qty:         gv('f-qty') || null,
+                sat_panjang: gv('f-sat_panjang'),
+                panjang,
+            };
+
+            try {
+                const data = await fetch('/api/surat-jalan-details', {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                }).then(r => r.json());
+
+                if (data.success) {
+                    showAlert('✅ Barang berhasil ditambahkan.', 'success');
+                    document.getElementById('f-deskripsi').value = '';
+                    document.getElementById('f-jumlah').value    = '';
+                    document.getElementById('f-qty').value       = '';
+                    document.getElementById('f-panjang').value   = '';
+                    await loadDetails();
+                } else {
+                    showAlert('❌ ' + (data.error || 'Gagal menyimpan.'), 'error');
+                }
+            } catch(e) { showAlert('❌ Kesalahan server: ' + e.message, 'error'); }
+        }
+
+        async function loadDetails() {
+            try {
+                details = await fetch('/api/surat-jalan-details/by-surat-jalan/' + sjId).then(r => r.json());
+                renderDetails();
+                updateTotal();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderDetails() {
+            const tbody = document.getElementById('detail-tbody');
+            if (!details.length) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">Belum ada barang.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = details.map((d, i) => `
+                <tr>
+                <td style="color:var(--text-muted);font-size:0.8rem">${i+1}</td>
+                <td style="font-weight:600">${esc(d.deskripsi)}</td>
+                <td style="text-align:right">${esc(d.jumlah || '-')}</td>
+                <td style="text-align:right">${esc(d.qty || '-')}</td>
+                <td style="text-align:right;font-weight:700;color:#2563eb">${fmtNum(d.panjang)} ${esc(d.sat_panjang || '')}</td>
+                <td><button class="btn-del" onclick="openDelModal(${d.id_suratjalandetail})"><i class="ti ti-trash" style="font-size:12px"></i></button></td>
+                </tr>`).join('');
+        }
+
+        function updateTotal() {
+            const total = details.reduce((s,d) => s + (parseFloat(d.panjang)||0), 0);
+            const unit = details.length ? (details[0].sat_panjang || '') : '';
+            document.getElementById('total-display').textContent = total > 0 ? fmtNum(total) + ' ' + unit : '—';
+            document.getElementById('total-items').textContent = details.length + ' barang';
+        }
+
+        function openDelModal(id) { delId = id; document.getElementById('del-modal').style.display = 'flex'; }
+        function closeDelModal() { delId = null; document.getElementById('del-modal').style.display = 'none'; }
+        async function confirmDel() {
+            try {
+                const data = await fetch('/api/surat-jalan-details/' + delId, { method: 'DELETE' }).then(r => r.json());
+                if (data.success) { closeDelModal(); await loadDetails(); } else alert('Gagal hapus: ' + (data.error || 'Unknown error'));
+            } catch(e) { alert('Kesalahan server: ' + e.message); }
+        }
+
+        function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function fmtNum(v) { return parseFloat(v||0).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    </script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tambah Surat Jalan - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title {
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--primary); margin: 24px 0 14px; padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-light); display: flex; align-items: center; gap: 8px;
+        }
+        .fg { display: flex; flex-direction: column; }
+        .fl { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .fi {
+            padding: 10px 13px; border: 1px solid var(--border-color); border-radius: 9px;
+            font-size: 0.88rem; font-family: inherit; color: var(--text-main); background: var(--bg-main);
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; box-sizing: border-box;
+        }
+        .fi:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.08); }
+        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+        <div class="bento-item" style="width:100%;box-sizing:border-box">
+
+            <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:0.88rem;font-weight:600"></div>
+
+            <!-- LATEST NO INFO -->
+            <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap">
+                <div style="padding:8px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:0.82rem">
+                    <span style="color:#64748b;font-weight:600">Latest Surat Jalan Export</span>
+                    <span id="latest-export" style="color:#2563eb;font-weight:800;margin-left:8px">-</span>
+                </div>
+                <div style="padding:8px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:0.82rem">
+                    <span style="color:#64748b;font-weight:600">Latest Surat Jalan Lokal</span>
+                    <span id="latest-lokal" style="color:#16a34a;font-weight:800;margin-left:8px">-</span>
+                </div>
+                <div style="padding:8px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;font-size:0.82rem">
+                    <span style="color:#64748b;font-weight:600">Latest Surat Jalan Sample</span>
+                    <span id="latest-sample" style="color:#c2410c;font-weight:800;margin-left:8px">-</span>
+                </div>
+            </div>
+
+            <div class="section-title"><i class="ti ti-truck-delivery"></i> Input Surat Jalan</div>
+
+            <div class="grid3" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">No Surat Jalan <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="f-no_suratjalan" class="fi" placeholder="Contoh: LS26H003">
+                </div>
+                <div class="fg">
+                    <label class="fl">Contract No</label>
+                    <input type="text" id="f-contract_no" class="fi" placeholder="No. sales contract (opsional)">
+                </div>
+                <div class="fg">
+                    <label class="fl">Faktur No</label>
+                    <input type="text" id="f-faktur_no" class="fi" placeholder="No. faktur / invoice (opsional)">
+                </div>
+            </div>
+
+            <div class="grid3" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Buyer</label>
+                    <input type="text" id="f-buyer" class="fi" placeholder="Nama buyer">
+                </div>
+                <div class="fg">
+                    <label class="fl">Tujuan</label>
+                    <input type="text" id="f-tujuan" class="fi" placeholder="Tujuan pengiriman">
+                </div>
+                <div class="fg">
+                    <label class="fl">Destinasi</label>
+                    <input type="text" id="f-destinasi" class="fi" placeholder="Kota / negara tujuan">
+                </div>
+            </div>
+
+            <div class="grid3" style="margin-bottom:28px">
+                <div class="fg">
+                    <label class="fl">Tanggal <span style="color:#ef4444">*</span></label>
+                    <input type="date" id="f-tanggal" class="fi">
+                </div>
+                <div class="fg">
+                    <label class="fl">Jenis <span style="color:#ef4444">*</span></label>
+                    <select id="f-jenis" class="fi" onchange="highlightLatest()">
+                        <option value="">-- Pilih Jenis --</option>
+                        <option value="Export">Export</option>
+                        <option value="Lokal">Lokal</option>
+                        <option value="Sample">Sample</option>
+                    </select>
+                </div>
+                <div class="fg"></div>
+            </div>
+
+            <div class="grid3" style="margin-bottom:28px">
+                <div class="fg">
+                    <label class="fl">Satuan</label>
+                    <select id="f-satuan" class="fi">
+                        <option value="Roll">Roll</option>
+                        <option value="Bal">Bal</option>
+                        <option value="Karton">Karton</option>
+                        <option value="Pcs">Pcs</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label class="fl">Satuan Panjang</label>
+                    <select id="f-sat_panjang" class="fi">
+                        <option value="Yard">Yard</option>
+                        <option value="Meter">Meter</option>
+                    </select>
+                </div>
+                <div class="fg"></div>
+            </div>
+
+            <div style="display:flex;gap:10px">
+                <a href="/inventory/surat-jalan"
+                style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+                <i class="ti ti-arrow-left"></i> Batal
+            </a>
+            <button onclick="submitForm()" id="btn-submit"
+            style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+            <i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Barang
+        </button>
+    </div>
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    let latestData = {};
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const now = new Date();
+        document.getElementById('f-tanggal').value =
+        `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+        loadLatest();
+    });
+
+    async function loadLatest() {
+        try {
+            latestData = await fetch('/api/surat-jalan/latest').then(r => r.json());
+            document.getElementById('latest-export').textContent = latestData.export || '-';
+            document.getElementById('latest-lokal').textContent  = latestData.lokal  || '-';
+            document.getElementById('latest-sample').textContent = latestData.sample || '-';
+        } catch(e) { console.error('Gagal memuat nomor terakhir', e); }
+    }
+
+    function highlightLatest() {
+        // opsional: bisa dipakai untuk auto-suggest No Surat Jalan berikutnya sesuai jenis
+    }
+
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.style.display = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent = msg;
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function gv(id) { return document.getElementById(id).value.trim(); }
+
+    function submitForm() {
+        if (!gv('f-no_suratjalan')) { showAlert('❌ No Surat Jalan wajib diisi.', 'error'); return; }
+        if (!gv('f-tanggal'))       { showAlert('❌ Tanggal wajib diisi.', 'error'); return; }
+        if (!gv('f-jenis'))         { showAlert('❌ Jenis wajib dipilih.', 'error'); return; }
+
+        const payload = {
+            no_suratjalan: gv('f-no_suratjalan'),
+            contract_no:   gv('f-contract_no')  || null,
+            faktur_no:     gv('f-faktur_no')    || null,
+            buyer:         gv('f-buyer')        || null,
+            tujuan:        gv('f-tujuan')       || null,
+            destinasi:     gv('f-destinasi')    || null,
+            jenis:         gv('f-jenis'),
+            tanggal:       gv('f-tanggal'),
+            satuan:        gv('f-satuan'),
+            sat_panjang:   gv('f-sat_panjang'),
+        };
+
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+        fetch('/api/surat-jalan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('✅ Surat Jalan berhasil dibuat! Mengalihkan...', 'success');
+                setTimeout(() => { window.location.href = '/inventory/surat-jalan/detail?id=' + data.id; }, 1000);
+            } else {
+                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Barang';
+            }
+        })
+        .catch(err => {
+            showAlert('❌ Terjadi kesalahan server: ' + err.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan & Lanjut Input Barang';
+        });
+    }
+</script>
+</body>
+</html>

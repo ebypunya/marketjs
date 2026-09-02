@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Surat Jalan - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .section-title {
+            font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--primary); margin: 0 0 14px; padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-light); display: flex; align-items: center; gap: 8px;
+        }
+        .fg { display: flex; flex-direction: column; }
+        .fl { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+        .fi {
+            padding: 10px 13px; border: 1px solid var(--border-color); border-radius: 9px;
+            font-size: 0.88rem; font-family: inherit; color: var(--text-main); background: var(--bg-main);
+            outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%; box-sizing: border-box;
+        }
+        .fi:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(79,70,229,0.08); }
+        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+        <div class="bento-item" style="width:100%;box-sizing:border-box">
+
+            <div id="alert-box" style="display:none;padding:12px 16px;border-radius:8px;margin-bottom:20px;font-size:0.88rem;font-weight:600"></div>
+
+            <div class="section-title"><i class="ti ti-truck-delivery"></i> Edit Surat Jalan</div>
+
+            <div class="grid3" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">No Surat Jalan <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="f-no_suratjalan" class="fi" placeholder="Memuat...">
+                </div>
+                <div class="fg">
+                    <label class="fl">Contract No</label>
+                    <input type="text" id="f-contract_no" class="fi" placeholder="No. sales contract (opsional)">
+                </div>
+                <div class="fg">
+                    <label class="fl">Faktur No</label>
+                    <input type="text" id="f-faktur_no" class="fi" placeholder="No. faktur / invoice (opsional)">
+                </div>
+            </div>
+
+            <div class="grid3" style="margin-bottom:14px">
+                <div class="fg">
+                    <label class="fl">Buyer</label>
+                    <input type="text" id="f-buyer" class="fi" placeholder="Nama buyer">
+                </div>
+                <div class="fg">
+                    <label class="fl">Tujuan</label>
+                    <input type="text" id="f-tujuan" class="fi" placeholder="Tujuan pengiriman">
+                </div>
+                <div class="fg">
+                    <label class="fl">Destinasi</label>
+                    <input type="text" id="f-destinasi" class="fi" placeholder="Kota / negara tujuan">
+                </div>
+            </div>
+
+            <div class="grid3" style="margin-bottom:28px">
+                <div class="fg">
+                    <label class="fl">Tanggal <span style="color:#ef4444">*</span></label>
+                    <input type="date" id="f-tanggal" class="fi">
+                </div>
+                <div class="fg">
+                    <label class="fl">Jenis <span style="color:#ef4444">*</span></label>
+                    <select id="f-jenis" class="fi">
+                        <option value="">-- Pilih Jenis --</option>
+                        <option value="Export">Export</option>
+                        <option value="Lokal">Lokal</option>
+                        <option value="Sample">Sample</option>
+                    </select>
+                </div>
+                <div class="fg"></div>
+            </div>
+
+            <div class="grid3" style="margin-bottom:28px">
+                <div class="fg">
+                    <label class="fl">Satuan</label>
+                    <select id="f-satuan" class="fi">
+                        <option value="Roll">Roll</option>
+                        <option value="Bal">Bal</option>
+                        <option value="Karton">Karton</option>
+                        <option value="Pcs">Pcs</option>
+                    </select>
+                </div>
+                <div class="fg">
+                    <label class="fl">Satuan Panjang</label>
+                    <select id="f-sat_panjang" class="fi">
+                        <option value="Yard">Yard</option>
+                        <option value="Meter">Meter</option>
+                    </select>
+                </div>
+                <div class="fg"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <a href="/inventory/surat-jalan"
+                style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit">
+                <i class="ti ti-arrow-left"></i> Batal
+            </a>
+            <a id="btn-items" href="#"
+            style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:#7c3aed;background:#f5f3ff;font-family:inherit">
+            <i class="ti ti-list-details"></i> Kelola Barang
+        </a>
+        <button onclick="submitEdit()" id="btn-submit"
+        style="padding:11px 28px;background:var(--primary);color:white;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit">
+        <i class="ti ti-device-floppy"></i> Simpan Perubahan
+    </button>
+</div>
+</div>
+</div>
+
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    const sjId = new URLSearchParams(window.location.search).get('id');
+    if (!sjId) window.location.href = '/inventory/surat-jalan';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('btn-items').href = '/inventory/surat-jalan/detail?id=' + sjId;
+        loadData();
+    });
+
+    function showAlert(msg, type) {
+        const box = document.getElementById('alert-box');
+        box.style.display = 'block';
+        box.style.background = type === 'success' ? '#f0fdf4' : '#fef2f2';
+        box.style.color = type === 'success' ? '#16a34a' : '#dc2626';
+        box.textContent = msg;
+        box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    function gv(id) { return document.getElementById(id).value.trim(); }
+    function sv(id, val) { document.getElementById(id).value = (val === null || val === undefined) ? '' : val; }
+
+    async function loadData() {
+        try {
+            const d = await fetch('/api/surat-jalan/' + sjId).then(r => r.json());
+            if (d.error) { showAlert('❌ Data tidak ditemukan.', 'error'); return; }
+            sv('f-no_suratjalan', d.no_suratjalan);
+            sv('f-contract_no', d.contract_no);
+            sv('f-faktur_no', d.faktur_no);
+            sv('f-buyer', d.buyer);
+            sv('f-tujuan', d.tujuan);
+            sv('f-destinasi', d.destinasi);
+            sv('f-tanggal', d.tanggal ? d.tanggal.slice(0,10) : '');
+            document.getElementById('f-jenis').value = d.jenis || '';
+            document.getElementById('f-satuan').value = d.satuan || 'Roll';
+            document.getElementById('f-sat_panjang').value = d.sat_panjang || 'Yard';
+        } catch(e) {
+            showAlert('❌ Gagal memuat data surat jalan.', 'error');
+        }
+    }
+
+    function submitEdit() {
+        if (!gv('f-no_suratjalan')) { showAlert('❌ No Surat Jalan wajib diisi.', 'error'); return; }
+        if (!gv('f-tanggal'))       { showAlert('❌ Tanggal wajib diisi.', 'error'); return; }
+        if (!gv('f-jenis'))         { showAlert('❌ Jenis wajib dipilih.', 'error'); return; }
+
+        const payload = {
+            no_suratjalan: gv('f-no_suratjalan'),
+            contract_no:   gv('f-contract_no')  || null,
+            faktur_no:     gv('f-faktur_no')    || null,
+            buyer:         gv('f-buyer')        || null,
+            tujuan:        gv('f-tujuan')       || null,
+            destinasi:     gv('f-destinasi')    || null,
+            jenis:         gv('f-jenis'),
+            tanggal:       gv('f-tanggal'),
+            satuan:        gv('f-satuan'),
+            sat_panjang:   gv('f-sat_panjang'),
+        };
+
+        const btn = document.getElementById('btn-submit');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="ti ti-loader"></i> Menyimpan...';
+
+        fetch('/api/surat-jalan/' + sjId, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('✅ Surat Jalan berhasil diperbarui!', 'success');
+                setTimeout(() => { window.location.href = '/inventory/surat-jalan'; }, 1000);
+            } else {
+                showAlert('❌ Gagal: ' + (data.error || 'Unknown error'), 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
+            }
+        })
+        .catch(err => {
+            showAlert('❌ Terjadi kesalahan server: ' + err.message, 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="ti ti-device-floppy"></i> Simpan Perubahan';
+        });
+    }
+</script>
+</body>
+</html>

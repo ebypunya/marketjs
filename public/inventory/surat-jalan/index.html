@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Jalan - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+</head>
+<body class="dashboard-page">
+
+    <div id="app-content">
+
+        <!-- LATEST NO BADGES -->
+        <div id="latest-sj" style="display:flex;gap:12px;margin-bottom:1rem;flex-wrap:wrap">
+            <div style="padding:8px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;font-size:0.82rem">
+                <span style="color:#64748b;font-weight:600">EXPORT</span>
+                <span id="latest-export" style="color:#2563eb;font-weight:800;font-size:0.95rem;margin-left:8px">-</span>
+            </div>
+            <div style="padding:8px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;font-size:0.82rem">
+                <span style="color:#64748b;font-weight:600">LOKAL</span>
+                <span id="latest-lokal" style="color:#16a34a;font-weight:800;font-size:0.95rem;margin-left:8px">-</span>
+            </div>
+            <div style="padding:8px 16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;font-size:0.82rem">
+                <span style="color:#64748b;font-weight:600">SAMPLE</span>
+                <span id="latest-sample" style="color:#c2410c;font-weight:800;font-size:0.95rem;margin-left:8px">-</span>
+            </div>
+        </div>
+
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;gap:12px;flex-wrap:wrap">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <input type="text" id="search-input" placeholder="🔍  Cari no surat jalan, contract, atau buyer..."
+                style="padding:10px 16px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;width:300px;outline:none;font-family:inherit">
+
+                <select id="filter-jenis"
+                style="padding:10px 14px;border:1px solid var(--border-color);border-radius:10px;font-size:0.88rem;font-family:inherit;outline:none;color:var(--text-main);background:#fff;cursor:pointer">
+                <option value="">Semua Jenis</option>
+                <option value="Export">Export</option>
+                <option value="Lokal">Lokal</option>
+                <option value="Sample">Sample</option>
+            </select>
+        </div>
+
+        <a href="/inventory/surat-jalan/tambah"
+        style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--primary);color:white;border-radius:10px;text-decoration:none;font-weight:700;font-size:0.88rem">
+        <i class="ti ti-plus"></i> Tambah Surat Jalan
+    </a>
+</div>
+
+<div class="bento-item" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+        <table class="data-table" style="margin:0;min-width:1000px">
+            <thead>
+                <tr style="background:var(--bg-main)">
+                    <th style="padding:14px 18px;width:44px">#</th>
+                    <th style="padding:14px 18px">NO SURAT JALAN</th>
+                    <th style="padding:14px 18px;text-align:center">JENIS</th>
+                    <th style="padding:14px 18px">CONTRACT NO</th>
+                    <th style="padding:14px 18px">FAKTUR NO</th>
+                    <th style="padding:14px 18px">BUYER</th>
+                    <th style="padding:14px 18px">TUJUAN</th>
+                    <th style="padding:14px 18px">TANGGAL</th>
+                    <th style="padding:14px 18px;width:170px;text-align:center">AKSI</th>
+                </tr>
+            </thead>
+            <tbody id="sj-tbody">
+                <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">Memuat data...</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-top:1px solid var(--border-color);background:var(--bg-main)">
+        <span id="pagination-info" style="font-size:0.8rem;color:var(--text-muted)">-</span>
+        <div id="pagination-controls" style="display:flex;gap:6px"></div>
+    </div>
+</div>
+
+<div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:999;justify-content:center;align-items:center">
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.18)">
+        <div style="font-size:48px;margin-bottom:10px">🗑️</div>
+        <h3 style="margin:0 0 8px;color:#0f172a">Hapus Surat Jalan?</h3>
+        <p style="color:#64748b;font-size:0.88rem;margin-bottom:6px">Data <b id="delete-name" style="color:#0f172a"></b> beserta seluruh item barangnya akan dihapus permanen.</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:18px">
+            <button onclick="closeDeleteModal()" style="padding:10px 24px;border:1px solid var(--border-color);border-radius:8px;background:#fff;font-weight:600;cursor:pointer;font-family:inherit">Batal</button>
+            <button onclick="confirmDelete()" style="padding:10px 24px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-family:inherit">Hapus</button>
+        </div>
+    </div>
+</div>
+
+</div>
+<script src="/assets/js/sidebar.js"></script>
+<script src="/assets/js/layout.js"></script>
+<script>
+    let allData = [], filtered = [], currentPage = 1;
+    const PER_PAGE = 10;
+    let deleteId = null;
+
+    function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+    function fmtDate(str) {
+        if (!str) return '-';
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return '-';
+        return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+    }
+
+    function jenisBadge(jenis) {
+        const map = {
+            Export: { bg: '#eff6ff', color: '#2563eb' },
+            Lokal:  { bg: '#f0fdf4', color: '#16a34a' },
+            Sample: { bg: '#fff7ed', color: '#c2410c' },
+        };
+        const s = map[jenis] || { bg: '#f1f5f9', color: '#64748b' };
+        return `<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:800;background:${s.bg};color:${s.color}">${esc(jenis || '-')}</span>`;
+    }
+
+    function loadLatest() {
+        fetch('/api/surat-jalan/latest')
+        .then(r => r.json())
+        .then(d => {
+            document.getElementById('latest-export').textContent = d.export || '-';
+            document.getElementById('latest-lokal').textContent  = d.lokal  || '-';
+            document.getElementById('latest-sample').textContent = d.sample || '-';
+        })
+        .catch(() => {});
+    }
+
+    function loadData() {
+        fetch('/api/surat-jalan')
+        .then(r => r.json())
+        .then(data => { allData = data; applyFilter(); })
+        .catch(() => {
+            document.getElementById('sj-tbody').innerHTML =
+            '<tr><td colspan="9" style="text-align:center;padding:40px;color:#ef4444">Gagal memuat data.</td></tr>';
+        });
+    }
+
+    function applyFilter() {
+        const q = document.getElementById('search-input').value.toLowerCase();
+        const jenisVal = document.getElementById('filter-jenis').value;
+        filtered = allData.filter(d => {
+            const matchSearch = !q ||
+            (d.no_suratjalan && d.no_suratjalan.toLowerCase().includes(q)) ||
+            (d.contract_no && d.contract_no.toLowerCase().includes(q)) ||
+            (d.buyer && d.buyer.toLowerCase().includes(q));
+            const matchJenis = !jenisVal || d.jenis === jenisVal;
+            return matchSearch && matchJenis;
+        });
+        currentPage = 1;
+        renderTable();
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('sj-tbody');
+        const total = filtered.length;
+        const totalPages = Math.ceil(total / PER_PAGE) || 1;
+        currentPage = Math.min(currentPage, totalPages);
+        const start = (currentPage - 1) * PER_PAGE;
+        const pageData = filtered.slice(start, start + PER_PAGE);
+
+        if (!total) {
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data surat jalan.</td></tr>';
+            document.getElementById('pagination-info').textContent = '0 data';
+            document.getElementById('pagination-controls').innerHTML = '';
+            return;
+        }
+
+        tbody.innerHTML = pageData.map((d, i) => `
+            <tr>
+            <td style="padding:13px 18px;color:var(--text-muted);font-size:0.82rem">${start + i + 1}</td>
+            <td style="padding:13px 18px;font-weight:800;color:var(--primary)">${esc(d.no_suratjalan)}</td>
+            <td style="padding:13px 18px;text-align:center">${jenisBadge(d.jenis)}</td>
+            <td style="padding:13px 18px;font-size:0.85rem">${esc(d.contract_no || '-')}</td>
+            <td style="padding:13px 18px;font-size:0.85rem">${esc(d.faktur_no || '-')}</td>
+            <td style="padding:13px 18px;font-weight:600">${esc(d.buyer || '-')}</td>
+            <td style="padding:13px 18px;font-size:0.85rem;color:var(--text-muted)">${esc(d.tujuan || '-')}</td>
+            <td style="padding:13px 18px;font-size:0.85rem;color:var(--text-muted)">${fmtDate(d.tanggal)}</td>
+            <td style="padding:13px 18px;text-align:center">
+            <div style="display:flex;gap:6px;justify-content:center">
+            <a href="/inventory/surat-jalan/detail?id=${d.id_suratjalan}" title="Kelola Barang"
+            style="display:inline-flex;padding:6px 10px;background:#f5f3ff;color:#7c3aed;border-radius:7px;text-decoration:none"><i class="ti ti-list-details" style="font-size:13px"></i></a>
+            <a href="/inventory/surat-jalan/edit?id=${d.id_suratjalan}" title="Edit"
+            style="display:inline-flex;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none"><i class="ti ti-edit" style="font-size:13px"></i></a>
+            <button onclick="openDeleteModal(${d.id_suratjalan}, '${esc(d.no_suratjalan)}')" title="Hapus"
+            style="padding:6px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;cursor:pointer;font-family:inherit"><i class="ti ti-trash" style="font-size:13px"></i></button>
+            </div>
+            </td>
+            </tr>`).join('');
+
+        document.getElementById('pagination-info').textContent =
+        `Menampilkan ${start+1}–${Math.min(start+pageData.length,total)} dari ${total} data`;
+        renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+        const ctrl = document.getElementById('pagination-controls');
+        if (totalPages <= 1) { ctrl.innerHTML = ''; return; }
+        const btnStyle = a => `padding:6px 12px;border-radius:7px;border:1px solid ${a?'var(--primary)':'var(--border-color)'};background:${a?'var(--primary)':'#fff'};color:${a?'#fff':'var(--text-muted)'};font-size:0.8rem;font-weight:600;cursor:pointer;font-family:inherit`;
+        let html = `<button style="${btnStyle(false)}" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}><i class="ti ti-chevron-left"></i></button>`;
+        for (let i = 1; i <= totalPages; i++) html += `<button style="${btnStyle(i===currentPage)}" onclick="goPage(${i})">${i}</button>`;
+            html += `<button style="${btnStyle(false)}" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}><i class="ti ti-chevron-right"></i></button>`;
+        ctrl.innerHTML = html;
+    }
+
+    function goPage(p) { const tp = Math.ceil(filtered.length/PER_PAGE)||1; if (p<1||p>tp) return; currentPage = p; renderTable(); }
+
+    function openDeleteModal(id, no) { deleteId = id; document.getElementById('delete-name').textContent = no; document.getElementById('delete-modal').style.display = 'flex'; }
+    function closeDeleteModal() { deleteId = null; document.getElementById('delete-modal').style.display = 'none'; }
+    function confirmDelete() {
+        fetch('/api/surat-jalan/' + deleteId, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(data => { if (data.success) { closeDeleteModal(); loadData(); loadLatest(); } else alert('❌ Gagal: ' + (data.error || 'Unknown error')); })
+        .catch(err => alert('❌ Kesalahan jaringan: ' + err.message));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadLatest();
+        loadData();
+        document.getElementById('search-input').addEventListener('input', applyFilter);
+        document.getElementById('filter-jenis').addEventListener('change', applyFilter);
+    });
+</script>
+</body>
+</html>

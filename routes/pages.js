@@ -71,6 +71,23 @@ router.get('/sales/invoices/detail', requireLogin, (req, res) =>
 router.get('/sales/invoices/print', requireLogin, (req, res) =>
     res.sendFile(pub('sales', 'invoices', 'print.html')));
 
+// surat jalan
+router.get('/inventory/surat-jalan', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/inventory/surat-jalan/index.html'));
+});
+
+router.get('/inventory/surat-jalan/tambah', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/inventory/surat-jalan/tambah.html'));
+});
+
+router.get('/inventory/surat-jalan/edit', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/inventory/surat-jalan/edit.html'));
+});
+
+router.get('/inventory/surat-jalan/detail', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/inventory/surat-jalan/detail.html'));
+});
+
 // Finance - invoice sample
 router.get('/finance/invoice-sample', requireLogin, (req, res) =>
     res.sendFile(pub('finance', 'invoice-sample', 'index.html')));

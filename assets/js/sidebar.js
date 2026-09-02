@@ -18,6 +18,13 @@ function getPageMeta() {
         '/finance/invoice-sample/edit':     { title: 'Edit Invoice Sample',   sub: 'Ubah data invoice sample.' },
         '/finance/invoice-sample/detail':   { title: 'Detail Invoice Sample', sub: 'Kelola item invoice sample.' },
 
+        // ===== surat jalan ====
+        '/inventory/surat-jalan':        { title: 'Surat Jalan',        sub: 'Daftar seluruh surat jalan (export, lokal, sample).' },
+        '/inventory/surat-jalan/tambah': { title: 'Tambah Surat Jalan', sub: 'Buat surat jalan baru.' },
+        '/inventory/surat-jalan/edit':   { title: 'Edit Surat Jalan',   sub: 'Ubah data surat jalan.' },
+        '/inventory/surat-jalan/detail': { title: 'Detail Surat Jalan', sub: 'Kelola daftar barang pada surat jalan.' },
+
+
         // ===== GUDANG (BARU) =====
         '/gudang/sparepart': { title: 'Gudang Sparepart', sub: 'Stok dan data sparepart mesin/kendaraan.' },
         '/gudang/greige':    { title: 'Gudang Greige',    sub: 'Stok kain greige (bahan mentah).' },
