@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surat Jalan - Print</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Tahoma, Arial, sans-serif; font-size: 10.5pt; background: #e5e7eb; color: #000; }
+        .page-wrapper { display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px; min-height: 100vh; }
+        .action-bar { display: flex; gap: 10px; margin-bottom: 18px; }
+        .btn { padding: 9px 22px; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
+        .btn-primary { background: #4f46e5; color: #fff; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+        .btn-secondary:hover { background: #f9fafb; }
+
+        /* Ukuran halaman meniru form kontinu asli (24cm x 14cm) */
+        .page { width: 24cm; min-height: 14cm; background: #fff; padding: 10mm 12mm; box-shadow: 0 4px 32px rgba(0,0,0,0.13); }
+
+        .head-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+        .co-name { font-weight: bold; font-size: 12pt; }
+        .co-addr { font-size: 8.5pt; color: #222; margin-top: 2px; line-height: 1.4; max-width: 480px; }
+        .judul { font-weight: bold; margin-top: 8px; font-size: 11pt; }
+
+        .buyer-box {
+            border: 1px solid #000; border-radius: 10px; padding: 8px 14px;
+            width: 270px; font-size: 9.5pt; line-height: 1.5; flex-shrink: 0;
+        }
+
+        .meta-line { margin-top: 6px; font-size: 9.5pt; }
+        .meta-row { display: flex; justify-content: space-between; margin-top: 4px; font-size: 9.5pt; }
+        .meta-row .right { text-align: right; }
+
+        .item-wrap { border: 1px solid #000; border-radius: 10px; margin-top: 8px; overflow: hidden; }
+        .item-tbl { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+        .item-tbl th {
+            text-align: left; padding: 6px 8px; border-bottom: 1px solid #000; font-size: 9.5pt;
+        }
+        .item-tbl td { padding: 6px 8px; border-bottom: 1px solid #ccc; vertical-align: top; }
+        .item-tbl tbody tr:last-child td { border-bottom: none; }
+
+        .total-line { margin-top: 10px; font-weight: bold; font-size: 10pt; padding-left: 4px; }
+
+        .sig-row { display: flex; justify-content: space-around; margin-top: 34px; font-size: 9.5pt; text-align: center; }
+        .sig-line { margin-top: 44px; border-bottom: 1px solid #000; width: 130px; margin-left: auto; margin-right: auto; }
+
+        @media print {
+            body { background: #fff; }
+            .page-wrapper { padding: 0; }
+            .action-bar { display: none; }
+            .page { width: 100%; min-height: 100%; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="closeTab()">✕ Tutup</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+        </div>
+
+        <div class="page">
+            <div class="head-row">
+                <div>
+                    <div class="co-name">PT URASE PRIMA</div>
+                    <div class="co-addr">
+                        Desa Cibinong, Ubrug - Jatiluhur, Purwakarta 41152, Jawa Barat - Indonesia
+                        &nbsp; Phone: +62 264 822 4018 &nbsp; Email: sales@uraseprima.com
+                    </div>
+                    <div class="judul">Surat Jalan No <span id="v-no">—</span></div>
+                </div>
+                <div class="buyer-box">
+                    <div id="v-buyer">—</div>
+                    <div id="v-tujuan">—</div>
+                    <div>Destinasi : &nbsp;<span id="v-destinasi">—</span></div>
+                </div>
+            </div>
+
+            <div class="meta-line">
+                Faktur No : <span id="v-faktur">—</span>
+                &nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;
+                Contract No : <span id="v-contract">—</span>
+            </div>
+
+            <div class="meta-row">
+                <div>
+                    Angkutan : ________________________________<br><br>
+                    No : ________________________________
+                </div>
+                <div class="right">
+                    Purwakarta, <span id="v-tanggal">—</span>
+                </div>
+            </div>
+
+            <div class="item-wrap">
+                <table class="item-tbl">
+                    <thead>
+                        <tr>
+                            <th style="width:6%">No</th>
+                            <th style="width:14%">Jumlah</th>
+                            <th style="width:14%">Satuan</th>
+                            <th style="width:66%">Deskripsi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-tbody">
+                        <tr><td colspan="4" style="text-align:center;padding:18px;color:#999">Memuat data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="total-line" id="total-line">TOTAL : — &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| TOTAL PANJANG : —</div>
+
+            <div class="sig-row">
+                <div>
+                    Penerima
+                    <div class="sig-line"></div>
+                </div>
+                <div>
+                    Angkutan
+                    <div class="sig-line"></div>
+                </div>
+                <div>
+                    Pengirim
+                    <div class="sig-line"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function closeTab() {
+    window.close();
+    // fallback jika browser memblokir window.close() (tab tidak dibuka via script)
+    setTimeout(() => {
+        if (!window.closed) {
+            window.location.href = '/inventory/surat-jalan';
+        }
+    }, 300);
+}
+        const sjId = new URLSearchParams(window.location.search).get('id');
+        if (!sjId) window.location.href = '/inventory/surat-jalan';
+
+        function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function fmtNum(v) { return parseFloat(v || 0).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+        function fmtDateID(str) {
+            if (!str) return '—';
+            const p = str.slice(0, 10).split('-'); // YYYY-MM-DD
+            return `${p[2]}-${p[1]}-${p[0]}`; // dd-mm-yyyy, meniru date('d-m-Y', ...) di kode lama
+        }
+
+        async function load() {
+            try {
+                const [header, items] = await Promise.all([
+                    fetch('/api/surat-jalan/' + sjId).then(r => r.json()),
+                    fetch('/api/surat-jalan-details/by-surat-jalan/' + sjId).then(r => r.json()),
+                ]);
+
+                if (header.error) throw new Error(header.error);
+
+                document.title = 'Surat Jalan - ' + (header.no_suratjalan || sjId);
+
+                document.getElementById('v-no').textContent        = header.no_suratjalan || '—';
+                document.getElementById('v-buyer').textContent     = header.buyer || '—';
+                document.getElementById('v-tujuan').textContent    = header.tujuan || '—';
+                document.getElementById('v-destinasi').textContent = header.destinasi || '—';
+                document.getElementById('v-faktur').textContent    = header.faktur_no || '—';
+                document.getElementById('v-contract').textContent  = header.contract_no || '—';
+                document.getElementById('v-tanggal').textContent   = fmtDateID(header.tanggal);
+
+                const tbody = document.getElementById('items-tbody');
+                if (!items || !items.length) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:18px;color:#999">Tidak ada barang.</td></tr>';
+                } else {
+                    tbody.innerHTML = items.map((it, i) => {
+                        const desk = `${esc(it.deskripsi || '')} ${fmtNum(it.panjang)} ${esc(it.sat_panjang || '')}`;
+                        return `<tr>
+                            <td>${i + 1}</td>
+                            <td>${esc(it.jumlah ?? '—')}</td>
+                            <td>${esc(it.qty ?? '—')}</td>
+                            <td>${desk}</td>
+                        </tr>`;
+                    }).join('');
+                }
+
+                const jumlahTotal  = (items || []).reduce((s, it) => s + (parseFloat(it.jumlah) || 0), 0);
+                const panjangTotal = (items || []).reduce((s, it) => s + (parseFloat(it.panjang) || 0), 0);
+
+                document.getElementById('total-line').innerHTML =
+                    `TOTAL : ${jumlahTotal.toLocaleString('id-ID')} ${esc(header.satuan || '')}` +
+                    `&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;| TOTAL PANJANG : ${fmtNum(panjangTotal)} ${esc(header.sat_panjang || '')}`;
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('items-tbody').innerHTML =
+                    '<tr><td colspan="4" style="text-align:center;color:red;padding:18px">Gagal memuat: ' + esc(e.message) + '</td></tr>';
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

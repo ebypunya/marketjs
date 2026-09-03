@@ -15,7 +15,7 @@ router.get('/latest', requireLogin, (req, res) => {
     let hasError = false;
 
     jenisList.forEach(jenis => {
-        const sql = `SELECT no_suratjalan FROM surat_jalan WHERE jenis = ? ORDER BY id_suratjalan DESC LIMIT 1`;
+        const sql = `SELECT no_suratjalan FROM suratjalan WHERE jenis = ? ORDER BY id_suratjalan DESC LIMIT 1`;
         db.query(sql, [jenis], (err, rows) => {
             if (hasError) return;
             completed++;
@@ -35,7 +35,7 @@ router.get('/latest', requireLogin, (req, res) => {
 });
 
 router.get('/', requireLogin, (req, res) => {
-    const sql = `SELECT * FROM surat_jalan ORDER BY tanggal DESC, id_suratjalan DESC`;
+    const sql = `SELECT * FROM suratjalan ORDER BY tanggal DESC, id_suratjalan DESC`;
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
@@ -43,7 +43,7 @@ router.get('/', requireLogin, (req, res) => {
 });
 
 router.get('/:id', requireLogin, (req, res) => {
-    db.query('SELECT * FROM surat_jalan WHERE id_suratjalan = ?', [req.params.id], (err, results) => {
+    db.query('SELECT * FROM suratjalan WHERE id_suratjalan = ?', [req.params.id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!results.length) return res.status(404).json({ error: 'Not found' });
         res.json(results[0]);
@@ -60,14 +60,14 @@ router.post('/', requireLogin, (req, res) => {
         return res.status(400).json({ error: 'Field wajib tidak lengkap.' });
     }
 
-    db.query('SELECT id_suratjalan FROM surat_jalan WHERE no_suratjalan = ?', [no_suratjalan], (err, dup) => {
+    db.query('SELECT id_suratjalan FROM suratjalan WHERE no_suratjalan = ?', [no_suratjalan], (err, dup) => {
         if (err) return res.status(500).json({ error: err.message });
         if (dup.length > 0) {
             return res.status(400).json({ error: `No Surat Jalan "${no_suratjalan}" sudah digunakan.` });
         }
 
         const sql = `
-            INSERT INTO surat_jalan
+            INSERT INTO suratjalan
             (no_suratjalan, contract_no, faktur_no, buyer, tujuan, destinasi, jenis, tanggal, satuan, sat_panjang, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         `;
@@ -100,7 +100,7 @@ router.put('/:id', requireLogin, (req, res) => {
     }
 
     db.query(
-        'SELECT id_suratjalan FROM surat_jalan WHERE no_suratjalan = ? AND id_suratjalan != ?',
+        'SELECT id_suratjalan FROM suratjalan WHERE no_suratjalan = ? AND id_suratjalan != ?',
         [no_suratjalan, req.params.id],
         (err, dup) => {
             if (err) return res.status(500).json({ error: err.message });
@@ -109,7 +109,7 @@ router.put('/:id', requireLogin, (req, res) => {
             }
 
             const sql = `
-                UPDATE surat_jalan SET
+                UPDATE suratjalan SET
                 no_suratjalan=?, contract_no=?, faktur_no=?, buyer=?, tujuan=?, destinasi=?,
                 jenis=?, tanggal=?, satuan=?, sat_panjang=?, updated_at=NOW()
                 WHERE id_suratjalan=?
@@ -141,15 +141,15 @@ router.delete('/:id', requireLogin, (req, res) => {
     const id = req.params.id;
 
     // Hapus detail barang dulu (hindari foreign key constraint), baru header-nya.
-    db.query('DELETE FROM surat_jalan_details WHERE id_suratjalan = ?', [id], (err) => {
+    db.query('DELETE FROM suratjalan_detail WHERE id_suratjalan = ?', [id], (err) => {
         if (err) {
-            console.error('DELETE surat_jalan_details error:', err);
+            console.error('DELETE suratjalan_detail error:', err);
             return res.status(500).json({ success: false, error: err.message });
         }
 
-        db.query('DELETE FROM surat_jalan WHERE id_suratjalan = ?', [id], (err2, result) => {
+        db.query('DELETE FROM suratjalan WHERE id_suratjalan = ?', [id], (err2, result) => {
             if (err2) {
-                console.error('DELETE surat_jalan error:', err2);
+                console.error('DELETE suratjalan error:', err2);
                 return res.status(500).json({ success: false, error: err2.message });
             }
             if (result.affectedRows === 0) {

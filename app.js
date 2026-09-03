@@ -52,7 +52,11 @@ async function main() {
 
     app.use('/api/invoices', require('./routes/invoices'));
     app.use('/api/invoice-details', require('./routes/invoiceDetails'));
-    
+    app.use('/api/invoice-samples', require('./routes/invoiceSamples'));
+    app.use('/api/invoice-sample-details', require('./routes/invoiceSampleDetails'));
+
+    app.use('/api/surat-jalan', require('./routes/suratJalan'));
+    app.use('/api/surat-jalan-details', require('./routes/suratJalanDetails'));
 
     app.use('/api/invoice-samples', require('./routes/invoiceSamples'));
     app.use('/api/invoice-sample-details', require('./routes/invoiceSampleDetails'));

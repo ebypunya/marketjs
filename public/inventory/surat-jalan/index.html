@@ -177,6 +177,10 @@
             <td style="padding:13px 18px;font-size:0.85rem;color:var(--text-muted)">${fmtDate(d.tanggal)}</td>
             <td style="padding:13px 18px;text-align:center">
             <div style="display:flex;gap:6px;justify-content:center">
+                <a href="/inventory/surat-jalan/print?id=${d.id_suratjalan}" target="_blank" title="Print"
+   style="display:inline-flex;padding:6px 10px;background:#f0fdf4;color:#16a34a;border-radius:7px;text-decoration:none">
+   <i class="ti ti-printer" style="font-size:13px"></i>
+</a>
             <a href="/inventory/surat-jalan/detail?id=${d.id_suratjalan}" title="Kelola Barang"
             style="display:inline-flex;padding:6px 10px;background:#f5f3ff;color:#7c3aed;border-radius:7px;text-decoration:none"><i class="ti ti-list-details" style="font-size:13px"></i></a>
             <a href="/inventory/surat-jalan/edit?id=${d.id_suratjalan}" title="Edit"

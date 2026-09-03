@@ -65,9 +65,11 @@
 
             <div class="grid3" style="margin-bottom:14px">
                 <div class="fg">
-                    <label class="fl">Buyer</label>
-                    <input type="text" id="f-buyer" class="fi" placeholder="Nama buyer">
-                </div>
+    <label class="fl">Buyer</label>
+    <select id="f-buyer" class="fi">
+        <option value="">-- Pilih Customer --</option>
+    </select>
+</div>
                 <div class="fg">
                     <label class="fl">Tujuan</label>
                     <input type="text" id="f-tujuan" class="fi" placeholder="Tujuan pengiriman">
@@ -131,6 +133,25 @@
 <script src="/assets/js/sidebar.js"></script>
 <script src="/assets/js/layout.js"></script>
 <script>
+    async function loadCustomers() {
+    try {
+        const data = await fetch('/api/customers').then(r => r.json());
+        const sel = document.getElementById('f-buyer');
+        data.forEach(c => {
+            const o = document.createElement('option');
+            o.value = c.name;       // disimpan sebagai nama, kolom buyer tetap VARCHAR
+            o.textContent = c.name;
+            sel.appendChild(o);
+        });
+    } catch(e) { console.error('Gagal load customers', e); }
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    document.getElementById('f-tanggal').value =
+        `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    loadLatest();
+    loadCustomers();
+});
     let latestData = {};
 
     document.addEventListener('DOMContentLoaded', () => {

@@ -7,7 +7,7 @@ const { db } = require('../config/db');
 const { requireLogin } = require('../middleware/auth');
 
 router.get('/by-surat-jalan/:id', requireLogin, (req, res) => {
-    const sql = `SELECT * FROM surat_jalan_details WHERE id_suratjalan = ? ORDER BY id_suratjalandetail ASC`;
+    const sql = `SELECT * FROM suratjalan_detail WHERE id_suratjalan = ? ORDER BY id_suratjalandetail ASC`;
     db.query(sql, [req.params.id], (err, results) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(results);
@@ -22,7 +22,7 @@ router.post('/', requireLogin, (req, res) => {
     }
 
     const sql = `
-        INSERT INTO surat_jalan_details
+        INSERT INTO suratjalan_detail
         (id_suratjalan, deskripsi, jumlah, qty, sat_panjang, panjang, created_at, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
     `;
@@ -40,9 +40,9 @@ router.post('/', requireLogin, (req, res) => {
 });
 
 router.delete('/:id', requireLogin, (req, res) => {
-    db.query('DELETE FROM surat_jalan_details WHERE id_suratjalandetail = ?', [req.params.id], (err, result) => {
+    db.query('DELETE FROM suratjalan_detail WHERE id_suratjalandetail = ?', [req.params.id], (err, result) => {
         if (err) {
-            console.error('DELETE surat_jalan_details error:', err);
+            console.error('DELETE suratjalan_detail error:', err);
             return res.status(500).json({ success: false, error: err.message });
         }
         if (result.affectedRows === 0) {

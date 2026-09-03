@@ -88,6 +88,10 @@ router.get('/inventory/surat-jalan/detail', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/inventory/surat-jalan/detail.html'));
 });
 
+router.get('/inventory/surat-jalan/print', requireLogin, (req, res) => {
+    res.sendFile(pub('inventory', 'surat-jalan', 'print.html'));
+});
+
 // Finance - invoice sample
 router.get('/finance/invoice-sample', requireLogin, (req, res) =>
     res.sendFile(pub('finance', 'invoice-sample', 'index.html')));
