@@ -102,6 +102,8 @@ router.get('/finance/debit-note/edit', requireLogin, (req, res) =>
     res.sendFile(pub('finance', 'debit-note', 'edit.html')));
 router.get('/finance/debit-note/detail', requireLogin, (req, res) =>
     res.sendFile(pub('finance', 'debit-note', 'detail.html')));
+router.get('/finance/debit-note/print', requireLogin, (req, res) =>
+    res.sendFile(pub('finance', 'debit-note', 'print.html')));
 
 // Finance - invoice sample
 router.get('/finance/invoice-sample', requireLogin, (req, res) =>

@@ -161,7 +161,20 @@ function renderLayout() {
     </footer>
     </div>`;
 
-    const pageContent = document.getElementById('app-content').innerHTML;
+    // PENTING: Ambil SELURUH isi <body> (bukan hanya #app-content).
+    // Sebelumnya kode ini hanya mengambil document.getElementById('app-content').innerHTML,
+    // sehingga elemen lain yang ditulis di luar #app-content (misalnya modal konfirmasi
+    // hapus seperti <div id="del-modal"> / <div id="delete-modal">) ikut terhapus saat
+    // document.body.innerHTML ditimpa di bawah ini. Akibatnya tombol Hapus di banyak
+    // halaman (customers, products, kurs, sales-contract, invoices, surat-jalan,
+    // invoice-sample, debit-note, dst) tidak bereaksi sama sekali saat diklik, karena
+    // modalnya sudah tidak ada lagi di DOM.
+    //
+    // Dengan mengambil seluruh body.innerHTML di sini (sebelum ditimpa), apapun yang
+    // ditulis developer di luar #app-content pada file halaman (selama ditulis SEBELUM
+    // tag <script src="/assets/js/sidebar.js">) akan tetap ikut terbawa ke dalam
+    // #page-content, sehingga modal tetap ada di DOM dan tetap berfungsi.
+    const pageContent = document.body.innerHTML;
 
     document.body.innerHTML =
     `<div class="dashboard-container">` +

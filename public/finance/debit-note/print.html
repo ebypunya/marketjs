@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debit Note - Print</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 10pt; background: #e5e7eb; color: #000; }
+        .page-wrapper { display: flex; flex-direction: column; align-items: center; padding: 24px 16px 40px; min-height: 100vh; }
+        .action-bar { display: flex; gap: 10px; margin-bottom: 18px; align-items: center; }
+        .btn { padding: 9px 22px; border: none; border-radius: 8px; font-size: 0.88rem; font-weight: 700; cursor: pointer; font-family: Arial, sans-serif; }
+        .btn-primary { background: #4f46e5; color: #fff; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+        .btn-secondary:hover { background: #f9fafb; }
+
+        .page { width: 210mm; min-height: 297mm; background: #fff; padding: 13mm 15mm; box-shadow: 0 4px 32px rgba(0,0,0,0.13); }
+
+        .co-box { border: 1px solid #000; }
+        .co-header { text-align: center; padding: 8px 10px 6px; border-bottom: 1px solid #000; }
+        .co-name { font-size: 13pt; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 3px; }
+        .co-addr { font-size: 8pt; color: #222; line-height: 1.5; }
+        .dn-title { text-align: center; font-size: 10.5pt; font-weight: 800; padding: 6px 0; border-bottom: 1px solid #000; text-transform: capitalize; }
+
+        /* INFO TABLE */
+        .info-tbl-wrap { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #000; }
+        .info-tbl { width: 100%; border-collapse: collapse; font-size: 8.6pt; padding: 8px 10px; }
+        .info-tbl td { padding: 2.5px 4px; vertical-align: top; }
+        .info-tbl td.lbl { font-weight: 700; white-space: nowrap; width: 108px; }
+        .info-tbl td.col { width: 10px; }
+
+        /* ITEMS */
+        .tbl { width: 100%; border-collapse: collapse; font-size: 8.6pt; }
+        .tbl th { border-bottom: 1px solid #000; padding: 6px 10px; text-align: left; font-weight: 700; }
+        .tbl th.c { text-align: center; }
+        .tbl th.r { text-align: right; }
+        .tbl td { padding: 6px 10px; vertical-align: top; }
+        .tbl td.c { text-align: center; }
+        .tbl td.r { text-align: right; white-space: nowrap; }
+        .tbl-items-wrap { min-height: 220mm; border-bottom: 1px solid #000; }
+
+        .kurs-line { padding: 6px 10px; font-size: 8.6pt; font-style: italic; border-bottom: 1px solid #000; }
+
+        .total-row-wrap { display: flex; justify-content: space-between; padding: 8px 10px; font-weight: 800; font-size: 9.5pt; border-bottom: 1px solid #000; }
+
+        .remarks-wrap { padding: 8px 10px; font-size: 8.6pt; line-height: 1.65; }
+        .remarks-title { font-weight: 700; margin-bottom: 3px; }
+
+        @media print {
+            body { background: #fff; }
+            .page-wrapper { padding: 0; }
+            .action-bar { display: none; }
+            .page { width: 100%; min-height: 100%; padding: 10mm 14mm; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="action-bar">
+            <button class="btn btn-secondary" onclick="window.history.back()">← Kembali</button>
+            <button class="btn btn-primary" onclick="window.print()">🖨️ Print / Save PDF</button>
+        </div>
+
+        <div class="page">
+            <div class="co-box">
+                <!-- HEADER -->
+                <div class="co-header">
+                    <div class="co-name">PT URASE PRIMA</div>
+                    <div class="co-addr">
+                        Desa Cibinong, Ubrug - Jatiluhur, Purwakarta 41152, Jawa Barat - Indonesia<br>
+                        Phone: +62 264 822 4018 &nbsp;&nbsp; Email: sales@uraseprima.com
+                    </div>
+                </div>
+                <div class="dn-title">Debit Note</div>
+
+                <!-- INFO -->
+                <div class="info-tbl-wrap">
+                    <table class="info-tbl">
+                        <tr><td class="lbl">Messrs</td><td class="col">:</td><td id="v-messrs">—</td></tr>
+                        <tr><td class="lbl">ATTN</td><td class="col">:</td><td id="v-attn">—</td></tr>
+                    </table>
+                    <table class="info-tbl">
+                        <tr><td class="lbl">Date</td><td class="col">:</td><td id="v-date">—</td></tr>
+                        <tr><td class="lbl">Reff No</td><td class="col">:</td><td id="v-reff">—</td></tr>
+                        <tr><td class="lbl">Delivery Note No</td><td class="col">:</td><td id="v-delnote">—</td></tr>
+                    </table>
+                </div>
+
+                <!-- ITEMS -->
+                <div class="tbl-items-wrap">
+                    <table class="tbl">
+                        <thead>
+                            <tr>
+                                <th style="width:8%">No</th>
+                                <th style="width:70%">Description</th>
+                                <th class="r" style="width:22%" id="th-amount">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-tbody">
+                            <tr><td colspan="3" style="text-align:center;padding:18px;color:#999">Memuat data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- KURS -->
+                <div class="kurs-line" id="kurs-line" style="display:none">
+                    Kurs : <span id="v-kurs">—</span>
+                </div>
+
+                <!-- GRAND TOTAL -->
+                <div class="total-row-wrap">
+                    <div>Grand Total</div>
+                    <div id="v-grandtotal">—</div>
+                </div>
+
+                <!-- REMARKS -->
+                <div class="remarks-wrap">
+                    <div class="remarks-title">Remarks:</div>
+                    Please pay by T.T. to :<br>
+                    <b>BANK CENTRAL ASIA</b><br>
+                    Jl. Asia Afrika No. 122-124, Bandung / Indonesia<br>
+                    A/C No. 008-6-09273-0 (For USD)<br>
+                    A/C No. 008-6-09272-1 (For IDR)<br>
+                    Swift Code : CENAIDJA &nbsp;&nbsp; PT. URASE PRIMA<br>
+                    Under Name : PT. URASE PRIMA
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dnId = new URLSearchParams(window.location.search).get('id');
+        if (!dnId) window.location.href = '/finance/debit-note';
+
+        function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+        function fmtDate(str) {
+            if (!str) return '—';
+            return str.slice(0, 10);
+        }
+        function fmtNum(v, d = 2) {
+            return parseFloat(v || 0).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
+        }
+        function formatCur(val, cur) {
+            const n = parseFloat(val) || 0;
+            return cur === 'IDR'
+                ? 'Rp ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                : '$ ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        async function load() {
+            try {
+                const [dn, items] = await Promise.all([
+                    fetch('/api/debitnote/' + dnId).then(r => r.json()),
+                    fetch('/api/debitnote-details/by-debitnote/' + dnId).then(r => r.json()),
+                ]);
+
+                if (dn.error) throw new Error(dn.error);
+
+                const cur = dn.currency || 'USD';
+                document.title = 'Debit Note - ' + (dn.reff_no || dnId);
+
+                document.getElementById('v-messrs').textContent = dn.messrs || '—';
+                document.getElementById('v-attn').textContent   = dn.attn || '—';
+                document.getElementById('v-date').textContent   = fmtDate(dn.date);
+                document.getElementById('v-reff').textContent   = dn.reff_no || '—';
+                document.getElementById('v-delnote').textContent = dn.delivery_note_no || '—';
+
+                document.getElementById('th-amount').textContent = 'Amount' + (cur ? ' (' + cur + ')' : '');
+
+                // ITEMS
+                const tbody = document.getElementById('items-tbody');
+                if (!items || !items.length) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;padding:18px;color:#999">Tidak ada item.</td></tr>';
+                } else {
+                    tbody.innerHTML = items.map((it, i) => `
+                        <tr>
+                        <td class="c">${i + 1}</td>
+                        <td>${esc(it.description)}</td>
+                        <td class="r">${formatCur(it.subtotal, cur)}</td>
+                        </tr>`).join('');
+                }
+
+                // KURS (hanya tampil kalau ada nilainya)
+                if (dn.kurs && parseFloat(dn.kurs) > 0) {
+                    document.getElementById('kurs-line').style.display = '';
+                    document.getElementById('v-kurs').textContent = 'Rp ' + fmtNum(dn.kurs, 2);
+                }
+
+                // GRAND TOTAL
+                const grandTotal = cur === 'IDR' ? dn.total_amount_idr : dn.total_amount;
+                document.getElementById('v-grandtotal').textContent = formatCur(grandTotal, cur);
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('items-tbody').innerHTML =
+                    '<tr><td colspan="3" style="text-align:center;color:red;padding:18px">Gagal memuat: ' + esc(e.message) + '</td></tr>';
+            }
+        }
+
+        load();
+    </script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 // =========================================================================
-// HELPER: recalc total contract / invoice / invoice sample
+// HELPER: recalc total contract / invoice / invoice sample / debit note
 // dan adjust qty_invoiced pada contract_details.
 // Dipakai bersama oleh beberapa route (contracts, contract-details,
-// invoices, invoice-details, invoice-samples).
+// invoices, invoice-details, invoice-samples, debitnote-details).
 // =========================================================================
 const { db } = require('../config/db');
 
@@ -51,6 +51,7 @@ function recalcInvoiceSampleTotal(invoiceSampleId, callback) {
     WHERE isamp.id = ?`;
     db.query(sql, [invoiceSampleId], callback || (() => {}));
 }
+
 function recalcDebitNoteTotal(debitNoteId, callback) {
     const sql = `
     UPDATE debitnote d
@@ -73,5 +74,6 @@ module.exports = {
     recalcContractTotal,
     adjustContractDetailInvoiced,
     recalcInvoiceTotal,
-    recalcInvoiceSampleTotal
+    recalcInvoiceSampleTotal,
+    recalcDebitNoteTotal
 };
