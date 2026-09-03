@@ -17,6 +17,7 @@ function getPageMeta() {
         '/finance/invoice-sample/tambah':   { title: 'Tambah Invoice Sample', sub: 'Buat invoice sample baru.' },
         '/finance/invoice-sample/edit':     { title: 'Edit Invoice Sample',   sub: 'Ubah data invoice sample.' },
         '/finance/invoice-sample/detail':   { title: 'Detail Invoice Sample', sub: 'Kelola item invoice sample.' },
+        '/reports/ai': { title: 'AI Assistant', sub: 'Tanya jawab & generate laporan otomatis dari data bisnis.' },
 
         // ===== surat jalan ====
         '/inventory/surat-jalan':        { title: 'Surat Jalan',        sub: 'Daftar seluruh surat jalan (export, lokal, sample).' },
@@ -109,8 +110,9 @@ function renderLayout() {
     <i class="ti ti-chevron-down arrow"></i>
     </div>
     <div class="nav-submenu">
-    <a href="/reports/report" class="nav-sub-link">Report</a>
-    </div>
+<a href="/reports/report" class="nav-sub-link">Report</a>
+<a href="/reports/ai" class="nav-sub-link">AI Assistant</a>
+</div>
 
     <div id="admin-panel-section" style="display:none">
     <div class="nav-divider"></div>

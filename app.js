@@ -57,11 +57,13 @@ async function main() {
 
     app.use('/api/surat-jalan', require('./routes/suratJalan'));
     app.use('/api/surat-jalan-details', require('./routes/suratJalanDetails'));
+    
 
     app.use('/api/invoice-samples', require('./routes/invoiceSamples'));
     app.use('/api/invoice-sample-details', require('./routes/invoiceSampleDetails'));
     app.use('/api/debitnote', require('./routes/debitNote'));
 app.use('/api/debitnote-details', require('./routes/debitNoteDetails'));
+    app.use('/api/ai', require('./routes/ai'));
 
     // =========================================================================
     // SERVER INITIALIZATION & LISTENER

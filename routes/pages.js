@@ -91,6 +91,8 @@ router.get('/inventory/surat-jalan/detail', (req, res) => {
 router.get('/inventory/surat-jalan/print', requireLogin, (req, res) => {
     res.sendFile(pub('inventory', 'surat-jalan', 'print.html'));
 });
+router.get('/reports/ai', requireLogin, (req, res) =>
+    res.sendFile(pub('reports', 'ai', 'index.html')));
 
 // debit note
 // Finance - debit note

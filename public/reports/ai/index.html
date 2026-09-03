@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - MarketJS</title>
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        .ai-wrap { display: flex; flex-direction: column; height: calc(100vh - 220px); min-height: 480px; }
+        .ai-messages {
+            flex: 1; overflow-y: auto; padding: 20px 4px 10px;
+            display: flex; flex-direction: column; gap: 14px;
+        }
+        .ai-msg { display: flex; gap: 10px; max-width: 780px; }
+        .ai-msg.user { align-self: flex-end; flex-direction: row-reverse; }
+        .ai-msg-avatar {
+            width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800;
+        }
+        .ai-msg.assistant .ai-msg-avatar { background: var(--primary-light); color: var(--primary); }
+        .ai-msg.user .ai-msg-avatar { background: #eef2ff; color: #4338ca; }
+        .ai-msg-bubble {
+            padding: 12px 16px; border-radius: 14px; font-size: 0.88rem; line-height: 1.6;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .ai-msg.assistant .ai-msg-bubble { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-main); border-top-left-radius: 4px; }
+        .ai-msg.user .ai-msg-bubble { background: var(--primary); color: #fff; border-top-right-radius: 4px; }
+        .ai-msg-bubble b { font-weight: 800; }
+        .ai-msg-bubble ul { margin: 6px 0 6px 18px; padding: 0; }
+        .ai-msg-bubble li { margin-bottom: 3px; }
+
+        .ai-typing { display: flex; gap: 4px; padding: 6px 2px; }
+        .ai-typing span {
+            width: 6px; height: 6px; border-radius: 50%; background: var(--primary);
+            opacity: 0.4; animation: ai-bounce 1.1s infinite ease-in-out;
+        }
+        .ai-typing span:nth-child(2) { animation-delay: 0.15s; }
+        .ai-typing span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes ai-bounce { 0%, 60%, 100% { opacity: 0.4; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+        .ai-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+        .ai-chip {
+            padding: 8px 14px; background: var(--primary-light); color: var(--primary);
+            border-radius: 20px; font-size: 0.78rem; font-weight: 700; cursor: pointer; border: none; font-family: inherit;
+            transition: all .15s;
+        }
+        .ai-chip:hover { background: var(--primary); color: #fff; }
+
+        .ai-input-row { display: flex; gap: 10px; padding-top: 14px; border-top: 1px solid var(--border-color); align-items: flex-end; }
+        .ai-input {
+            flex: 1; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 12px;
+            font-size: 0.88rem; font-family: inherit; resize: none; outline: none; max-height: 120px;
+            background: var(--bg-main); transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .ai-input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(255,106,19,0.1); }
+        .ai-send-btn {
+            padding: 12px 18px; background: var(--primary); color: #fff; border: none; border-radius: 12px;
+            font-weight: 700; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+        }
+        .ai-send-btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+        .ai-empty { text-align: center; color: var(--text-muted); padding: 40px 20px; }
+        .ai-empty i { font-size: 2.8rem; display: block; margin-bottom: 12px; opacity: 0.25; }
+    </style>
+</head>
+<body class="dashboard-page">
+    <div id="app-content">
+        <div class="bento-item" style="padding: 1.5rem 1.75rem;">
+            <div class="ai-wrap">
+                <div class="ai-messages" id="ai-messages">
+                    <div class="ai-empty" id="ai-empty-state">
+                        <i class="ti ti-sparkles"></i>
+                        Tanya apa saja soal data bisnis, atau minta dibuatkan laporan.
+                    </div>
+                </div>
+
+                <div class="ai-suggestions" id="ai-suggestions">
+                    <button class="ai-chip" onclick="sendSuggestion('Buatkan ringkasan penjualan bulan ini')">Ringkasan penjualan bulan ini</button>
+                    <button class="ai-chip" onclick="sendSuggestion('Contract mana saja yang mendekati atau lewat jadwal kirim?')">Contract mendekati jadwal kirim</button>
+                    <button class="ai-chip" onclick="sendSuggestion('Invoice mana saja yang belum lunas?')">Invoice belum lunas</button>
+                    <button class="ai-chip" onclick="sendSuggestion('Bagaimana tren kurs 7 hari terakhir?')">Tren kurs terakhir</button>
+                </div>
+
+                <div class="ai-input-row">
+                    <textarea id="ai-input" class="ai-input" rows="1" placeholder="Tulis pertanyaan atau minta buatkan laporan..."></textarea>
+                    <button class="ai-send-btn" id="ai-send-btn" onclick="sendMessage()">
+                        <i class="ti ti-send"></i> Kirim
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/assets/js/sidebar.js"></script>
+    <script src="/assets/js/layout.js"></script>
+    <script>
+        let history = []; // {role:'user'|'assistant', content: string}
+        let sending = false;
+
+        const messagesEl = document.getElementById('ai-messages');
+        const inputEl = document.getElementById('ai-input');
+        const sendBtn = document.getElementById('ai-send-btn');
+
+        inputEl.addEventListener('input', () => {
+            inputEl.style.height = 'auto';
+            inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+        });
+        inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+        // Formatter ringan: **bold**, baris "- " jadi <li>, newline jadi <br>
+        function formatAssistant(text) {
+            let escaped = esc(text);
+            const lines = escaped.split('\n');
+            let html = '';
+            let inList = false;
+            lines.forEach(line => {
+                const isBullet = /^\s*-\s+/.test(line);
+                if (isBullet) {
+                    if (!inList) { html += '<ul>'; inList = true; }
+                    html += '<li>' + line.replace(/^\s*-\s+/, '') + '</li>';
+                } else {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += (html && !html.endsWith('</ul>') ? '<br>' : '') + line;
+                }
+            });
+            if (inList) html += '</ul>';
+            return html.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+        }
+
+        function appendMessage(role, text) {
+            document.getElementById('ai-empty-state')?.remove();
+            const div = document.createElement('div');
+            div.className = 'ai-msg ' + role;
+            const bubbleContent = role === 'assistant' ? formatAssistant(text) : esc(text);
+            div.innerHTML = `
+                <div class="ai-msg-avatar"><i class="ti ${role === 'assistant' ? 'ti-sparkles' : 'ti-user'}"></i></div>
+                <div class="ai-msg-bubble">${bubbleContent}</div>`;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            return div;
+        }
+
+        function appendTyping() {
+            const div = document.createElement('div');
+            div.className = 'ai-msg assistant';
+            div.id = 'ai-typing-row';
+            div.innerHTML = `
+                <div class="ai-msg-avatar"><i class="ti ti-sparkles"></i></div>
+                <div class="ai-msg-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div>`;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        function removeTyping() {
+            document.getElementById('ai-typing-row')?.remove();
+        }
+
+        function sendSuggestion(text) {
+            inputEl.value = text;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const msg = inputEl.value.trim();
+            if (!msg || sending) return;
+
+            sending = true;
+            sendBtn.disabled = true;
+            inputEl.value = '';
+            inputEl.style.height = 'auto';
+
+            appendMessage('user', msg);
+            appendTyping();
+
+            try {
+                const res = await fetch('/api/ai/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: msg, history })
+                });
+                const data = await res.json();
+                removeTyping();
+
+                if (!res.ok) {
+                    appendMessage('assistant', '❌ ' + (data.error || 'Terjadi kesalahan.'));
+                } else {
+                    appendMessage('assistant', data.reply);
+                    history.push({ role: 'user', content: msg });
+                    history.push({ role: 'assistant', content: data.reply });
+                }
+            } catch (e) {
+                removeTyping();
+                appendMessage('assistant', '❌ Kesalahan jaringan: ' + e.message);
+            } finally {
+                sending = false;
+                sendBtn.disabled = false;
+                inputEl.focus();
+            }
+        }
+    </script>
+</body>
+</html>

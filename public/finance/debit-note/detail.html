@@ -89,9 +89,13 @@
         </div>
 
         <div style="display:flex;gap:10px;margin-bottom:20px">
-            <a href="/finance/debit-note" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit"><i class="ti ti-arrow-left"></i> Kembali</a>
-            <a id="btn-edit" href="#" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--primary);background:var(--primary-light);font-family:inherit"><i class="ti ti-edit"></i> Edit Header</a>
-        </div>
+    <a href="/finance/debit-note" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--text-main);font-family:inherit"><i class="ti ti-arrow-left"></i> Kembali</a>
+    <a id="btn-print" href="#" target="_blank"
+    style="padding:11px 24px;border:none;border-radius:9px;font-weight:700;font-size:0.88rem;text-decoration:none;color:#fff;background:#16a34a;font-family:inherit;display:inline-flex;align-items:center;gap:6px">
+    <i class="ti ti-printer"></i> Print
+    </a>
+    <a id="btn-edit" href="#" style="padding:11px 24px;border:1px solid var(--border-color);border-radius:9px;font-weight:600;font-size:0.88rem;text-decoration:none;color:var(--primary);background:var(--primary-light);font-family:inherit"><i class="ti ti-edit"></i> Edit Awal</a>
+</div>
     </div>
 
     <div id="del-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;justify-content:center;align-items:center">
@@ -108,6 +112,12 @@
     <script src="/assets/js/sidebar.js"></script>
     <script src="/assets/js/layout.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('btn-edit').href = '/finance/debit-note/edit?id=' + dnId;
+    document.getElementById('btn-print').href = '/finance/debit-note/print?id=' + dnId;   // ← tambahan ini
+    await loadDebitNote();
+    await loadDetails();
+});
         const dnId = new URLSearchParams(window.location.search).get('id');
         if (!dnId) window.location.href = '/finance/debit-note';
 

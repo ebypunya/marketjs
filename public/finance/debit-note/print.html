@@ -15,16 +15,33 @@
         .btn-secondary { background: #fff; color: #374151; border: 1px solid #d1d5db; }
         .btn-secondary:hover { background: #f9fafb; }
 
-        .page { width: 210mm; min-height: 297mm; background: #fff; padding: 13mm 15mm; box-shadow: 0 4px 32px rgba(0,0,0,0.13); }
+        /* Halaman A4: tinggi tetap, flex column supaya isi otomatis pas 1 halaman */
+        .page {
+            width: 210mm;
+            height: 297mm;
+            background: #fff;
+            padding: 13mm 15mm;
+            box-shadow: 0 4px 32px rgba(0,0,0,0.13);
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
 
-        .co-box { border: 1px solid #000; }
-        .co-header { text-align: center; padding: 8px 10px 6px; border-bottom: 1px solid #000; }
+        .co-box {
+            border: 1px solid #000;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0; /* penting agar flex child bisa menyusut, bukan overflow */
+        }
+
+        .co-header { text-align: center; padding: 8px 10px 6px; border-bottom: 1px solid #000; flex-shrink: 0; }
         .co-name { font-size: 13pt; font-weight: 900; letter-spacing: 0.5px; margin-bottom: 3px; }
         .co-addr { font-size: 8pt; color: #222; line-height: 1.5; }
-        .dn-title { text-align: center; font-size: 10.5pt; font-weight: 800; padding: 6px 0; border-bottom: 1px solid #000; text-transform: capitalize; }
+        .dn-title { text-align: center; font-size: 10.5pt; font-weight: 800; padding: 6px 0; border-bottom: 1px solid #000; text-transform: capitalize; flex-shrink: 0; }
 
         /* INFO TABLE */
-        .info-tbl-wrap { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #000; }
+        .info-tbl-wrap { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #000; flex-shrink: 0; }
         .info-tbl { width: 100%; border-collapse: collapse; font-size: 8.6pt; padding: 8px 10px; }
         .info-tbl td { padding: 2.5px 4px; vertical-align: top; }
         .info-tbl td.lbl { font-weight: 700; white-space: nowrap; width: 108px; }
@@ -38,20 +55,40 @@
         .tbl td { padding: 6px 10px; vertical-align: top; }
         .tbl td.c { text-align: center; }
         .tbl td.r { text-align: right; white-space: nowrap; }
-        .tbl-items-wrap { min-height: 220mm; border-bottom: 1px solid #000; }
 
-        .kurs-line { padding: 6px 10px; font-size: 8.6pt; font-style: italic; border-bottom: 1px solid #000; }
+        /* Area item mengisi SISA ruang halaman (bukan tinggi tetap), supaya kurs/total/remarks tidak terdorong ke halaman 2 */
+        .tbl-items-wrap {
+            flex: 1;
+            border-bottom: 1px solid #000;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .tbl-items-wrap .tbl { flex-shrink: 0; }
 
-        .total-row-wrap { display: flex; justify-content: space-between; padding: 8px 10px; font-weight: 800; font-size: 9.5pt; border-bottom: 1px solid #000; }
+        .kurs-line { padding: 6px 10px; font-size: 8.6pt; font-style: italic; border-bottom: 1px solid #000; flex-shrink: 0; }
 
-        .remarks-wrap { padding: 8px 10px; font-size: 8.6pt; line-height: 1.65; }
+        .total-row-wrap { display: flex; justify-content: space-between; padding: 8px 10px; font-weight: 800; font-size: 9.5pt; border-bottom: 1px solid #000; flex-shrink: 0; }
+
+        .remarks-wrap { padding: 8px 10px; font-size: 8.6pt; line-height: 1.65; flex-shrink: 0; }
         .remarks-title { font-weight: 700; margin-bottom: 3px; }
 
         @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
             body { background: #fff; }
             .page-wrapper { padding: 0; }
             .action-bar { display: none; }
-            .page { width: 100%; min-height: 100%; padding: 10mm 14mm; box-shadow: none; }
+            .page {
+                width: 210mm;
+                height: 297mm;
+                padding: 10mm 14mm;
+                box-shadow: none;
+                box-sizing: border-box;
+            }
         }
     </style>
 </head>

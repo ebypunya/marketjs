@@ -112,13 +112,15 @@
             <td style="padding:13px 18px;font-size:0.85rem;color:var(--text-muted)">${fmtDate(d.date)}</td>
             <td style="padding:13px 18px;text-align:center">
             <div style="display:flex;gap:6px;justify-content:center">
-            <a href="/finance/debit-note/detail?id=${d.id_debitnote}" title="Kelola Item"
-            style="display:inline-flex;padding:6px 10px;background:#f5f3ff;color:#7c3aed;border-radius:7px;text-decoration:none"><i class="ti ti-list-details" style="font-size:13px"></i></a>
-            <a href="/finance/debit-note/edit?id=${d.id_debitnote}" title="Edit"
-            style="display:inline-flex;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none"><i class="ti ti-edit" style="font-size:13px"></i></a>
-            <button onclick="openDeleteModal(${d.id_debitnote}, '${esc(d.reff_no || d.messrs || '')}')" title="Hapus"
-            style="padding:6px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;cursor:pointer;font-family:inherit"><i class="ti ti-trash" style="font-size:13px"></i></button>
-            </div>
+    <a href="/finance/debit-note/print?id=${d.id_debitnote}" target="_blank" title="Print"
+    style="display:inline-flex;padding:6px 10px;background:#f0fdf4;color:#16a34a;border-radius:7px;text-decoration:none"><i class="ti ti-printer" style="font-size:13px"></i></a>
+    <a href="/finance/debit-note/detail?id=${d.id_debitnote}" title="Kelola Item"
+    style="display:inline-flex;padding:6px 10px;background:#f5f3ff;color:#7c3aed;border-radius:7px;text-decoration:none"><i class="ti ti-list-details" style="font-size:13px"></i></a>
+    <a href="/finance/debit-note/edit?id=${d.id_debitnote}" title="Edit"
+    style="display:inline-flex;padding:6px 10px;background:#eef2ff;color:var(--primary);border-radius:7px;text-decoration:none"><i class="ti ti-edit" style="font-size:13px"></i></a>
+    <button onclick="openDeleteModal(${d.id_debitnote}, '${esc(d.reff_no || d.messrs || '')}')" title="Hapus"
+    style="padding:6px 10px;background:#fef2f2;color:#ef4444;border:none;border-radius:7px;cursor:pointer;font-family:inherit"><i class="ti ti-trash" style="font-size:13px"></i></button>
+</div>
             </td>
             </tr>`).join('');
 
