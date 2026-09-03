@@ -117,10 +117,9 @@
         </div>
     </div>
 
-    <script src="/assets/js/sidebar.js"></script>
+       <script src="/assets/js/sidebar.js"></script>
     <script src="/assets/js/layout.js"></script>
     <script>
-        document.getElementById('btn-print').href = '/inventory/surat-jalan/print?id=' + sjId;
         const sjId = new URLSearchParams(window.location.search).get('id');
         if (!sjId) window.location.href = '/inventory/surat-jalan';
 
@@ -128,6 +127,7 @@
         const MONTHS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
 
         document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('btn-print').href = '/inventory/surat-jalan/print?id=' + sjId;
             document.getElementById('btn-edit').href = '/inventory/surat-jalan/edit?id=' + sjId;
             await loadHeader();
             await loadDetails();

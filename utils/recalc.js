@@ -51,6 +51,23 @@ function recalcInvoiceSampleTotal(invoiceSampleId, callback) {
     WHERE isamp.id = ?`;
     db.query(sql, [invoiceSampleId], callback || (() => {}));
 }
+function recalcDebitNoteTotal(debitNoteId, callback) {
+    const sql = `
+    UPDATE debitnote d
+    SET d.total_amount = (
+        SELECT COALESCE(SUM(dd.subtotal), 0)
+        FROM debitnote_detail dd
+        WHERE dd.id_debitnote = d.id_debitnote
+    ),
+    d.total_amount_idr = (
+        SELECT COALESCE(SUM(dd.amount_idr), 0)
+        FROM debitnote_detail dd
+        WHERE dd.id_debitnote = d.id_debitnote
+    ),
+    d.updated_at = NOW()
+    WHERE d.id_debitnote = ?`;
+    db.query(sql, [debitNoteId], callback || (() => {}));
+}
 
 module.exports = {
     recalcContractTotal,

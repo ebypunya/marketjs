@@ -23,8 +23,11 @@ function getPageMeta() {
         '/inventory/surat-jalan/tambah': { title: 'Tambah Surat Jalan', sub: 'Buat surat jalan baru.' },
         '/inventory/surat-jalan/edit':   { title: 'Edit Surat Jalan',   sub: 'Ubah data surat jalan.' },
         '/inventory/surat-jalan/detail': { title: 'Detail Surat Jalan', sub: 'Kelola daftar barang pada surat jalan.' },
-
-
+// DEBIT NOTE
+'/finance/debit-note':          { title: 'Debit Note',        sub: 'Daftar seluruh debit note.' },
+'/finance/debit-note/tambah':   { title: 'Tambah Debit Note', sub: 'Buat debit note baru.' },
+'/finance/debit-note/edit':     { title: 'Edit Debit Note',   sub: 'Ubah data debit note.' },
+'/finance/debit-note/detail':   { title: 'Detail Debit Note', sub: 'Kelola item debit note.' },
         // ===== GUDANG (BARU) =====
         '/gudang/sparepart': { title: 'Gudang Sparepart', sub: 'Stok dan data sparepart mesin/kendaraan.' },
         '/gudang/greige':    { title: 'Gudang Greige',    sub: 'Stok kain greige (bahan mentah).' },

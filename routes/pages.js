@@ -92,6 +92,17 @@ router.get('/inventory/surat-jalan/print', requireLogin, (req, res) => {
     res.sendFile(pub('inventory', 'surat-jalan', 'print.html'));
 });
 
+// debit note
+// Finance - debit note
+router.get('/finance/debit-note', requireLogin, (req, res) =>
+    res.sendFile(pub('finance', 'debit-note', 'index.html')));
+router.get('/finance/debit-note/tambah', requireLogin, (req, res) =>
+    res.sendFile(pub('finance', 'debit-note', 'tambah.html')));
+router.get('/finance/debit-note/edit', requireLogin, (req, res) =>
+    res.sendFile(pub('finance', 'debit-note', 'edit.html')));
+router.get('/finance/debit-note/detail', requireLogin, (req, res) =>
+    res.sendFile(pub('finance', 'debit-note', 'detail.html')));
+
 // Finance - invoice sample
 router.get('/finance/invoice-sample', requireLogin, (req, res) =>
     res.sendFile(pub('finance', 'invoice-sample', 'index.html')));
