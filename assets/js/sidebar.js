@@ -36,7 +36,7 @@ function getPageMeta() {
         '/gudang/finish':    { title: 'Gudang Finish',    sub: 'Stok kain jadi (finish goods).' },
         '/gudang/stocklot':  { title: 'Gudang Stocklot',  sub: 'Stok kain stocklot / sisa produksi.' },
     };
-    return map[path] || { title: 'MarketJS', sub: '' };
+    return map[path] || { title: 'UraseKu', sub: '' };
 }
 
 function renderLayout() {

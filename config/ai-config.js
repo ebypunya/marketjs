@@ -5,5 +5,5 @@
 module.exports = {
     apiKey: process.env.GEMINI_API_KEY || 'rahasia',
     model: 'gemini-3.7-flash', // Model cepat, pintar, dan gratis (memiliki free tier)
-    maxTokens: 1500,
+    //maxTokens: 1500,
 };
